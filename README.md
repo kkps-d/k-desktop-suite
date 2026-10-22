@@ -100,6 +100,76 @@ gradle/libs.versions.toml     Dependency and plugin versions
 Use the workspace as the first feature module's starting point. Add durable
 storage and domain logic behind the ViewModel as real tools are introduced.
 
+## KD Notepad
+
+KD Notepad is a separate Android application in the `:notepad` module. Select the
+`notepad` run configuration in Android Studio to install it alongside KD Suite.
+Its application ID is `com.kkps.kdesktopsuite.notepad`; the existing starter and
+its application ID are unchanged. Theme and tab code stay inside Notepad until
+KD Paint establishes what should be shared.
+
+Notepad uses a Windows-inspired document layout with Material 3 Expressive:
+scrollable document tabs above File/Edit menus, a monospace editor, and a quiet
+status bar. Narrow or short windows consolidate commands into an overflow menu.
+It follows system appearance and dynamic color, with a green fallback palette.
+
+### Documents and recovery
+
+- New, Open, Save, Save As, Close, independent undo/redo, and standard clipboard
+  operations are available through menus and keyboard shortcuts.
+- Each tab retains its text, selection, scroll position, file association, and
+  undo history across switches, resizing, and activity recreation.
+- Closing unsaved tabs offers Save / Discard / Cancel. Opening an already-open
+  file selects its existing tab. A cancelled or failed save keeps the draft open.
+- Open and Save As use Android's document picker without broad storage access.
+  Files must be UTF-8 plain text, optionally with a BOM. LF/CRLF conventions are
+  retained; mixed line endings normalize to CRLF if any CRLF is present. New files
+  use UTF-8 without a BOM and LF. Invalid UTF-8 and NUL-containing files are rejected.
+- Private recovery snapshots restore documents, tab order, the active tab,
+  selection, scroll positions, and zoom on relaunch. Recovery never overwrites
+  original files. Snapshots follow 500 ms of inactivity and flush on backgrounding;
+  an abrupt termination can lose edits newer than the last successful checkpoint.
+  Undo history resets after process restart. Uninstalling removes private recovery.
+- Missing file access preserves recovered contents and offers Save As. External
+  file changes require Overwrite / Save As / Cancel before saving over them.
+- Mouse/trackpad input supports context menus, scrolling, hover, editor zoom, and
+  opening one dropped text file. Native text drops insert into the editor. When a
+  provider grants only temporary access, a later Save may require Save As.
+
+| Action | Shortcut |
+| --- | --- |
+| New / Open | Ctrl+N / Ctrl+O |
+| Save / Save As | Ctrl+S / Ctrl+Shift+S |
+| Close tab | Ctrl+W |
+| Next / previous tab | Ctrl+Tab / Ctrl+Shift+Tab |
+| Undo / redo | Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z |
+| Cut / copy / paste / select all | Ctrl+X / C / V / A |
+| Zoom in / out / reset | Ctrl+Plus / Ctrl+Minus / Ctrl+0 |
+
+Editor zoom also supports Ctrl+wheel and pinch input. It changes document text
+size, retaining the system font scale. Accessible zoom commands remain available
+in the Edit/overflow menu.
+
+### Build and test Notepad
+
+With the JDK and Android SDK configured as above:
+
+```sh
+./gradlew :notepad:testDebugUnitTest :notepad:assembleDebug :notepad:lintDebug :notepad:assembleDebugAndroidTest
+ANDROID_SERIAL=emulator-5554 ./gradlew :notepad:connectedDebugAndroidTest
+```
+
+The APK is `notepad/build/outputs/apk/debug/notepad-debug.apk`. Codec unit tests,
+real content-provider tests, document/tab state tests, recovery tests, adaptive UI
+tests, and an activity recreation test live in the Notepad module. Compose previews
+cover phone, tablet, desktop, short windows, and an extra-large dark window.
+
+Manually verify TalkBack, keyboard-only operation, large fonts, RTL, right-click
+menus, trackpad pinch, drops from another app, caption/window dragging,
+maximize/restore, fold changes, split screen, and external displays on suitable
+devices. Find/Replace, tab reordering, detached windows, rich text, legacy
+encodings, and large-file optimizations are deferred.
+
 ## References
 
 - [Adaptive app development](https://developer.android.com/develop/adaptive-apps/guides/get-started-with-adaptive-apps)

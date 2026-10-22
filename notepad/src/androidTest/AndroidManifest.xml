@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <provider
+            android:name="com.kkps.kdesktopsuite.notepad.TestDocumentProvider"
+            android:authorities="com.kkps.kdesktopsuite.notepad.test.documents"
+            android:exported="true" />
+    </application>
+</manifest>
