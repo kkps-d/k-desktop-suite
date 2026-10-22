@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">K Desktop Suite</string>
+    <string name="workspace">Workspace</string>
+    <string name="guide">Guide</string>
+    <string name="back_to_documents">Back to documents</string>
+    <string name="documents">Documents</string>
+    <string name="workspace_subtitle">A workspace that fits your window.</string>
+    <string name="select_document">Select a document</string>
+    <string name="select_document_hint">Open a document to start editing. Resize the window to try the adaptive layout.</string>
+    <string name="document_body">Document text</string>
+    <string name="demo_storage_hint">Starter documents · Edits survive window recreation. They are not saved to disk.</string>
+    <string name="guide_title">Make room for your ideas</string>
+    <string name="guide_intro">This starter uses Material 3 Adaptive to follow the available window space, including desktop windows, tablets, foldables, and phones.</string>
+    <string name="guide_resize_title">Resize the window</string>
+    <string name="guide_resize_body">Wide windows show the document list beside the editor. Narrow windows show one pane at a time, with Back returning to the list.</string>
+    <string name="guide_input_title">Use a keyboard or mouse</string>
+    <string name="guide_input_body">Tab moves between controls. Enter opens a focused document. Text supports pointer selection, scrolling, and standard editing shortcuts.</string>
+    <string name="guide_state_title">Keep your place</string>
+    <string name="guide_state_body">Document navigation and edits survive window recreation. This is a development sample; add persistent storage before using it for real documents.</string>
+</resources>
