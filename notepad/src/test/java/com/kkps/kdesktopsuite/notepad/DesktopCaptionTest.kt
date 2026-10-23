@@ -1,0 +1,70 @@
+package com.kkps.kdesktopsuite.notepad
+
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import org.junit.Assert.*
+import org.junit.Test
+
+class DesktopCaptionTest {
+    private val region = Rect(0f, 0f, 1200f, 800f)
+
+    @Test
+    fun choosesWidestUnobstructedSpanWithUnsortedAndOverlappingControls() {
+        val caption = DesktopCaption(40f, listOf(
+            Rect(1080f, 0f, 1200f, 40f), Rect(0f, 0f, 48f, 40f),
+            Rect(500f, 0f, 520f, 40f), Rect(510f, 0f, 540f, 40f),
+            Rect(0f, 300f, 1200f, 350f),
+        ))
+        val layout = captionLayout(caption, region, 1f)
+        assertEquals(CaptionMode.Tabs, layout.mode)
+        assertEquals(Rect(540f, 0f, 1080f, 40f), layout.span)
+    }
+
+    @Test
+    fun thresholdsIncludeNewButtonAndReservedDraggingAreaAtEveryDensity() {
+        listOf(1f, 1.5f, 2.75f).forEach { density ->
+            listOf(95f to CaptionMode.BelowCaption, 96f to CaptionMode.Switcher,
+                215f to CaptionMode.Switcher, 216f to CaptionMode.Tabs).forEach { (width, expected) ->
+                val caption = DesktopCaption(40f * density, listOf(Rect(0f, 0f, 48f * density, 40f * density)))
+                val bounds = Rect(0f, 0f, (48f + width) * density, 800f * density)
+                assertEquals("$width dp at $density", expected, captionLayout(caption, bounds, density).mode)
+            }
+        }
+    }
+
+    @Test
+    fun rtlMovesDraggingSpaceWithoutMirroringSystemControls() {
+        val caption = DesktopCaption(40f, listOf(Rect(0f, 0f, 48f, 40f), Rect(1080f, 0f, 1200f, 40f)))
+        val layout = captionLayout(caption, region, 1f)
+        assertEquals(Rect(48f, 0f, 1032f, 40f), layout.controls(1f, rtl = false))
+        assertEquals(Rect(96f, 0f, 1080f, 40f), layout.controls(1f, rtl = true))
+    }
+
+    @Test
+    fun respectsContentOriginAndHingeRegion() {
+        val caption = DesktopCaption(40f, listOf(Rect(1080f, 0f, 1200f, 40f)))
+        val layout = captionLayout(caption, Rect(620f, 24f, 1180f, 800f), 1f)
+        assertEquals(Rect(620f, 24f, 1080f, 40f), layout.span)
+        assertEquals(CaptionMode.Tabs, layout.mode)
+        assertEquals(CaptionMode.BelowCaption, captionLayout(caption, Rect(0f, 400f, 1200f, 800f), 1f).mode)
+    }
+
+    @Test
+    fun missingOrFullyObstructedGeometryFallsBackAndFullscreenUsesRegularTabs() {
+        assertEquals(CaptionMode.Regular, captionLayout(DesktopCaption(), region, 1f).mode)
+        assertEquals(CaptionMode.BelowCaption, captionLayout(DesktopCaption(40f), region, 1f).mode)
+        val blocked = DesktopCaption(40f, listOf(Rect(0f, 0f, 1200f, 40f)))
+        assertEquals(CaptionMode.BelowCaption, captionLayout(blocked, region, 1f).mode)
+    }
+
+    @Test
+    fun gestureRectsClipScrolledTabsToCaptionAndControlsThenConvertToHostCoordinates() {
+        val clip = Rect(48f, 0f, 300f, 40f)
+        val controls = listOf(Rect(-100f, 0f, 100f, 48f), Rect(100f, 0f, 220f, 48f),
+            Rect(252f, 0f, 300f, 48f), Rect(350f, 0f, 470f, 48f))
+        assertEquals(listOf(Rect(38f, -4f, 90f, 36f), Rect(90f, -4f, 210f, 36f), Rect(242f, -4f, 290f, 36f)),
+            captionGestureRects(controls, clip, Offset(10f, 4f)))
+        assertTrue(captionGestureRects(controls, null, Offset.Zero).isEmpty())
+        assertTrue(captionGestureRects(emptyList(), clip, Offset.Zero).isEmpty())
+    }
+}

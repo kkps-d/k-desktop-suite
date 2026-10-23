@@ -9,6 +9,7 @@
     <string name="save_document">Save</string>
     <string name="save_as">Save as…</string>
     <string name="close_document">Close</string>
+    <string name="close_current_document">Close current document</string>
     <string name="undo">Undo</string>
     <string name="redo">Redo</string>
     <string name="cut">Cut</string>
@@ -23,6 +24,7 @@
     <string name="cursor_position">Ln %1$d, Col %2$d</string>
     <string name="document_editor">KD Notepad document editor</string>
     <string name="new_tab">New document</string>
+    <string name="switch_document">Switch document: %1$s</string>
     <string name="close_tab">Close %1$s</string>
     <string name="unsaved_tab">%1$s, unsaved changes</string>
     <string name="loading">Restoring documents…</string>

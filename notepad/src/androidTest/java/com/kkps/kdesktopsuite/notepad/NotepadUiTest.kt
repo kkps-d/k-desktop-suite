@@ -5,12 +5,15 @@ package com.kkps.kdesktopsuite.notepad
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.material3.adaptive.Posture
 import androidx.compose.material3.adaptive.HingeInfo
@@ -25,11 +28,21 @@ import java.util.UUID
 
 class NotepadUiTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = createAndroidComposeRule<ComponentActivity>()
     private var windowSize by mutableStateOf(DpSize(1200.dp, 900.dp))
+    private var caption by mutableStateOf(DesktopCaption())
     private lateinit var notepad: NotepadViewModel
 
     private fun showEditor(largeFontRtl: Boolean = false, separatingFold: Boolean = false) {
+        compose.activityRule.scenario.onActivity {
+            it.enableEdgeToEdge()
+            if (android.os.Build.VERSION.SDK_INT >= 35) {
+                it.window.insetsController?.setSystemBarsAppearance(
+                    android.view.WindowInsetsController.APPEARANCE_TRANSPARENT_CAPTION_BAR_BACKGROUND,
+                    android.view.WindowInsetsController.APPEARANCE_TRANSPARENT_CAPTION_BAR_BACKGROUND,
+                )
+            }
+        }
         val file = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "ui-${UUID.randomUUID()}.json")
         compose.setContent {
             notepad = remember { NotepadViewModel(FakeDocuments(), SessionStore(file), SavedStateHandle()) }
@@ -49,12 +62,84 @@ class NotepadUiTest {
                         HingeInfo(Rect(580f, 0f, 620f, 900f), isFlat = false, isVertical = true, isSeparating = true, isOccluding = true),
                     )) else adaptive.windowPosture
                     NotepadTheme {
-                        NotepadScreen(notepad, contentInsets = WindowInsets(0), adaptive = WindowAdaptiveInfo(adaptive.windowSizeClass, posture))
+                        val density = LocalDensity.current.density
+                        NotepadScreen(notepad, contentInsets = WindowInsets(0), adaptive = WindowAdaptiveInfo(adaptive.windowSizeClass, posture),
+                            caption = DesktopCaption(caption.height * density, caption.obstructions.map {
+                                Rect(it.left * density, it.top * density, it.right * density, it.bottom * density)
+                            }))
                     }
                 }
             }
         }
         compose.waitUntil(5_000) { !notepad.loading }
+    }
+
+    private fun desktopCaption(freeWidth: Float = 1032f) = DesktopCaption(40f, listOf(
+        Rect(0f, 0f, 48f, 40f), Rect(48f + freeWidth, 0f, 1200f, 40f),
+    ))
+
+    @Test
+    fun compactCaptionSwitcherSelectsCreatesAndConfirmsClosingDocuments() {
+        caption = desktopCaption(152f)
+        showEditor()
+        compose.onNodeWithTag("document-tabs").assertDoesNotExist()
+        compose.onNodeWithTag("document-editor").performTextReplacement("First draft")
+        compose.onNodeWithTag("document-switcher").performClick()
+        compose.onNodeWithText("New document").performClick()
+        compose.onNodeWithTag("document-editor").performTextReplacement("Second draft")
+        compose.onNodeWithTag("document-switcher").performClick()
+        compose.onNodeWithContentDescription("Untitled 1, unsaved changes").performClick()
+        compose.onNodeWithTag("document-editor").assertTextContains("First draft")
+        compose.onNodeWithTag("document-switcher").performClick()
+        compose.onNodeWithText("Close current document").performClick()
+        compose.onNodeWithText("Cancel").performClick()
+        compose.onNodeWithTag("document-editor").assertTextContains("First draft")
+        compose.onNodeWithTag("document-switcher").performClick()
+        compose.onNodeWithText("Close current document").performClick()
+        compose.onNodeWithText("Discard").performClick()
+        compose.onNodeWithTag("document-editor").assertTextContains("Second draft")
+    }
+
+    @Test
+    fun captionModeChangesDismissMenuAndPreserveEditorSelectionAndScroll() {
+        caption = desktopCaption()
+        showEditor()
+        compose.onNodeWithTag("document-tabs").assertIsDisplayed()
+        compose.onNodeWithTag("document-editor").performTextReplacement((1..150).joinToString("\n") { "Line $it" })
+        compose.onNodeWithTag("document-editor").performTouchInput { swipeUp() }
+        var scroll = 0
+        var selection = androidx.compose.ui.text.TextRange.Zero
+        compose.runOnIdle {
+            scroll = notepad.active!!.scroll.value
+            selection = notepad.active!!.editor.selection
+            org.junit.Assert.assertTrue(scroll > 0)
+            caption = desktopCaption(152f)
+        }
+        compose.onNodeWithTag("document-switcher").performClick()
+        compose.onNodeWithText("Close current document").assertIsDisplayed()
+        compose.runOnIdle { caption = desktopCaption() }
+        compose.onNodeWithText("Close current document").assertDoesNotExist()
+        compose.onNodeWithTag("document-tabs").assertIsDisplayed()
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals(scroll, notepad.active!!.scroll.value)
+            org.junit.Assert.assertEquals(selection, notepad.active!!.editor.selection)
+            caption = DesktopCaption()
+        }
+        compose.onNodeWithTag("document-tabs").assertIsDisplayed()
+        compose.onNodeWithTag("document-switcher").assertDoesNotExist()
+        compose.onNodeWithTag("document-editor").assertTextContains("Line 150", substring = true)
+    }
+
+    @Test
+    fun verySmallCaptionFallsBackBelowControlsAndLargeFontRtlSwitcherStillWorks() {
+        caption = desktopCaption(95f)
+        showEditor(largeFontRtl = true)
+        compose.onNodeWithTag("document-switcher").assertIsDisplayed().performClick()
+        compose.onNodeWithText("New document").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("document-editor").performTextReplacement("مرحبا မြန်မာ 👋")
+        compose.runOnIdle { caption = desktopCaption(152f) }
+        compose.onNodeWithTag("document-switcher").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Close current document").assertIsDisplayed()
     }
 
     @Test

@@ -116,6 +116,14 @@ scrollable document tabs above File/Edit menus, a monospace editor, and a quiet
 status bar. Narrow or short windows consolidate commands into an overflow menu.
 It follows system appearance and dynamic color, with a green fallback palette.
 
+On Android 15 / API 35 and newer desktop windows, document tabs share the system
+title bar with the native window controls. A blank area remains available for
+window dragging. When system controls leave less than 216dp of free header space,
+a compact document switcher offers document selection, New document, and Close
+current document. If less than 96dp remains, the switcher moves below the caption.
+Caption-free windows and older Android versions retain the regular tab row.
+Header controls retain 48dp touch targets, extending below shorter system captions.
+
 ### Documents and recovery
 
 - New, Open, Save, Save As, Close, independent undo/redo, and standard clipboard

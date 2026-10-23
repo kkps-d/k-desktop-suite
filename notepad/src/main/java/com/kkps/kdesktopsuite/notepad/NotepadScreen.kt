@@ -4,6 +4,8 @@ package com.kkps.kdesktopsuite.notepad
 
 import android.content.ClipData
 import android.content.Intent
+import android.os.Build
+import android.view.WindowInsetsController
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,6 +17,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
@@ -33,6 +36,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -74,11 +78,28 @@ internal fun NotepadScreen(
     activity: NotepadActivity? = null,
     contentInsets: WindowInsets = WindowInsets.safeDrawing.union(WindowInsets.ime),
     adaptive: WindowAdaptiveInfo = currentWindowAdaptiveInfoV2(),
+    caption: DesktopCaption = rememberDesktopCaption(activity != null),
 ) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
     val active = notepad.active
+    val tabs = rememberLazyListState()
+    val headerColor = MaterialTheme.colorScheme.surfaceContainerLow
+    SideEffect {
+        if (activity != null && Build.VERSION.SDK_INT >= 35) {
+            activity.window.insetsController?.setSystemBarsAppearance(
+                if (headerColor.luminance() > 0.5f) WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS else 0,
+                WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS,
+            )
+        }
+    }
+    // Only the header enters caption space. Restore any status bar/cutout protection that
+    // overlaps the caption inset instead of dropping all top system insets.
+    val layoutInsets = if (caption.height > 0f) {
+        contentInsets.exclude(WindowInsets(top = caption.height.roundToInt()))
+            .union(WindowInsets(top = caption.safeTop.roundToInt()))
+    } else contentInsets
     val contextCommands = NotepadCommand.entries.filter { it in NotepadCommand.Undo..NotepadCommand.SelectAll }
     val contextLabels = contextCommands.associateWith { stringResource(it.label) }
     val compact = !adaptive.windowSizeClass.isWidthAtLeastBreakpoint(600) || !adaptive.windowSizeClass.isHeightAtLeastBreakpoint(480)
@@ -163,7 +184,7 @@ internal fun NotepadScreen(
 
     Surface(Modifier.fillMaxSize()) {
         BoxWithConstraints(
-            Modifier.fillMaxSize().windowInsetsPadding(contentInsets)
+            Modifier.fillMaxSize().windowInsetsPadding(layoutInsets)
                 .contentReceiver(receiveContent)
                 .onPreviewKeyEvent { event ->
                     if (event.type != KeyEventType.KeyDown || !event.isCtrlPressed || notepad.closeConfirmation != null || notepad.conflict != null) false
@@ -215,11 +236,13 @@ internal fun NotepadScreen(
                     .size(with(density) { region.width.toDp() }, with(density) { region.height.toDp() }),
             ) {
                 if (notepad.loading) {
+                    Spacer(Modifier.height(with(density) { (caption.height - origin.y - region.top).coerceAtLeast(0f).toDp() }))
                     LinearProgressIndicator(Modifier.fillMaxWidth())
                     Text(stringResource(R.string.loading), Modifier.padding(NotepadSpacing.medium))
                 } else {
-                    DocumentTabs(notepad.documents, notepad.activeId, notepad.pickerPending,
-                        notepad::select, notepad::requestClose, notepad::newDocument)
+                    DocumentHeader(notepad.documents, notepad.activeId, notepad.pickerPending,
+                        notepad::select, notepad::requestClose, notepad::newDocument,
+                        caption, region.translate(origin), tabs)
                     HorizontalDivider()
                     CommandBar(compact, ::enabled, ::run)
                     if (notepad.opening > 0) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -291,18 +314,101 @@ internal fun NotepadScreen(
 }
 
 @Composable
-private fun DocumentTabs(
+internal fun DocumentHeader(
     documents: List<DocumentSession>, activeId: String, pickerPending: Boolean,
     select: (String, Boolean) -> Unit, close: (String) -> Unit, new: () -> Unit,
+    caption: DesktopCaption, region: Rect, list: LazyListState = rememberLazyListState(),
 ) {
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val list = rememberLazyListState()
-    var contextId by remember { mutableStateOf<String?>(null) }
-    var keyboardTargetId by remember { mutableStateOf<String?>(null) }
+    val density = LocalDensity.current
+    val direction = LocalLayoutDirection.current
+    val layout = captionLayout(caption, region, density.density)
+    val controls = if (layout.integrated) layout.controls(density.density, direction == LayoutDirection.Rtl) else null
+    val input = rememberCaptionInput(controls)
     LaunchedEffect(activeId, documents.size) {
         val index = documents.indexOfFirst { it.id == activeId }
         if (index >= 0) list.scrollToItem(index)
     }
+    if (layout.mode == CaptionMode.BelowCaption) {
+        Spacer(Modifier.height(with(density) { (caption.height - region.top).coerceAtLeast(0f).toDp() }))
+    }
+    // Place system clearances in physical coordinates; only the app controls follow RTL.
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(
+            Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .heightIn(min = with(density) { if (layout.integrated) (caption.height - region.top).coerceAtLeast(0f).toDp() else 0.dp })
+                .testTag("document-header"),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (controls != null) Spacer(Modifier.width(with(density) { (controls.left - region.left).toDp() }))
+            Box(if (controls == null) Modifier.weight(1f) else Modifier.width(with(density) { controls.width.toDp() })) {
+                CompositionLocalProvider(LocalLayoutDirection provides direction) {
+                    key(layout.mode) {
+                        if (layout.mode == CaptionMode.Switcher || layout.mode == CaptionMode.BelowCaption) {
+                            DocumentSwitcher(documents, activeId, pickerPending, select, close, new,
+                                if (layout.integrated) input else null)
+                        } else {
+                            DocumentTabs(documents, activeId, pickerPending, select, close, new, list,
+                                if (layout.integrated) input else null)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DocumentSwitcher(
+    documents: List<DocumentSession>, activeId: String, pickerPending: Boolean,
+    select: (String, Boolean) -> Unit, close: (String) -> Unit, new: () -> Unit,
+    input: CaptionInput?,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val active = documents.find { it.id == activeId }
+    val title = active?.let { documentTitle(it) }.orEmpty()
+    val accessibleTitle = if (active?.dirty == true) stringResource(R.string.unsaved_tab, title) else title
+    val switcherLabel = stringResource(R.string.switch_document, accessibleTitle)
+    Box {
+        TextButton(
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth().heightIn(min = NotepadSpacing.touchTarget)
+                .captionControl(input, "switcher").testTag("document-switcher")
+                .semantics { contentDescription = switcherLabel },
+        ) {
+            Text((if (active?.dirty == true) "● " else "") + title, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("▾", Modifier.padding(start = 4.dp))
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            documents.forEach { doc ->
+                val docTitle = documentTitle(doc)
+                val label = if (doc.dirty) stringResource(R.string.unsaved_tab, docTitle) else docTitle
+                DropdownMenuItem(
+                    text = { Text((if (doc.dirty) "● " else "") + docTitle, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    modifier = Modifier.semantics { selected = doc.id == activeId; contentDescription = label },
+                    trailingIcon = if (doc.id == activeId) ({ Text("✓") }) else null,
+                    onClick = { expanded = false; select(doc.id, true) },
+                )
+            }
+            HorizontalDivider()
+            DropdownMenuItem(text = { Text(stringResource(R.string.new_tab)) }, onClick = { expanded = false; new() })
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.close_current_document)) },
+                enabled = active != null && !active.saving && !pickerPending,
+                onClick = { expanded = false; active?.let { close(it.id) } },
+            )
+        }
+    }
+}
+
+@Composable
+private fun DocumentTabs(
+    documents: List<DocumentSession>, activeId: String, pickerPending: Boolean,
+    select: (String, Boolean) -> Unit, close: (String) -> Unit, new: () -> Unit,
+    list: LazyListState = rememberLazyListState(), input: CaptionInput? = null,
+) {
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    var contextId by remember { mutableStateOf<String?>(null) }
+    var keyboardTargetId by remember { mutableStateOf<String?>(null) }
     Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerLow), verticalAlignment = Alignment.CenterVertically) {
         LazyRow(state = list, modifier = Modifier.weight(1f).testTag("document-tabs")) {
             items(documents, key = { it.id }) { doc ->
@@ -316,6 +422,7 @@ private fun DocumentTabs(
                     Surface(
                         onClick = { select(doc.id, true) },
                         modifier = Modifier.widthIn(min = 120.dp, max = 240.dp)
+                            .captionControl(input, doc.id)
                             .focusRequester(tabFocus)
                             .onFocusChanged { focused = it.hasFocus }
                             .then(if (focused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary) else Modifier)
@@ -348,7 +455,7 @@ private fun DocumentTabs(
                     ) {
                         Row(Modifier.padding(start = NotepadSpacing.medium), verticalAlignment = Alignment.CenterVertically) {
                             Text((if (doc.dirty) "● " else "") + title, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            TooltipAction(stringResource(R.string.close_tab, title), "×", !doc.saving && !pickerPending) { close(doc.id) }
+                            TooltipAction(stringResource(R.string.close_tab, title), "×", enabled = !doc.saving && !pickerPending) { close(doc.id) }
                         }
                     }
                     DropdownMenu(expanded = contextId == doc.id, onDismissRequest = { contextId = null }) {
@@ -362,7 +469,7 @@ private fun DocumentTabs(
                 }
             }
         }
-        TooltipAction(stringResource(R.string.new_tab), "+", onClick = new)
+        TooltipAction(stringResource(R.string.new_tab), "+", modifier = Modifier.captionControl(input, "new"), onClick = new)
     }
 }
 
@@ -471,13 +578,13 @@ private fun StatusBar(doc: DocumentSession, zoom: Int, compact: Boolean, run: (N
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TooltipAction(label: String, glyph: String, enabled: Boolean = true, onClick: () -> Unit) {
+private fun TooltipAction(label: String, glyph: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
         tooltip = { PlainTooltip { Text(label) } },
         state = rememberTooltipState(),
     ) {
-        IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(NotepadSpacing.touchTarget).semantics { contentDescription = label }) {
+        IconButton(onClick = onClick, enabled = enabled, modifier = modifier.size(NotepadSpacing.touchTarget).semantics { contentDescription = label }) {
             Text(glyph, style = MaterialTheme.typography.titleLarge)
         }
     }
@@ -500,6 +607,31 @@ private fun NotepadPreview() {
                 DocumentEditor(doc, 100, {}, remember { FocusRequester() }, Modifier.weight(1f))
                 HorizontalDivider()
                 StatusBar(doc, 100, compact, {})
+            }
+        }
+    }
+}
+
+@Preview(name = "Integrated desktop header", widthDp = 1000, heightDp = 160)
+@Preview(name = "Compact desktop header", widthDp = 320, heightDp = 160)
+@Composable
+private fun DesktopHeaderPreview() {
+    NotepadTheme {
+        val density = LocalDensity.current
+        val doc = remember { DocumentSession(DocumentSnapshot(text = "A desktop draft")) }
+        BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+            val width = with(density) { maxWidth.toPx() }
+            val height = with(density) { 40.dp.toPx() }
+            val region = Rect(0f, 0f, width, with(density) { maxHeight.toPx() })
+            val compact = maxWidth < 600.dp
+            val caption = DesktopCaption(height, listOf(
+                Rect(0f, 0f, with(density) { 48.dp.toPx() }, height),
+                Rect(width - with(density) { 120.dp.toPx() }, 0f, width, height),
+            ))
+            Column {
+                DocumentHeader(listOf(doc), doc.id, false, { _, _ -> }, {}, {}, caption, region)
+                HorizontalDivider()
+                CommandBar(compact, { true }, {})
             }
         }
     }
