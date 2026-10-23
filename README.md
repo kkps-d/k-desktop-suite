@@ -4,6 +4,9 @@ A native Android starter for adaptive app development on phones, tablets,
 foldables, and desktop windows, including Googlebook. Built with Kotlin,
 Jetpack Compose, and Material 3 Adaptive.
 
+Apps use **KD [App]** branding, where **KD** means **K Desktop**: **KD Notepad**
+and **KD Paint**. The included starter launches as **KD Suite**.
+
 ## Open and run
 
 1. Open this directory in Android Studio Rabbit 2 RC 1 or newer and let Gradle sync.
