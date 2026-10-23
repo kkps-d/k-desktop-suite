@@ -12,8 +12,14 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import kotlin.math.ceil
 import kotlin.math.floor
+
+internal object DesktopCaptionDimensions {
+    val dragAreaWidth = 8.dp
+    val minTabStripWidth get() = TabBarDimensions.minTabWidth + TabBarDimensions.buttonSize + dragAreaWidth
+}
 
 // Geometry is in window pixels, including the physical positions of system controls in RTL.
 internal data class DesktopCaption(
@@ -22,23 +28,26 @@ internal data class DesktopCaption(
     val safeTop: Float = 0f,
 )
 
-internal enum class CaptionMode { Regular, Tabs, Switcher, BelowCaption }
+internal enum class CaptionMode { Regular, Tabs, BelowCaption }
 
 internal data class CaptionLayout(val mode: CaptionMode, val span: Rect = Rect.Zero) {
-    val integrated: Boolean get() = mode == CaptionMode.Tabs || mode == CaptionMode.Switcher
+    val integrated: Boolean get() = mode == CaptionMode.Tabs
 
-    fun controls(density: Float, rtl: Boolean): Rect = if (rtl) {
-        span.copy(left = span.left + 48f * density)
-    } else {
-        span.copy(right = span.right - 48f * density)
+    fun controls(density: Float, rtl: Boolean): Rect = when {
+        rtl -> span.copy(left = span.left + DesktopCaptionDimensions.dragAreaWidth.value * density)
+        else -> span.copy(right = span.right - DesktopCaptionDimensions.dragAreaWidth.value * density)
     }
 }
 
-internal fun captionLayout(caption: DesktopCaption, region: Rect, density: Float): CaptionLayout {
+internal fun captionLayout(
+    caption: DesktopCaption, region: Rect, density: Float,
+    minRowHeight: Float = TabBarDimensions.minBarHeight.value * density,
+): CaptionLayout {
     if (caption.height <= 0f) return CaptionLayout(CaptionMode.Regular)
     if (region.top >= caption.height || caption.obstructions.isEmpty()) return CaptionLayout(CaptionMode.BelowCaption)
 
     val header = Rect(region.left, region.top, region.right, minOf(region.bottom, caption.height))
+    if (header.height < minRowHeight) return CaptionLayout(CaptionMode.BelowCaption)
     var spans = listOf(header)
     caption.obstructions.filter { it.overlaps(header) }.forEach { obstacle ->
         spans = spans.flatMap { span ->
@@ -49,11 +58,7 @@ internal fun captionLayout(caption: DesktopCaption, region: Rect, density: Float
         }
     }
     val span = spans.maxByOrNull { it.width } ?: return CaptionLayout(CaptionMode.BelowCaption)
-    val mode = when {
-        span.width >= 216f * density -> CaptionMode.Tabs
-        span.width >= 96f * density -> CaptionMode.Switcher
-        else -> CaptionMode.BelowCaption
-    }
+    val mode = if (span.width >= DesktopCaptionDimensions.minTabStripWidth.value * density) CaptionMode.Tabs else CaptionMode.BelowCaption
     return CaptionLayout(mode, span)
 }
 

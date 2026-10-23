@@ -10,22 +10,23 @@ class DesktopCaptionTest {
 
     @Test
     fun choosesWidestUnobstructedSpanWithUnsortedAndOverlappingControls() {
-        val caption = DesktopCaption(40f, listOf(
-            Rect(1080f, 0f, 1200f, 40f), Rect(0f, 0f, 48f, 40f),
-            Rect(500f, 0f, 520f, 40f), Rect(510f, 0f, 540f, 40f),
+        val caption = DesktopCaption(56f, listOf(
+            Rect(1080f, 0f, 1200f, 56f), Rect(0f, 0f, 48f, 56f),
+            Rect(500f, 0f, 520f, 56f), Rect(510f, 0f, 540f, 56f),
             Rect(0f, 300f, 1200f, 350f),
         ))
         val layout = captionLayout(caption, region, 1f)
         assertEquals(CaptionMode.Tabs, layout.mode)
-        assertEquals(Rect(540f, 0f, 1080f, 40f), layout.span)
+        assertEquals(Rect(540f, 0f, 1080f, 56f), layout.span)
     }
 
     @Test
-    fun thresholdsIncludeNewButtonAndReservedDraggingAreaAtEveryDensity() {
+    fun captionRequiresRoomForTabNewAndDraggingAtEveryDensity() {
+        val threshold = DesktopCaptionDimensions.minTabStripWidth.value
         listOf(1f, 1.5f, 2.75f).forEach { density ->
-            listOf(95f to CaptionMode.BelowCaption, 96f to CaptionMode.Switcher,
-                215f to CaptionMode.Switcher, 216f to CaptionMode.Tabs).forEach { (width, expected) ->
-                val caption = DesktopCaption(40f * density, listOf(Rect(0f, 0f, 48f * density, 40f * density)))
+            listOf(48f to CaptionMode.BelowCaption,
+                (threshold - 1f) to CaptionMode.BelowCaption, threshold to CaptionMode.Tabs).forEach { (width, expected) ->
+                val caption = DesktopCaption(56f * density, listOf(Rect(0f, 0f, 48f * density, 56f * density)))
                 val bounds = Rect(0f, 0f, (48f + width) * density, 800f * density)
                 assertEquals("$width dp at $density", expected, captionLayout(caption, bounds, density).mode)
             }
@@ -34,26 +35,39 @@ class DesktopCaptionTest {
 
     @Test
     fun rtlMovesDraggingSpaceWithoutMirroringSystemControls() {
-        val caption = DesktopCaption(40f, listOf(Rect(0f, 0f, 48f, 40f), Rect(1080f, 0f, 1200f, 40f)))
+        val caption = DesktopCaption(56f, listOf(Rect(0f, 0f, 48f, 56f), Rect(1080f, 0f, 1200f, 56f)))
         val layout = captionLayout(caption, region, 1f)
-        assertEquals(Rect(48f, 0f, 1032f, 40f), layout.controls(1f, rtl = false))
-        assertEquals(Rect(96f, 0f, 1080f, 40f), layout.controls(1f, rtl = true))
+        assertEquals(Rect(48f, 0f, 1072f, 56f), layout.controls(1f, rtl = false))
+        assertEquals(Rect(56f, 0f, 1080f, 56f), layout.controls(1f, rtl = true))
     }
 
     @Test
     fun respectsContentOriginAndHingeRegion() {
-        val caption = DesktopCaption(40f, listOf(Rect(1080f, 0f, 1200f, 40f)))
+        val caption = DesktopCaption(80f, listOf(Rect(1080f, 0f, 1200f, 80f)))
         val layout = captionLayout(caption, Rect(620f, 24f, 1180f, 800f), 1f)
-        assertEquals(Rect(620f, 24f, 1080f, 40f), layout.span)
+        assertEquals(Rect(620f, 24f, 1080f, 80f), layout.span)
         assertEquals(CaptionMode.Tabs, layout.mode)
+        assertEquals(CaptionMode.BelowCaption, captionLayout(caption, Rect(620f, 25f, 1180f, 800f), 1f).mode)
         assertEquals(CaptionMode.BelowCaption, captionLayout(caption, Rect(0f, 400f, 1200f, 800f), 1f).mode)
+    }
+
+    @Test
+    fun shortCaptionsAndScaledTextMoveTabsBelowCaption() {
+        listOf(1f, 1.5f, 2.75f).forEach { density ->
+            val bounds = Rect(0f, 0f, 1200f * density, 800f * density)
+            fun caption(height: Float) = DesktopCaption(height * density, listOf(Rect(0f, 0f, 48f * density, height * density)))
+            assertEquals(CaptionMode.BelowCaption, captionLayout(caption(55f), bounds, density).mode)
+            assertEquals(CaptionMode.Tabs, captionLayout(caption(56f), bounds, density).mode)
+            assertEquals(CaptionMode.BelowCaption, captionLayout(caption(56f), bounds, density, 68f * density).mode)
+            assertEquals(CaptionMode.Tabs, captionLayout(caption(68f), bounds, density, 68f * density).mode)
+        }
     }
 
     @Test
     fun missingOrFullyObstructedGeometryFallsBackAndFullscreenUsesRegularTabs() {
         assertEquals(CaptionMode.Regular, captionLayout(DesktopCaption(), region, 1f).mode)
-        assertEquals(CaptionMode.BelowCaption, captionLayout(DesktopCaption(40f), region, 1f).mode)
-        val blocked = DesktopCaption(40f, listOf(Rect(0f, 0f, 1200f, 40f)))
+        assertEquals(CaptionMode.BelowCaption, captionLayout(DesktopCaption(56f), region, 1f).mode)
+        val blocked = DesktopCaption(56f, listOf(Rect(0f, 0f, 1200f, 56f)))
         assertEquals(CaptionMode.BelowCaption, captionLayout(blocked, region, 1f).mode)
     }
 

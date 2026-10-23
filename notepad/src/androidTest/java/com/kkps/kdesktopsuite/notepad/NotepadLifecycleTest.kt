@@ -32,8 +32,13 @@ class NotepadLifecycleTest {
         }
         compose.onNodeWithTag("document-header").assertIsDisplayed()
         val bounds = compose.onNodeWithTag("document-header").fetchSemanticsNode().boundsInWindow
-        val layout = captionLayout(caption, Rect(0f, bounds.top, width, 1000f), compose.density.density)
-        assertTrue("Desktop header should integrate when controls leave enough space", layout.integrated)
+        val layout = captionLayout(caption, Rect(0f, 0f, width, 1000f), compose.density.density)
+        if (!layout.integrated) {
+            assertTrue("Short or constrained captions keep accessible tabs below system controls", bounds.top >= caption.height)
+            compose.onNodeWithContentDescription("New document").assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)
+            compose.runOnIdle { assertTrue(compose.activity.window.decorView.systemGestureExclusionRects.isEmpty()) }
+            return
+        }
         assertTrue("Header should occupy the caption", bounds.top < caption.height)
         compose.runOnIdle {
             val exclusions = compose.activity.window.decorView.systemGestureExclusionRects

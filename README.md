@@ -117,12 +117,26 @@ status bar. Narrow or short windows consolidate commands into an overflow menu.
 It follows system appearance and dynamic color, with a green fallback palette.
 
 On Android 15 / API 35 and newer desktop windows, document tabs share the system
-title bar with the native window controls. A blank area remains available for
-window dragging. When system controls leave less than 216dp of free header space,
-a compact document switcher offers document selection, New document, and Close
-current document. If less than 96dp remains, the switcher moves below the caption.
-Caption-free windows and older Android versions retain the regular tab row.
-Header controls retain 48dp touch targets, extending below shorter system captions.
+title bar when it can fit the 8dp top inset, 48dp controls, and system clearances.
+The integrated strip reserves 8dp for window dragging and requires at least 176dp
+of unobstructed width for a tab, New, and that clearance. Otherwise tabs move below
+the caption. Caption-free windows and older Android versions use a standalone row.
+If that row is narrower than 168dp, an active-document selector opens a scrollable
+list with full titles, document status, selection, and individual close actions.
+New remains alongside the selector.
+
+Tab slots have no gaps and compress equally from 240dp to 120dp before scrolling.
+New follows the last tab until the strip overflows, then stays at the viewport edge.
+The selected tab stays visible after selection or resizing. Titles use regular
+14sp text with 20sp line height; the header grows for larger fonts. Close and New
+use vector icons and 48dp targets. A reserved status slot prevents dirty/save/error
+indicators from shifting titles. The selected tab's outward feet join the neutral
+File/Edit surface; separators appear only between inactive tabs and after a final
+inactive tab. Inactive tabs have subtle hover feedback; keyboard focus is distinct
+from selection. Arrow keys move tab focus, and Enter/Space activates a tab.
+
+See the [tab implementation specification](docs/CHROME_ANDROID_TAB_SPEC.md) for
+layout rules and acceptance checks.
 
 ### Documents and recovery
 

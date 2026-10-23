@@ -9,7 +9,6 @@
     <string name="save_document">Save</string>
     <string name="save_as">Save as…</string>
     <string name="close_document">Close</string>
-    <string name="close_current_document">Close current document</string>
     <string name="undo">Undo</string>
     <string name="redo">Redo</string>
     <string name="cut">Cut</string>
@@ -27,6 +26,7 @@
     <string name="switch_document">Switch document: %1$s</string>
     <string name="close_tab">Close %1$s</string>
     <string name="unsaved_tab">%1$s, unsaved changes</string>
+    <string name="document_error">Document needs attention</string>
     <string name="loading">Restoring documents…</string>
     <string name="saving">Saving…</string>
     <string name="saved">Saved</string>

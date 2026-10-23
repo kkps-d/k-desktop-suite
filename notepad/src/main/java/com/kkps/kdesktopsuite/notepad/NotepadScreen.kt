@@ -7,14 +7,21 @@ import android.content.Intent
 import android.os.Build
 import android.view.WindowInsetsController
 import androidx.annotation.StringRes
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.content.ReceiveContentListener
 import androidx.compose.foundation.content.TransferableContent
 import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyListState
@@ -36,7 +43,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -47,19 +58,33 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+
+internal object TabBarDimensions {
+    val topPadding = 8.dp
+    val minTabWidth = 120.dp
+    val maxTabWidth = 240.dp
+    val contentStartPadding = 20.dp
+    val contentEndPadding = 8.dp
+    val buttonSize = 48.dp
+    val minBarHeight get() = topPadding + buttonSize
+    val focusOutlineWidth = 2.dp
+}
 
 internal enum class NotepadCommand(@StringRes val label: Int, val shortcut: String) {
     New(R.string.new_document, "Ctrl+N"), Open(R.string.open_document, "Ctrl+O"),
@@ -85,7 +110,7 @@ internal fun NotepadScreen(
     val focus = remember { FocusRequester() }
     val active = notepad.active
     val tabs = rememberLazyListState()
-    val headerColor = MaterialTheme.colorScheme.surfaceContainerLow
+    val headerColor = MaterialTheme.colorScheme.surfaceContainerHigh
     SideEffect {
         if (activity != null && Build.VERSION.SDK_INT >= 35) {
             activity.window.insetsController?.setSystemBarsAppearance(
@@ -242,8 +267,7 @@ internal fun NotepadScreen(
                 } else {
                     DocumentHeader(notepad.documents, notepad.activeId, notepad.pickerPending,
                         notepad::select, notepad::requestClose, notepad::newDocument,
-                        caption, region.translate(origin), tabs)
-                    HorizontalDivider()
+                        caption, region.translate(origin), tabs, notepad.errorDocumentId)
                     CommandBar(compact, ::enabled, ::run)
                     if (notepad.opening > 0) LinearProgressIndicator(Modifier.fillMaxWidth())
                     notepad.errorMessage?.let { message ->
@@ -318,37 +342,39 @@ internal fun DocumentHeader(
     documents: List<DocumentSession>, activeId: String, pickerPending: Boolean,
     select: (String, Boolean) -> Unit, close: (String) -> Unit, new: () -> Unit,
     caption: DesktopCaption, region: Rect, list: LazyListState = rememberLazyListState(),
+    errorDocumentId: String? = null,
 ) {
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
-    val layout = captionLayout(caption, region, density.density)
+    val contentHeight = with(density) { NotepadTabTypography.title.lineHeight.toDp() }
+        .coerceAtLeast(TabBarDimensions.buttonSize)
+    val rowHeight = contentHeight + TabBarDimensions.topPadding
+    val layout = captionLayout(caption, region, density.density, with(density) { rowHeight.toPx() })
     val controls = if (layout.integrated) layout.controls(density.density, direction == LayoutDirection.Rtl) else null
     val input = rememberCaptionInput(controls)
-    LaunchedEffect(activeId, documents.size) {
-        val index = documents.indexOfFirst { it.id == activeId }
-        if (index >= 0) list.scrollToItem(index)
-    }
+    val captionHeight = with(density) { if (layout.integrated) (caption.height - region.top).toDp() else 0.dp }
+    val tabHeight = (captionHeight - TabBarDimensions.topPadding).coerceAtLeast(contentHeight)
     if (layout.mode == CaptionMode.BelowCaption) {
-        Spacer(Modifier.height(with(density) { (caption.height - region.top).coerceAtLeast(0f).toDp() }))
+        Spacer(Modifier.fillMaxWidth().height(with(density) { (caption.height - region.top).coerceAtLeast(0f).toDp() })
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh))
     }
-    // Place system clearances in physical coordinates; only the app controls follow RTL.
+    // System clearances use physical coordinates; only app controls follow RTL.
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
-            Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .heightIn(min = with(density) { if (layout.integrated) (caption.height - region.top).coerceAtLeast(0f).toDp() else 0.dp })
-                .testTag("document-header"),
-            verticalAlignment = Alignment.CenterVertically,
+            Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .heightIn(min = captionHeight).testTag("document-header"),
+            verticalAlignment = Alignment.Bottom,
         ) {
             if (controls != null) Spacer(Modifier.width(with(density) { (controls.left - region.left).toDp() }))
-            Box(if (controls == null) Modifier.weight(1f) else Modifier.width(with(density) { controls.width.toDp() })) {
+            BoxWithConstraints(if (controls == null) Modifier.weight(1f) else Modifier.width(with(density) { controls.width.toDp() })) {
+                val compact = maxWidth < TabBarDimensions.minTabWidth + TabBarDimensions.buttonSize
                 CompositionLocalProvider(LocalLayoutDirection provides direction) {
-                    key(layout.mode) {
-                        if (layout.mode == CaptionMode.Switcher || layout.mode == CaptionMode.BelowCaption) {
-                            DocumentSwitcher(documents, activeId, pickerPending, select, close, new,
-                                if (layout.integrated) input else null)
+                    key(layout.mode, compact) {
+                        if (compact) {
+                            DocumentSwitcher(documents, activeId, pickerPending, select, close, new, tabHeight, errorDocumentId)
                         } else {
                             DocumentTabs(documents, activeId, pickerPending, select, close, new, list,
-                                if (layout.integrated) input else null)
+                                if (layout.integrated) input else null, tabHeight, errorDocumentId)
                         }
                     }
                 }
@@ -358,45 +384,89 @@ internal fun DocumentHeader(
 }
 
 @Composable
+private fun documentState(doc: DocumentSession, hasError: Boolean): String = stringResource(when {
+    hasError -> R.string.document_error
+    doc.saving -> R.string.saving
+    doc.dirty -> R.string.unsaved
+    doc.uri == null -> R.string.not_saved
+    else -> R.string.saved
+})
+
+@Composable
+private fun DocumentTabStatus(doc: DocumentSession, hasError: Boolean) {
+    Box(Modifier.width(12.dp), contentAlignment = Alignment.Center) {
+        when {
+            hasError -> Icon(painterResource(R.drawable.ic_tab_error), null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.error)
+            doc.saving -> CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp)
+            doc.dirty -> Box(Modifier.size(6.dp).background(MaterialTheme.colorScheme.onSurfaceVariant, CircleShape))
+        }
+    }
+    Spacer(Modifier.width(4.dp))
+}
+
+@Composable
 private fun DocumentSwitcher(
     documents: List<DocumentSession>, activeId: String, pickerPending: Boolean,
     select: (String, Boolean) -> Unit, close: (String) -> Unit, new: () -> Unit,
-    input: CaptionInput?,
+    minTabHeight: Dp, errorDocumentId: String?,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val active = documents.find { it.id == activeId }
     val title = active?.let { documentTitle(it) }.orEmpty()
     val accessibleTitle = if (active?.dirty == true) stringResource(R.string.unsaved_tab, title) else title
     val switcherLabel = stringResource(R.string.switch_document, accessibleTitle)
-    Box {
-        TextButton(
-            onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth().heightIn(min = NotepadSpacing.touchTarget)
-                .captionControl(input, "switcher").testTag("document-switcher")
-                .semantics { contentDescription = switcherLabel },
-        ) {
-            Text((if (active?.dirty == true) "● " else "") + title, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text("▾", Modifier.padding(start = 4.dp))
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            documents.forEach { doc ->
-                val docTitle = documentTitle(doc)
-                val label = if (doc.dirty) stringResource(R.string.unsaved_tab, docTitle) else docTitle
-                DropdownMenuItem(
-                    text = { Text((if (doc.dirty) "● " else "") + docTitle, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    modifier = Modifier.semantics { selected = doc.id == activeId; contentDescription = label },
-                    trailingIcon = if (doc.id == activeId) ({ Text("✓") }) else null,
-                    onClick = { expanded = false; select(doc.id, true) },
-                )
+    val state = active?.let { documentState(it, it.id == errorDocumentId) }.orEmpty()
+    Row(Modifier.fillMaxWidth().padding(top = TabBarDimensions.topPadding), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f)) {
+            DocumentTooltip(title) {
+                TextButton(
+                    onClick = { expanded = true },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = minTabHeight)
+                        .testTag("document-switcher")
+                        .semantics { contentDescription = switcherLabel; stateDescription = state },
+                    shape = DocumentTabShape,
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                    contentPadding = PaddingValues(start = TabBarDimensions.contentStartPadding, end = TabBarDimensions.contentEndPadding),
+                ) {
+                    active?.let { DocumentTabStatus(it, it.id == errorDocumentId) }
+                    Text(title, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = NotepadTabTypography.title)
+                    Icon(painterResource(R.drawable.ic_tab_expand), null, Modifier.size(16.dp))
+                }
             }
-            HorizontalDivider()
-            DropdownMenuItem(text = { Text(stringResource(R.string.new_tab)) }, onClick = { expanded = false; new() })
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.close_current_document)) },
-                enabled = active != null && !active.saving && !pickerPending,
-                onClick = { expanded = false; active?.let { close(it.id) } },
-            )
+            NotepadDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                documents.forEach { doc ->
+                    val docTitle = documentTitle(doc)
+                    val label = if (doc.dirty) stringResource(R.string.unsaved_tab, docTitle) else docTitle
+                    val docState = documentState(doc, doc.id == errorDocumentId)
+                    Row(Modifier.widthIn(min = 240.dp), verticalAlignment = Alignment.CenterVertically) {
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+                                    Text(docTitle, style = NotepadTabTypography.title)
+                                    Text(docState, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            },
+                            modifier = Modifier.weight(1f).semantics {
+                                selected = doc.id == activeId
+                                contentDescription = label
+                                stateDescription = docState
+                            },
+                            trailingIcon = if (doc.id == activeId) ({ Text("✓") }) else null,
+                            onClick = { expanded = false; select(doc.id, true) },
+                        )
+                        TooltipAction(stringResource(R.string.close_tab, docTitle), R.drawable.ic_tab_close,
+                            enabled = !doc.saving && !pickerPending) {
+                            expanded = false
+                            close(doc.id)
+                        }
+                    }
+                }
+            }
         }
+        TooltipAction(stringResource(R.string.new_tab), R.drawable.ic_tab_new, iconSize = 20.dp, onClick = new)
     }
 }
 
@@ -404,72 +474,151 @@ private fun DocumentSwitcher(
 private fun DocumentTabs(
     documents: List<DocumentSession>, activeId: String, pickerPending: Boolean,
     select: (String, Boolean) -> Unit, close: (String) -> Unit, new: () -> Unit,
-    list: LazyListState = rememberLazyListState(), input: CaptionInput? = null,
+    list: LazyListState, input: CaptionInput?, minTabHeight: Dp, errorDocumentId: String?,
 ) {
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val scope = rememberCoroutineScope()
     var contextId by remember { mutableStateOf<String?>(null) }
-    var keyboardTargetId by remember { mutableStateOf<String?>(null) }
-    Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerLow), verticalAlignment = Alignment.CenterVertically) {
-        LazyRow(state = list, modifier = Modifier.weight(1f).testTag("document-tabs")) {
-            items(documents, key = { it.id }) { doc ->
-                val title = documentTitle(doc)
-                val selected = doc.id == activeId
-                val accessibleTitle = if (doc.dirty) stringResource(R.string.unsaved_tab, title) else title
-                val tabFocus = remember { FocusRequester() }
-                LaunchedEffect(keyboardTargetId) { if (keyboardTargetId == doc.id) tabFocus.requestFocus() }
-                var focused by remember { mutableStateOf(false) }
-                Box {
-                    Surface(
-                        onClick = { select(doc.id, true) },
-                        modifier = Modifier.widthIn(min = 120.dp, max = 240.dp)
-                            .captionControl(input, doc.id)
-                            .focusRequester(tabFocus)
-                            .onFocusChanged { focused = it.hasFocus }
-                            .then(if (focused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary) else Modifier)
-                            .semantics { this.selected = selected; role = Role.Tab; contentDescription = accessibleTitle }
-                            .onPreviewKeyEvent {
-                                if (it.type != KeyEventType.KeyDown || it.isCtrlPressed) false
-                                else when (it.key) {
-                                    Key.DirectionLeft, Key.DirectionRight -> {
-                                        val direction = (if (it.key == Key.DirectionLeft) -1 else 1) * (if (rtl) -1 else 1)
-                                        val index = documents.indexOf(doc)
-                                        val target = documents[Math.floorMod(index + direction, documents.size)]
-                                        keyboardTargetId = target.id
-                                        select(target.id, false)
-                                        true
-                                    }
-                                    else -> false
-                                }
-                            }.pointerInput(doc.id) {
-                                awaitPointerEventScope {
-                                    while (true) {
-                                        val event = awaitPointerEvent()
-                                        if (event.type == PointerEventType.Press && event.buttons.isSecondaryPressed) {
-                                            contextId = doc.id
-                                            event.changes.forEach { it.consume() }
-                                        }
+    val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
+    val separatorColor = MaterialTheme.colorScheme.outlineVariant
+    BoxWithConstraints(
+        Modifier.fillMaxWidth().heightIn(min = TabBarDimensions.minBarHeight).padding(top = TabBarDimensions.topPadding),
+    ) {
+        val availableWidth = (maxWidth - TabBarDimensions.buttonSize).coerceAtLeast(0.dp)
+        val tabWidth = (availableWidth / documents.size.coerceAtLeast(1))
+            .coerceIn(TabBarDimensions.minTabWidth, TabBarDimensions.maxTabWidth)
+        val viewportWidth = (tabWidth * documents.size).coerceAtMost(availableWidth)
+        val density = LocalDensity.current
+        LaunchedEffect(activeId, documents.size, tabWidth, viewportWidth, density) {
+            val index = documents.indexOfFirst { it.id == activeId }
+            val item = list.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+            val fits = with(density) {
+                item != null && item.offset >= 0 && item.offset + tabWidth.roundToPx() <= viewportWidth.roundToPx()
+            }
+            if (index >= 0 && !fits) list.scrollToItem(index)
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            LazyRow(
+                state = list,
+                modifier = Modifier.width(viewportWidth).testTag("document-tabs")
+                    .pointerInput(list, rtl) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                if (event.type == PointerEventType.Scroll && !event.keyboardModifiers.isCtrlPressed) {
+                                    // Native horizontal scrolling is handled by LazyRow. Map vertical wheels to tabs.
+                                    val delta = event.changes.sumOf { it.scrollDelta.y.toDouble() }.toFloat()
+                                    if (event.changes.none { it.isConsumed || it.scrollDelta.x != 0f } && delta != 0f) {
+                                        scope.launch { list.scrollBy(delta * TabBarDimensions.buttonSize.toPx() * if (rtl) -1f else 1f) }
+                                        event.changes.forEach { it.consume() }
                                     }
                                 }
-                            },
-                        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
-                    ) {
-                        Row(Modifier.padding(start = NotepadSpacing.medium), verticalAlignment = Alignment.CenterVertically) {
-                            Text((if (doc.dirty) "● " else "") + title, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            TooltipAction(stringResource(R.string.close_tab, title), "×", enabled = !doc.saving && !pickerPending) { close(doc.id) }
+                            }
                         }
+                    },
+            ) {
+                items(documents, key = { it.id }) { doc ->
+                    val title = documentTitle(doc)
+                    val selected = doc.id == activeId
+                    val shape = if (selected) DocumentTabShape else RoundedCornerShape(DocumentTabShapeDimensions.topCornerRadius)
+                    val interaction = remember { MutableInteractionSource() }
+                    val accessibleTitle = if (doc.dirty) stringResource(R.string.unsaved_tab, title) else title
+                    val state = documentState(doc, doc.id == errorDocumentId)
+                    val tabFocus = remember { FocusRequester() }
+                    DisposableEffect(doc.id) {
+                        focusRequesters[doc.id] = tabFocus
+                        onDispose { focusRequesters.remove(doc.id) }
                     }
-                    DropdownMenu(expanded = contextId == doc.id, onDismissRequest = { contextId = null }) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.close_document)) },
-                            trailingIcon = { Text("Ctrl+W", style = MaterialTheme.typography.labelMedium) },
-                            enabled = !doc.saving && !pickerPending,
-                            onClick = { contextId = null; close(doc.id) },
-                        )
+                    var focused by remember { mutableStateOf(false) }
+                    val index = documents.indexOf(doc)
+                    val separator = !selected && documents.getOrNull(index + 1)?.id != activeId
+                    Box(Modifier.zIndex(if (selected) 1f else 0f).drawBehind {
+                        if (separator) {
+                            val width = 1.dp.toPx()
+                            val height = 20.dp.toPx()
+                            drawRect(separatorColor, Offset(if (rtl) 0f else size.width - width, (size.height - height) / 2), Size(width, height))
+                        }
+                    }) {
+                        DocumentTooltip(title) {
+                            Surface(
+                                modifier = Modifier.width(tabWidth).heightIn(min = minTabHeight)
+                                    .captionControl(input, doc.id).clip(shape)
+                                    .focusRequester(tabFocus).onFocusChanged { focused = it.hasFocus }
+                                    .then(if (focused) Modifier.border(TabBarDimensions.focusOutlineWidth, MaterialTheme.colorScheme.primary, shape) else Modifier)
+                                    .semantics {
+                                        this.selected = selected
+                                        role = Role.Tab
+                                        contentDescription = accessibleTitle
+                                        stateDescription = state
+                                    }
+                                    .onPreviewKeyEvent {
+                                        if (it.type != KeyEventType.KeyDown || it.isCtrlPressed) false
+                                        else when (it.key) {
+                                            Key.DirectionLeft, Key.DirectionRight -> {
+                                                val direction = (if (it.key == Key.DirectionLeft) -1 else 1) * (if (rtl) -1 else 1)
+                                                val targetIndex = Math.floorMod(index + direction, documents.size)
+                                                val target = documents[targetIndex].id
+                                                scope.launch {
+                                                    val item = list.layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }
+                                                    if (item == null || item.offset < 0 || item.offset + item.size > list.layoutInfo.viewportEndOffset) {
+                                                        list.scrollToItem(targetIndex)
+                                                        // Wait for an offscreen tab's focus modifier to attach after layout.
+                                                        withFrameNanos { }
+                                                    }
+                                                    focusRequesters[target]?.requestFocus()
+                                                }
+                                                true
+                                            }
+                                            Key.Menu -> { contextId = doc.id; true }
+                                            Key.F10 -> if (it.isShiftPressed) { contextId = doc.id; true } else false
+                                            else -> false
+                                        }
+                                    }.pointerInput(doc.id) {
+                                        awaitPointerEventScope {
+                                            while (true) {
+                                                val event = awaitPointerEvent()
+                                                if (event.type == PointerEventType.Press && event.buttons.isSecondaryPressed) {
+                                                    contextId = doc.id
+                                                    event.changes.forEach { it.consume() }
+                                                }
+                                            }
+                                        }
+                                    }.clickable(
+                                        interactionSource = interaction,
+                                        indication = if (selected) null else LocalIndication.current,
+                                        role = Role.Tab,
+                                        onClick = { select(doc.id, true) },
+                                    ),
+                                shape = shape,
+                                color = if (selected) MaterialTheme.colorScheme.surface else Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.onSurface,
+                            ) {
+                                Row(
+                                    Modifier.padding(start = TabBarDimensions.contentStartPadding, end = TabBarDimensions.contentEndPadding),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    DocumentTabStatus(doc, doc.id == errorDocumentId)
+                                    Text(title, Modifier.weight(1f).testTag("tab-title-${doc.id}"), maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis, style = NotepadTabTypography.title)
+                                    TooltipAction(stringResource(R.string.close_tab, title), R.drawable.ic_tab_close,
+                                        enabled = !doc.saving && !pickerPending) { close(doc.id) }
+                                }
+                            }
+                        }
+                        NotepadDropdownMenu(expanded = contextId == doc.id, onDismissRequest = { contextId = null }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.close_document)) },
+                                trailingIcon = { Text("Ctrl+W", style = MaterialTheme.typography.labelMedium) },
+                                enabled = !doc.saving && !pickerPending,
+                                onClick = { contextId = null; close(doc.id) },
+                            )
+                        }
                     }
                 }
             }
+            TooltipAction(stringResource(R.string.new_tab), R.drawable.ic_tab_new, iconSize = 20.dp,
+                modifier = Modifier.captionControl(input, "new"), onClick = new)
         }
-        TooltipAction(stringResource(R.string.new_tab), "+", modifier = Modifier.captionControl(input, "new"), onClick = new)
     }
 }
 
@@ -478,20 +627,22 @@ private fun CommandBar(compact: Boolean, enabled: (NotepadCommand) -> Boolean, r
     var menu by remember { mutableStateOf<String?>(null) }
     val files = NotepadCommand.entries.take(5)
     val edits = NotepadCommand.entries.drop(5)
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        val groups = if (compact) listOf("all" to R.string.commands) else listOf("file" to R.string.file, "edit" to R.string.edit)
-        groups.forEach { (id, title) ->
-            Box {
-                TextButton(onClick = { menu = id }, modifier = Modifier.heightIn(min = NotepadSpacing.touchTarget)) { Text(stringResource(title)) }
-                DropdownMenu(expanded = menu == id, onDismissRequest = { menu = null }) {
-                    val commands = when (id) { "file" -> files; "edit" -> edits; else -> NotepadCommand.entries }
-                    commands.forEach { command ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(command.label)) },
-                            trailingIcon = { Text(command.shortcut, style = MaterialTheme.typography.labelMedium) },
-                            enabled = enabled(command),
-                            onClick = { menu = null; run(command) },
-                        )
+    Surface(color = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface) {
+        Row(Modifier.fillMaxWidth().testTag("command-bar"), verticalAlignment = Alignment.CenterVertically) {
+            val groups = if (compact) listOf("all" to R.string.commands) else listOf("file" to R.string.file, "edit" to R.string.edit)
+            groups.forEach { (id, title) ->
+                Box {
+                    TextButton(onClick = { menu = id }, modifier = Modifier.heightIn(min = NotepadSpacing.touchTarget)) { Text(stringResource(title)) }
+                    NotepadDropdownMenu(expanded = menu == id, onDismissRequest = { menu = null }) {
+                        val commands = when (id) { "file" -> files; "edit" -> edits; else -> NotepadCommand.entries }
+                        commands.forEach { command ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(command.label)) },
+                                trailingIcon = { Text(command.shortcut, style = MaterialTheme.typography.labelMedium) },
+                                enabled = enabled(command),
+                                onClick = { menu = null; run(command) },
+                            )
+                        }
                     }
                 }
             }
@@ -578,14 +729,26 @@ private fun StatusBar(doc: DocumentSession, zoom: Int, compact: Boolean, run: (N
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TooltipAction(label: String, glyph: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
+private fun DocumentTooltip(label: String, content: @Composable () -> Unit) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
         tooltip = { PlainTooltip { Text(label) } },
         state = rememberTooltipState(),
-    ) {
-        IconButton(onClick = onClick, enabled = enabled, modifier = modifier.size(NotepadSpacing.touchTarget).semantics { contentDescription = label }) {
-            Text(glyph, style = MaterialTheme.typography.titleLarge)
+        content = content,
+    )
+}
+
+@Composable
+private fun TooltipAction(
+    label: String, @DrawableRes icon: Int, modifier: Modifier = Modifier,
+    enabled: Boolean = true, iconSize: Dp = 16.dp, onClick: () -> Unit,
+) {
+    DocumentTooltip(label) {
+        IconButton(onClick = onClick, enabled = enabled,
+            colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+            modifier = modifier.size(TabBarDimensions.buttonSize).semantics { contentDescription = label },
+        ) {
+            Icon(painterResource(icon), null, Modifier.size(iconSize))
         }
     }
 }
@@ -597,12 +760,13 @@ private fun TooltipAction(label: String, glyph: String, modifier: Modifier = Mod
 private fun NotepadPreview() {
     // Preview owns no real repository or recovery store; construct the visual editor directly.
     NotepadTheme {
+        val density = LocalDensity.current
         val doc = remember { DocumentSession(DocumentSnapshot(text = "KD Notepad\n\nA little room to think.")) }
         BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
             val compact = maxWidth < 600.dp || maxHeight < 480.dp
+            val region = with(density) { Rect(0f, 0f, maxWidth.toPx(), maxHeight.toPx()) }
             Column(Modifier.fillMaxSize()) {
-                DocumentTabs(listOf(doc), doc.id, false, { _, _ -> }, {}, {})
-                HorizontalDivider()
+                DocumentHeader(listOf(doc), doc.id, false, { _, _ -> }, {}, {}, DesktopCaption(), region)
                 CommandBar(compact, { true }, {})
                 DocumentEditor(doc, 100, {}, remember { FocusRequester() }, Modifier.weight(1f))
                 HorizontalDivider()
@@ -614,6 +778,7 @@ private fun NotepadPreview() {
 
 @Preview(name = "Integrated desktop header", widthDp = 1000, heightDp = 160)
 @Preview(name = "Compact desktop header", widthDp = 320, heightDp = 160)
+@Preview(name = "Compact document selector", widthDp = 160, heightDp = 200)
 @Composable
 private fun DesktopHeaderPreview() {
     NotepadTheme {
@@ -621,7 +786,7 @@ private fun DesktopHeaderPreview() {
         val doc = remember { DocumentSession(DocumentSnapshot(text = "A desktop draft")) }
         BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
             val width = with(density) { maxWidth.toPx() }
-            val height = with(density) { 40.dp.toPx() }
+            val height = with(density) { 56.dp.toPx() }
             val region = Rect(0f, 0f, width, with(density) { maxHeight.toPx() })
             val compact = maxWidth < 600.dp
             val caption = DesktopCaption(height, listOf(
@@ -630,7 +795,6 @@ private fun DesktopHeaderPreview() {
             ))
             Column {
                 DocumentHeader(listOf(doc), doc.id, false, { _, _ -> }, {}, {}, caption, region)
-                HorizontalDivider()
                 CommandBar(compact, { true }, {})
             }
         }

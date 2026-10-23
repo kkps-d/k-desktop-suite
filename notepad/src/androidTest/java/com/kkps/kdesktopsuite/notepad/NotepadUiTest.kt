@@ -13,7 +13,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.material3.adaptive.Posture
 import androidx.compose.material3.adaptive.HingeInfo
@@ -31,7 +36,9 @@ class NotepadUiTest {
     val compose = createAndroidComposeRule<ComponentActivity>()
     private var windowSize by mutableStateOf(DpSize(1200.dp, 900.dp))
     private var caption by mutableStateOf(DesktopCaption())
+    private val compactCaptionWidth = DesktopCaptionDimensions.minTabStripWidth.value - 12f
     private lateinit var notepad: NotepadViewModel
+    private lateinit var inputModeManager: InputModeManager
 
     private fun showEditor(largeFontRtl: Boolean = false, separatingFold: Boolean = false) {
         compose.activityRule.scenario.onActivity {
@@ -57,6 +64,7 @@ class NotepadUiTest {
                         DeviceConfigurationOverride.DarkMode(true)
                 } else DeviceConfigurationOverride.FontScale(1f)
                 DeviceConfigurationOverride(configuration) {
+                    inputModeManager = LocalInputModeManager.current
                     val adaptive = currentWindowAdaptiveInfoV2()
                     val posture = if (separatingFold) Posture(hingeList = listOf(
                         HingeInfo(Rect(580f, 0f, 620f, 900f), isFlat = false, isVertical = true, isSeparating = true, isOccluding = true),
@@ -74,37 +82,147 @@ class NotepadUiTest {
         compose.waitUntil(5_000) { !notepad.loading }
     }
 
-    private fun desktopCaption(freeWidth: Float = 1032f) = DesktopCaption(40f, listOf(
-        Rect(0f, 0f, 48f, 40f), Rect(48f + freeWidth, 0f, 1200f, 40f),
+    private fun desktopCaption(freeWidth: Float = 1032f, height: Float = 56f) = DesktopCaption(height, listOf(
+        Rect(0f, 0f, 48f, height), Rect(48f + freeWidth, 0f, 1200f, height),
     ))
 
     @Test
-    fun compactCaptionSwitcherSelectsCreatesAndConfirmsClosingDocuments() {
-        caption = desktopCaption(152f)
+    fun tabsHaveContinuousSlotsAndIndependentHoverFeedback() {
+        caption = desktopCaption()
+        showEditor()
+        compose.onNodeWithContentDescription("New document").performClick()
+        val inactive = compose.onNodeWithContentDescription("Untitled 1")
+        val active = compose.onNodeWithContentDescription("Untitled 2")
+        val first = inactive.getUnclippedBoundsInRoot()
+        val second = active.getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(0f, second.left.value - first.right.value, 1f)
+        org.junit.Assert.assertEquals(first.bottom.value, second.bottom.value, 1f)
+        org.junit.Assert.assertEquals(second.bottom.value,
+            compose.onNodeWithTag("command-bar").getUnclippedBoundsInRoot().top.value, 1f)
+
+        fun background(tab: SemanticsNodeInteraction): androidx.compose.ui.graphics.Color {
+            val pixels = tab.captureToImage().toPixelMap()
+            return pixels[pixels.width / 2, pixels.height / 6]
+        }
+        val resting = background(inactive)
+        inactive.performMouseInput { enter(center); moveTo(center) }
+        compose.mainClock.advanceTimeBy(500)
+        org.junit.Assert.assertNotEquals(resting, background(inactive))
+        inactive.performMouseInput { exit() }
+        compose.mainClock.advanceTimeBy(500)
+        val selected = background(active)
+        active.performMouseInput { enter(center); moveTo(center) }
+        compose.mainClock.advanceTimeBy(500)
+        org.junit.Assert.assertEquals(selected, background(active))
+    }
+
+    @Test
+    fun tabsCompressEquallyBeforeScrollingAndNewRemainsReachable() {
+        caption = desktopCaption()
+        showEditor()
+        val new = compose.onNodeWithContentDescription("New document")
+        val first = compose.onNodeWithContentDescription("Untitled 1")
+        first.assertWidthIsEqualTo(240.dp)
+        new.assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)
+        org.junit.Assert.assertEquals(8f, first.getUnclippedBoundsInRoot().top.value -
+            compose.onNodeWithTag("document-header").getUnclippedBoundsInRoot().top.value, 1f)
+        org.junit.Assert.assertEquals(first.getUnclippedBoundsInRoot().right.value, new.getUnclippedBoundsInRoot().left.value, 1f)
+
+        repeat(4) { new.performClick() }
+        val viewport = compose.onNodeWithTag("document-tabs")
+        (1..5).forEach { index ->
+            val bounds = compose.onNodeWithContentDescription("Untitled $index").getUnclippedBoundsInRoot()
+            org.junit.Assert.assertEquals(976f / 5, (bounds.right - bounds.left).value, 1f)
+            compose.onNodeWithContentDescription("Close Untitled $index").assertIsDisplayed().assertWidthIsEqualTo(48.dp)
+        }
+        compose.runOnIdle { repeat(15) { notepad.newDocument() } }
+        org.junit.Assert.assertEquals(120f,
+            (compose.onNodeWithContentDescription("Untitled 20").getUnclippedBoundsInRoot().let { it.right - it.left }).value, 1f)
+        val pinned = new.getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(viewport.getUnclippedBoundsInRoot().right.value, pinned.left.value, 1f)
+        org.junit.Assert.assertEquals(1024f, pinned.right.value - viewport.getUnclippedBoundsInRoot().left.value, 1f)
+        viewport.performTouchInput { swipeRight() }
+        org.junit.Assert.assertEquals(pinned, new.getUnclippedBoundsInRoot())
+        compose.runOnIdle { notepad.select(notepad.documents.first().id) }
+        compose.waitForIdle()
+        compose.runOnIdle { notepad.select(notepad.documents.last().id) }
+        listOf(200f, 1032f).forEach { width ->
+            compose.runOnIdle { caption = desktopCaption(width) }
+            val tab = compose.onNodeWithContentDescription("Untitled 20").getUnclippedBoundsInRoot()
+            val bounds = viewport.getUnclippedBoundsInRoot()
+            org.junit.Assert.assertTrue(tab.left >= bounds.left && tab.right <= bounds.right)
+            compose.onNodeWithContentDescription("Close Untitled 20").assertIsDisplayed().assertWidthIsEqualTo(48.dp)
+        }
+    }
+
+    @Test
+    fun selectionAndDirtyStateDoNotMoveTitleOrClose() {
+        showEditor()
+        compose.onNodeWithContentDescription("New document").performClick()
+        lateinit var firstId: String
+        compose.runOnIdle { firstId = notepad.documents.first().id }
+        val title = compose.onNodeWithTag("tab-title-$firstId", useUnmergedTree = true)
+        val close = compose.onNodeWithContentDescription("Close Untitled 1")
+        val titleBounds = title.getUnclippedBoundsInRoot()
+        val closeBounds = close.getUnclippedBoundsInRoot()
+        compose.onNodeWithContentDescription("Untitled 1").performClick()
+        compose.onNodeWithTag("document-editor").performTextReplacement("Unsaved draft")
+        org.junit.Assert.assertEquals(titleBounds, title.getUnclippedBoundsInRoot())
+        org.junit.Assert.assertEquals(closeBounds, close.getUnclippedBoundsInRoot())
+        compose.runOnIdle { notepad.reportError(R.string.error_save, firstId) }
+        compose.onNodeWithContentDescription("Untitled 1, unsaved changes").assert(
+            SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Document needs attention"))
+        org.junit.Assert.assertEquals(closeBounds, close.getUnclippedBoundsInRoot())
+    }
+
+    @Test
+    fun rtlTabsKeepNewAdjacentAndSelectedTabVisibleWithLargeFonts() {
+        caption = desktopCaption()
+        showEditor(largeFontRtl = true)
+        val new = compose.onNodeWithContentDescription("New document")
+        org.junit.Assert.assertEquals(compose.onNodeWithContentDescription("Untitled 1").getUnclippedBoundsInRoot().left.value,
+            new.getUnclippedBoundsInRoot().right.value, 1f)
+        repeat(8) { new.performClick() }
+        val viewport = compose.onNodeWithTag("document-tabs")
+        org.junit.Assert.assertEquals(viewport.getUnclippedBoundsInRoot().left.value, new.getUnclippedBoundsInRoot().right.value, 1f)
+        compose.runOnIdle { caption = desktopCaption(200f) }
+        val selected = compose.onNodeWithContentDescription("Untitled 9").getUnclippedBoundsInRoot()
+        val bounds = viewport.getUnclippedBoundsInRoot()
+        org.junit.Assert.assertTrue(selected.left >= bounds.left && selected.right <= bounds.right)
+        compose.onNodeWithContentDescription("Close Untitled 9").assertIsDisplayed().assertWidthIsEqualTo(48.dp)
+    }
+
+    @Test
+    fun compactSelectorKeepsNewAndIndividualCloseActionsAvailable() {
+        windowSize = DpSize(160.dp, 800.dp)
         showEditor()
         compose.onNodeWithTag("document-tabs").assertDoesNotExist()
+        val switcher = compose.onNodeWithTag("document-switcher").getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(112f, (switcher.right - switcher.left).value, 1f)
+        val new = compose.onNodeWithContentDescription("New document").assertIsDisplayed().getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(48f, (new.right - new.left).value, 1f)
         compose.onNodeWithTag("document-editor").performTextReplacement("First draft")
-        compose.onNodeWithTag("document-switcher").performClick()
-        compose.onNodeWithText("New document").performClick()
+        compose.onNodeWithContentDescription("New document").performClick()
         compose.onNodeWithTag("document-editor").performTextReplacement("Second draft")
         compose.onNodeWithTag("document-switcher").performClick()
         compose.onNodeWithContentDescription("Untitled 1, unsaved changes").performClick()
         compose.onNodeWithTag("document-editor").assertTextContains("First draft")
         compose.onNodeWithTag("document-switcher").performClick()
-        compose.onNodeWithText("Close current document").performClick()
+        // Closing an inactive entry must preserve the active document, including on cancellation.
+        compose.onNodeWithContentDescription("Close Untitled 2").performClick()
         compose.onNodeWithText("Cancel").performClick()
         compose.onNodeWithTag("document-editor").assertTextContains("First draft")
         compose.onNodeWithTag("document-switcher").performClick()
-        compose.onNodeWithText("Close current document").performClick()
+        compose.onNodeWithContentDescription("Close Untitled 2").performClick()
         compose.onNodeWithText("Discard").performClick()
-        compose.onNodeWithTag("document-editor").assertTextContains("Second draft")
+        compose.onNodeWithTag("document-editor").assertTextContains("First draft")
+        compose.runOnIdle { org.junit.Assert.assertEquals(1, notepad.documents.size) }
     }
 
     @Test
-    fun captionModeChangesDismissMenuAndPreserveEditorSelectionAndScroll() {
+    fun captionAndCompactModeChangesPreserveSelectionAndScrollAndDismissMenus() {
         caption = desktopCaption()
         showEditor()
-        compose.onNodeWithTag("document-tabs").assertIsDisplayed()
         compose.onNodeWithTag("document-editor").performTextReplacement((1..150).joinToString("\n") { "Line $it" })
         compose.onNodeWithTag("document-editor").performTouchInput { swipeUp() }
         var scroll = 0
@@ -113,12 +231,17 @@ class NotepadUiTest {
             scroll = notepad.active!!.scroll.value
             selection = notepad.active!!.editor.selection
             org.junit.Assert.assertTrue(scroll > 0)
-            caption = desktopCaption(152f)
+            caption = desktopCaption(compactCaptionWidth)
         }
+        // Insufficient caption space uses a full-width tab row below the system controls.
+        val header = compose.onNodeWithTag("document-header").getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(56f, header.top.value, 1f)
+        compose.onNodeWithTag("document-tabs").assertIsDisplayed()
+        compose.runOnIdle { windowSize = DpSize(160.dp, 800.dp) }
         compose.onNodeWithTag("document-switcher").performClick()
-        compose.onNodeWithText("Close current document").assertIsDisplayed()
-        compose.runOnIdle { caption = desktopCaption() }
-        compose.onNodeWithText("Close current document").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Close Untitled 1").assertIsDisplayed()
+        compose.runOnIdle { windowSize = DpSize(1200.dp, 900.dp); caption = desktopCaption() }
+        compose.onNodeWithTag("document-switcher").assertDoesNotExist()
         compose.onNodeWithTag("document-tabs").assertIsDisplayed()
         compose.runOnIdle {
             org.junit.Assert.assertEquals(scroll, notepad.active!!.scroll.value)
@@ -126,20 +249,90 @@ class NotepadUiTest {
             caption = DesktopCaption()
         }
         compose.onNodeWithTag("document-tabs").assertIsDisplayed()
-        compose.onNodeWithTag("document-switcher").assertDoesNotExist()
         compose.onNodeWithTag("document-editor").assertTextContains("Line 150", substring = true)
     }
 
     @Test
-    fun verySmallCaptionFallsBackBelowControlsAndLargeFontRtlSwitcherStillWorks() {
-        caption = desktopCaption(95f)
+    fun shortCaptionFallsBackBelowControlsWithoutShrinkingTouchTargets() {
+        caption = desktopCaption(height = 40f)
         showEditor(largeFontRtl = true)
-        compose.onNodeWithTag("document-switcher").assertIsDisplayed().performClick()
-        compose.onNodeWithText("New document").assertIsDisplayed().performClick()
+        val header = compose.onNodeWithTag("document-header").getUnclippedBoundsInRoot()
+        org.junit.Assert.assertTrue(header.top >= 40.dp)
+        compose.onNodeWithContentDescription("New document").assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp).performClick()
         compose.onNodeWithTag("document-editor").performTextReplacement("مرحبا မြန်မာ 👋")
-        compose.runOnIdle { caption = desktopCaption(152f) }
-        compose.onNodeWithTag("document-switcher").assertIsDisplayed().performClick()
-        compose.onNodeWithText("Close current document").assertIsDisplayed()
+        compose.runOnIdle { caption = desktopCaption() }
+        compose.onNodeWithTag("document-editor").assertTextContains("مرحبا မြန်မာ 👋")
+        compose.onNodeWithTag("document-tabs").assertIsDisplayed()
+    }
+
+    @Test
+    fun arrowNavigationMovesFocusWithoutSelectingUntilActivation() {
+        showEditor()
+        compose.onNodeWithContentDescription("New document").performClick()
+        val first = compose.onNodeWithContentDescription("Untitled 1")
+        compose.runOnIdle { inputModeManager.requestInputMode(InputMode.Keyboard) }
+        first.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus)
+        first.assertIsFocused()
+        first.performKeyInput { pressKey(Key.DirectionRight) }
+        val second = compose.onNodeWithContentDescription("Untitled 2")
+        second.assertIsFocused()
+        compose.runOnIdle { org.junit.Assert.assertEquals(notepad.documents[1].id, notepad.activeId) }
+        second.performKeyInput { pressKey(Key.DirectionLeft) }
+        first.assertIsFocused()
+        compose.runOnIdle { org.junit.Assert.assertEquals(notepad.documents[1].id, notepad.activeId) }
+        first.performKeyInput { pressKey(Key.Enter) }
+        compose.runOnIdle { org.junit.Assert.assertEquals(notepad.documents[0].id, notepad.activeId) }
+        compose.onNodeWithTag("document-editor").assertIsFocused()
+        compose.runOnIdle {
+            repeat(18) { notepad.newDocument() }
+            notepad.select(notepad.documents.first().id)
+        }
+        first.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus)
+        first.performKeyInput { pressKey(Key.DirectionLeft) }
+        val last = compose.onNodeWithContentDescription("Untitled 20")
+        last.assertIsFocused()
+        compose.runOnIdle { org.junit.Assert.assertEquals(notepad.documents.first().id, notepad.activeId) }
+        last.performKeyInput { pressKey(Key.Spacebar) }
+        compose.runOnIdle { org.junit.Assert.assertEquals(notepad.documents.last().id, notepad.activeId) }
+    }
+
+    @Test
+    fun horizontalAndVerticalWheelsScrollTabsWithoutChangingSelection() {
+        showEditor()
+        compose.runOnIdle {
+            repeat(19) { notepad.newDocument() }
+            notepad.select(notepad.documents.first().id)
+        }
+        val viewport = compose.onNodeWithTag("document-tabs")
+        fun position() = viewport.fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.HorizontalScrollAxisRange].value()
+        val start = position()
+        viewport.performMouseInput { enter(center); scroll(2f, ScrollWheel.Horizontal) }
+        compose.waitForIdle()
+        val horizontal = position()
+        org.junit.Assert.assertTrue("Horizontal wheel scrolls the tab viewport", horizontal > start)
+        viewport.performMouseInput { scroll(2f) }
+        compose.waitForIdle()
+        org.junit.Assert.assertTrue("Vertical wheel scrolls the tab viewport", position() > horizontal)
+        compose.runOnIdle { org.junit.Assert.assertEquals(notepad.documents.first().id, notepad.activeId) }
+        compose.onNodeWithContentDescription("New document").assertIsDisplayed()
+    }
+
+    @Test
+    fun separatorsAvoidSelectionAndSelectedTabMatchesMenuSurface() {
+        caption = desktopCaption()
+        showEditor()
+        repeat(3) { compose.onNodeWithContentDescription("New document").performClick() }
+        compose.onNodeWithContentDescription("Untitled 2").performClick()
+        val first = compose.onNodeWithContentDescription("Untitled 1").captureToImage().toPixelMap()
+        val selected = compose.onNodeWithContentDescription("Untitled 2").captureToImage().toPixelMap()
+        val third = compose.onNodeWithContentDescription("Untitled 3").captureToImage().toPixelMap()
+        val menu = compose.onNodeWithTag("command-bar").captureToImage().toPixelMap()
+        val strip = third[third.width / 2, 2]
+        org.junit.Assert.assertEquals(strip, first[first.width - 1, first.height / 2])
+        org.junit.Assert.assertNotEquals(strip, third[third.width - 1, third.height / 2])
+        org.junit.Assert.assertEquals(menu[menu.width - 1, menu.height / 2], selected[selected.width / 2, 2])
+        val screenshot = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "tab-strip-verification.png")
+        screenshot.outputStream().use { compose.onRoot().captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }
 
     @Test
