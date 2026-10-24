@@ -84,6 +84,63 @@ class NotepadUiTest {
     }
 
     @Test
+    fun compactDocumentListHasAccessibleReorderAndWindowCommands() {
+        windowSize = DpSize(144.dp, 800.dp)
+        showEditor()
+        compose.runOnIdle { notepad.newDocument() }
+        val first = notepad.documents.first()
+        compose.onNodeWithTag("document-switcher").performClick()
+        val actions = compose.onNodeWithContentDescription("Untitled ${first.untitledNumber}")
+            .fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsActions.CustomActions]
+        compose.runOnIdle {
+            org.junit.Assert.assertTrue(actions.first { it.label == "Move right" }.action())
+            org.junit.Assert.assertSame(first, notepad.documents.last())
+            org.junit.Assert.assertTrue(actions.first { it.label == "Move to window…" }.action())
+        }
+        compose.onNodeWithText("New window").assertIsDisplayed().assertIsNotEnabled()
+        compose.onNodeWithText("Cancel").performClick()
+        compose.onNodeWithTag("document-switcher").assertIsDisplayed()
+    }
+
+    @Test
+    fun rtlMoveLeftCommandUsesPhysicalDirection() {
+        showEditor(largeFontRtl = true)
+        compose.runOnIdle { notepad.newDocument() }
+        val first = notepad.documents.first()
+        val actions = compose.onNodeWithContentDescription("Untitled ${first.untitledNumber}")
+            .fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsActions.CustomActions]
+        compose.runOnIdle {
+            org.junit.Assert.assertTrue(actions.first { it.label == "Move left" }.action())
+            org.junit.Assert.assertSame(first, notepad.documents.last())
+        }
+    }
+
+    @Test
+    fun movingTabWithAccessibleCommandAnimatesNeighborsAndKeepsTheDocument() {
+        showEditor()
+        compose.onNodeWithTag("document-editor").performTextReplacement("animated draft")
+        val first = notepad.active!!
+        compose.runOnIdle { notepad.newDocument(); notepad.newDocument() }
+        val neighbor = notepad.documents[1]
+        val title = compose.onNodeWithTag("tab-title-${neighbor.id}", useUnmergedTree = true)
+        val before = title.fetchSemanticsNode().boundsInRoot.left
+        val tab = compose.onNodeWithContentDescription("Untitled ${first.untitledNumber}, unsaved changes")
+        val action = tab.fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsActions.CustomActions]
+            .first { it.label == "Move right" }
+        compose.mainClock.autoAdvance = false
+        compose.runOnIdle { org.junit.Assert.assertTrue(action.action()) }
+        compose.mainClock.advanceTimeBy(64)
+        val during = title.fetchSemanticsNode().boundsInRoot.left
+        compose.mainClock.advanceTimeBy(1_000)
+        val after = title.fetchSemanticsNode().boundsInRoot.left
+        org.junit.Assert.assertTrue("The neighboring tab should slide through an intermediate position", during < before && during > after)
+        org.junit.Assert.assertTrue(after < before)
+        compose.mainClock.autoAdvance = true
+        compose.onNodeWithTag("document-editor").assertTextContains("animated draft")
+        compose.runOnIdle { org.junit.Assert.assertSame(first, notepad.active) }
+    }
+
+    @Test
     fun helpAboutShowsAppDetailsAndDismissalKeepsTheDraftAndSelection() {
         showEditor()
         compose.onNodeWithTag("document-editor").performTextReplacement("Draft behind About")

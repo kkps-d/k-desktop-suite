@@ -2,93 +2,66 @@ package com.kkps.kdesktopsuite.notepad
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
 internal enum class PickerKind { Open, SaveAs }
 internal data class PickerRequest(val kind: PickerKind, val documentId: String)
 internal data class SaveConflict(val documentId: String, val closeAfter: Boolean)
 
-@OptIn(FlowPreview::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 internal class NotepadViewModel(
     private val repository: DocumentRepository,
-    private val store: SessionStore,
+    val workspace: NotepadWorkspace,
     private val savedState: SavedStateHandle,
+    newWindow: Boolean = false,
+    private val ownsWorkspace: Boolean = false,
 ) : ViewModel() {
-    val documents = mutableStateListOf<DocumentSession>()
-    var activeId by mutableStateOf("")
-        private set
+    constructor(repository: DocumentRepository, store: SessionStore, savedState: SavedStateHandle) :
+        this(repository, NotepadWorkspace(store), savedState, ownsWorkspace = true)
+
+    val window = workspace.acquireWindow(savedState["windowId"], newWindow)
+    val documents get() = window.documents
+    val activeId get() = window.activeId
     val active: DocumentSession? get() = documents.firstOrNull { it.id == activeId }
-    var loading by mutableStateOf(true)
-        private set
+    val loading get() = workspace.loading
     var opening by mutableIntStateOf(0)
         private set
-    var zoom by mutableIntStateOf(100)
-        private set
-    var wordWrap by mutableStateOf(true)
-        private set
-    var showStatusBar by mutableStateOf(true)
-        private set
-    var appTheme by mutableStateOf(AppTheme.Auto)
-        private set
-    var fontStyle by mutableStateOf(NoteFontStyle.Monospace)
-        private set
+    val zoom get() = workspace.zoom
+    val wordWrap get() = workspace.wordWrap
+    val showStatusBar get() = workspace.showStatusBar
+    val appTheme get() = workspace.appTheme
+    val fontStyle get() = workspace.fontStyle
     var settingsOpen by mutableStateOf(savedState.get<Boolean>("settingsOpen") == true)
         private set
-    var focusRequest by mutableIntStateOf(0)
-        private set
+    val focusRequest get() = window.focusRequest
     var closeConfirmation by mutableStateOf<String?>(null)
         private set
     var conflict by mutableStateOf<SaveConflict?>(null)
         private set
     var pickerRequest by mutableStateOf<PickerRequest?>(null)
         private set
-    var errorMessage by mutableStateOf<Int?>(null)
-        private set
-    var errorDocumentId by mutableStateOf<String?>(null)
-        private set
-    private var nextUntitled = 1
-    private val ready = CompletableDeferred<Unit>()
+    val errorMessage get() = window.errorMessage
+    val errorDocumentId get() = window.errorDocumentId
+    private val ready get() = workspace.ready
     var pickerPending by mutableStateOf(savedState.get<String>("pickerKind") != null)
         private set
 
     init {
+        savedState["windowId"] = window.id
+        if (!window.attached) {
+            window.blocked = { pickerPending || closeConfirmation != null || conflict != null || opening > 0 }
+            window.showDocument = { showSettings(false) }
+        }
         viewModelScope.launch {
-            try {
-                store.read()?.let { snapshot ->
-                    documents.addAll(snapshot.documents.filter { it.text.isNotEmpty() }.map(::DocumentSession))
-                    activeId = snapshot.activeId.takeIf { id -> documents.any { it.id == id } }
-                        ?: documents.firstOrNull()?.id.orEmpty()
-                    zoom = snapshot.zoom
-                    nextUntitled = snapshot.nextUntitled
-                    wordWrap = snapshot.wordWrap
-                    showStatusBar = snapshot.showStatusBar
-                    appTheme = snapshot.appTheme
-                    fontStyle = snapshot.fontStyle
-                    focusRequest++
-                }
-            } catch (error: Exception) {
-                if (error is CancellationException) throw error
-                reportError(R.string.error_restore)
-            }
-            if (documents.isEmpty()) addBlank()
-            loading = false
-            ready.complete(Unit)
-            launch {
-                snapshotFlow { snapshot() }.debounce(500).collect { checkpoint(it) }
-            }
-            // Recovery copies are authoritative; validate access without replacing their contents.
+            ready.await()
+            // Recovery copies are authoritative; validate access without replacing contents.
             documents.toList().forEach { doc ->
                 val uri = doc.uri ?: return@forEach
                 try {
@@ -101,17 +74,9 @@ internal class NotepadViewModel(
         }
     }
 
-    fun snapshot() = SessionSnapshot(documents.map { it.snapshot() }, activeId, zoom, nextUntitled, wordWrap, showStatusBar, appTheme, fontStyle)
+    fun snapshot() = workspace.snapshot()
 
-    fun checkpoint() {
-        if (!loading) checkpoint(snapshot())
-    }
-
-    private fun checkpoint(snapshot: SessionSnapshot) {
-        store.checkpoint(snapshot) { succeeded ->
-            if (!succeeded && errorMessage == null) reportError(R.string.error_recovery)
-        }
-    }
+    fun checkpoint() = workspace.checkpoint()
 
     fun newDocument() {
         if (loading) return
@@ -119,17 +84,23 @@ internal class NotepadViewModel(
         checkpoint()
     }
 
-    private fun addBlank() {
-        val doc = DocumentSession(DocumentSnapshot(untitledNumber = nextUntitled++))
-        documents.add(doc)
-        activeId = doc.id
-        focusRequest++
-    }
+    private fun addBlank() = workspace.addBlank(window)
 
     fun select(id: String, focusEditor: Boolean = true) {
-        if (documents.none { it.id == id }) return
-        activeId = id
-        if (focusEditor) focusRequest++
+        window.select(id, focusEditor)
+        workspace.focus(window)
+    }
+
+    fun reorder(id: String, index: Int) = workspace.reorder(window, id, index)
+
+    fun canTransfer(id: String) = workspace.canTransfer(window, id)
+
+    fun moveToWindow(id: String, destination: NotepadWindow): Boolean {
+        if (!destination.attached) return false
+        val transfer = workspace.beginTransfer(window, id) ?: return false
+        return workspace.move(transfer.token, destination, destination.documents.size).also {
+            workspace.cancelTransfer(transfer.token)
+        }
     }
 
     fun cycleTab(direction: Int) {
@@ -139,12 +110,12 @@ internal class NotepadViewModel(
     }
 
     fun changeZoom(value: Int) {
-        zoom = value.coerceIn(50, 300)
+        workspace.zoom = value.coerceIn(50, 300)
     }
 
-    fun toggleWordWrap() { wordWrap = !wordWrap }
+    fun toggleWordWrap() { workspace.wordWrap = !wordWrap }
 
-    fun toggleStatusBar() { showStatusBar = !showStatusBar }
+    fun toggleStatusBar() { workspace.showStatusBar = !showStatusBar }
 
     fun showSettings(show: Boolean) {
         settingsOpen = show
@@ -152,12 +123,12 @@ internal class NotepadViewModel(
     }
 
     fun changeAppTheme(theme: AppTheme) {
-        appTheme = theme
+        workspace.appTheme = theme
         checkpoint()
     }
 
     fun changeFontStyle(style: NoteFontStyle) {
-        fontStyle = style
+        workspace.fontStyle = style
         checkpoint()
     }
 
@@ -226,7 +197,7 @@ internal class NotepadViewModel(
             when (kind) {
                 PickerKind.Open.name -> openUri(uri, id).join()
                 PickerKind.SaveAs.name -> {
-                    if (documents.any { it.uri == uri && it.id != id }) {
+                    if (workspace.findUri(uri)?.let { it.id != id } == true) {
                         reportError(R.string.error_already_open, id)
                     } else saveTo(id, uri, closeAfter, isSaveAs = true)
                 }
@@ -236,11 +207,11 @@ internal class NotepadViewModel(
 
     fun openUri(uri: String, originatingId: String = activeId): Job = viewModelScope.launch {
         ready.await()
-        documents.find { it.uri == uri }?.let { select(it.id); return@launch }
+        workspace.findUri(uri)?.let { workspace.selectDocument(it); return@launch }
         opening++
         try {
             val loaded = repository.read(uri)
-            documents.find { it.uri == uri }?.let { select(it.id); return@launch }
+            workspace.findUri(uri)?.let { workspace.selectDocument(it); return@launch }
             val doc = DocumentSession(DocumentSnapshot(
                 name = loaded.name, uri = uri, text = loaded.text, savedText = loaded.text,
                 diskFingerprint = loaded.fingerprint, format = loaded.format,
@@ -272,6 +243,10 @@ internal class NotepadViewModel(
     ) {
         val doc = documents.find { it.id == id } ?: return
         if (doc.saving) return
+        if (!workspace.reserveWrite(uri, id)) {
+            reportError(R.string.error_already_open, id)
+            return
+        }
         val snapshot = doc.snapshot()
         doc.saving = true
         viewModelScope.launch {
@@ -293,6 +268,7 @@ internal class NotepadViewModel(
                 else reportError(R.string.error_save, id)
             } finally {
                 doc.saving = false
+                workspace.releaseWrite(uri)
             }
         }
     }
@@ -313,12 +289,16 @@ internal class NotepadViewModel(
     }
 
     fun reportError(message: Int, documentId: String? = null) {
-        errorMessage = message
-        errorDocumentId = documentId
+        window.errorMessage = message
+        window.errorDocumentId = documentId
     }
 
     fun dismissError() {
-        errorMessage = null
-        errorDocumentId = null
+        window.errorMessage = null
+        window.errorDocumentId = null
+    }
+
+    override fun onCleared() {
+        if (ownsWorkspace) workspace.close()
     }
 }

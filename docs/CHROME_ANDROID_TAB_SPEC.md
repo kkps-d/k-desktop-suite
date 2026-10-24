@@ -73,6 +73,41 @@ The selector displays the active document's title and opens a scrollable documen
 
 ## Implementation focus
 
+### Animated dragging and multiple windows
+
+- Start pointer dragging after normal mouse/trackpad movement slop; touch requires
+  a long press so a normal swipe can scroll the strip. Close and New remain
+  independent controls. Preserve the system caption exclusions and blank drag area.
+- Show the platform tab shadow under the pointer. Preview a gap at tab midpoints,
+  moving neighboring keyed slots with a non-bouncing spring. Keep preview order
+  separate from document order until the drop succeeds. Animate cancelled previews
+  back, respect system animation settings, and auto-scroll at either viewport edge.
+  Suppress selected-tab scrolling while a drag is active.
+- Accept a moved tab on another window's strip at the preview position, or append
+  through its compact selector. Drops on the editor or other app content cancel
+  the operation without inserting text or detaching. Escape and Back cancel too.
+- Use application-owned live documents with stable window ownership. Transfer the
+  same editor state, preserving draft, selection, scroll, file association, and
+  undo/redo. Focus the destination after success. Remove from the source only after
+  destination acknowledgement, and close a source emptied by the transfer. Otherwise
+  use the existing right-neighbor-then-left selection rule for a moved active tab.
+- Use Android's same-application drag and unhandled-drag activity IntentSender on
+  API 35+. The system decides whether an outside drop can open a new window. Older
+  Android versions support existing-window drops and explicit New window where
+  multi-window is available. Dragging the only tab outside keeps its current window.
+- Disable window transfer while saving the tab or while a participating window has
+  an open picker or modal document decision. Failed launches and invalid, stale, or
+  repeated transfer tokens must never lose a document. Drag data carries opaque
+  single-use tokens, never document bodies.
+- Provide Move left/right and Move to window through tab context menus, accessibility
+  actions, and the compact document list. The destination chooser includes New window.
+- Share preferences and one recovery writer across windows. Flatten recovery by
+  window-creation order and tab order, retaining the last-focused active document.
+  Process restart merges into one window without duplication; ordinary activity
+  recreation preserves its live window. Keep legacy recovery compatible.
+
+### Existing tab presentation
+
 - [NotepadScreen.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadScreen.kt): overlapping slots, 120–240dp sizing with equal compression before scrolling, 48dp tab controls, separators, conditional status spacing, vector icons, compact document list, toolbar, and status bar.
 - [NotepadTheme.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadTheme.kt): regular 14sp/20sp title typography and the neutral Material surface hierarchy above.
 - [NotepadChrome.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadChrome.kt): 12dp top corners and bottom feet within overlapping tab bounds, and compact dropdown items.

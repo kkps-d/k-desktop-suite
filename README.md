@@ -165,6 +165,20 @@ layout rules and acceptance checks.
   operations are available through menus and keyboard shortcuts.
 - Each tab retains its text, selection, scroll position, file association, and
   undo history across switches, resizing, and activity recreation.
+- Drag a tab with a mouse or trackpad to reorder it; touch uses a long press.
+  Neighboring tabs slide aside to preview the position. Releasing commits the
+  order; Escape or dropping over the editor cancels it. Overflowing strips
+  scroll when the pointer approaches an edge. Motion follows system animation settings.
+- Move a tab between Notepad windows by dropping it onto the destination tab bar.
+  Drop it onto the compact document selector to append it. The live document,
+  including undo/redo history, moves with it. A window emptied by a transfer closes;
+  ordinary Close on the final tab still opens a fresh untitled document.
+- On Android 15 / API 35 and newer, dropping a tab onto empty desktop space can
+  create a separate window when the system permits it. A window's only tab stays
+  in its current window when dropped outside. Right-click a tab for Move left,
+  Move right, or Move to window; these commands also appear as accessibility
+  actions and in the compact document list. New window is available in desktop
+  or split-screen mode, including on older supported Android versions.
 - Closing unsaved tabs offers Save / Discard / Cancel. Opening an already-open
   file selects its existing tab. A cancelled or failed save keeps the draft open.
 - Open and Save As use Android's document picker without broad storage access.
@@ -179,6 +193,10 @@ layout rules and acceptance checks.
   original files. Snapshots follow 500 ms of inactivity and flush on backgrounding;
   an abrupt termination can lose edits newer than the last successful checkpoint.
   Undo history resets after process restart. Uninstalling removes private recovery.
+- All windows share one recovery writer and appearance/view preferences. After
+  process restart, documents merge into one window in window-creation order,
+  preserving each window's tab order and the last-focused active document.
+  Opening an already-open file brings its existing window forward.
 - Missing file access preserves recovered contents and offers Save As. External
   file changes require Overwrite / Save As / Cancel before saving over them.
 - Mouse/trackpad input supports context menus, scrolling, hover, editor zoom, and
@@ -216,7 +234,9 @@ cover phone, tablet, desktop, short windows, and an extra-large dark window.
 Manually verify TalkBack, keyboard-only operation, large fonts, RTL, right-click
 menus, trackpad pinch, drops from another app, caption/window dragging,
 maximize/restore, fold changes, split screen, and external displays on suitable
-devices. Find/Replace, tab reordering, detached windows, rich text, legacy
+devices. Also check animated tab reordering, edge scrolling, cancelled drops,
+dragging between two windows, drag-out creation, final-tab transfers, and recovery
+after editing both windows. Find/Replace, rich text, legacy
 encodings, and large-file optimizations are deferred.
 
 ## References

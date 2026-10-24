@@ -28,11 +28,12 @@ class NotepadLifecycleTest {
             width = view.width.toFloat()
             caption = DesktopCaption(insets.getInsets(type).top.toFloat(), insets.getBoundingRects(type).map {
                 Rect(it.left.toFloat(), it.top.toFloat(), it.right.toFloat(), it.bottom.toFloat())
-            })
+            }, insets.getInsets(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.displayCutout()).top.toFloat())
         }
         compose.onNodeWithTag("document-header").assertIsDisplayed()
         val bounds = compose.onNodeWithTag("document-header").fetchSemanticsNode().boundsInWindow
-        val layout = captionLayout(caption, Rect(0f, 0f, width, 1000f), compose.density.density)
+        // The app retains status/cutout protection above its interactive caption region.
+        val layout = captionLayout(caption, Rect(0f, caption.safeTop, width, 1000f), compose.density.density)
         if (!layout.integrated) {
             assertTrue("Short or constrained captions keep accessible tabs below system controls", bounds.top >= caption.height)
             compose.onNodeWithContentDescription("New document").assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)

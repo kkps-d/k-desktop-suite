@@ -1,6 +1,7 @@
 package com.kkps.kdesktopsuite.notepad
 
 import android.app.Application
+import android.app.ActivityManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -23,10 +24,15 @@ import java.io.File
 
 internal class NotepadApplication : Application() {
     val sessions by lazy { SessionStore(File(filesDir, "notepad-session.json")) }
+    val workspace by lazy {
+        NotepadWorkspace(sessions).apply { showWindow = { TabWindows.showWindow(this@NotepadApplication, it.id) } }
+    }
 }
 
 class NotepadActivity : ComponentActivity() {
-    private lateinit var notepad: NotepadViewModel
+    internal lateinit var notepad: NotepadViewModel
+        private set
+    private var boundWindow = false
     private val documentPicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val data = result.data
         val uri = data?.data?.takeIf { result.resultCode == RESULT_OK }
@@ -45,15 +51,58 @@ class NotepadActivity : ComponentActivity() {
         }
         notepad = ViewModelProvider(this, object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T =
-                NotepadViewModel(
+            override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
+                val state = extras.createSavedStateHandle()
+                if (savedInstanceState == null) intent.getStringExtra(TabWindows.windowExtra)?.let { state["windowId"] = it }
+                val workspace = (application as NotepadApplication).workspace
+                return NotepadViewModel(
                     AndroidDocumentRepository(applicationContext.contentResolver),
-                    (application as NotepadApplication).sessions,
-                    extras.createSavedStateHandle(),
+                    workspace,
+                    state,
+                    newWindow = savedInstanceState == null && workspace.windows.any { it.attached && !it.closed },
                 ) as T
+            }
         })[NotepadViewModel::class.java]
 
+        if (notepad.window.attached) {
+            notepad.window.bringToFront()
+            finishAndRemoveTask()
+            return
+        }
+        boundWindow = true
+        notepad.window.attached = true
+        notepad.window.bringToFront = {
+            @Suppress("DEPRECATION")
+            val task = getSystemService(ActivityManager::class.java).appTasks.find {
+                val info = it.taskInfo
+                (if (Build.VERSION.SDK_INT >= 29) info?.taskId else info?.id) == taskId
+            }
+            task?.moveToFront()
+        }
+
         setContent {
+            LaunchedEffect(notepad.loading, notepad.window.closed) {
+                if (notepad.window.closed) {
+                    finishAndRemoveTask()
+                } else if (!notepad.loading) {
+                    // The launch intent can outlive an acknowledged transfer across recreation.
+                    val token = intent.getStringExtra(TabWindows.transferExtra).takeIf { savedInstanceState == null }
+                    if (token != null) {
+                        intent.removeExtra(TabWindows.transferExtra)
+                        val transfer = notepad.workspace.transfer(token)
+                        if (transfer != null && !notepad.workspace.move(token, notepad.window, 0, newWindow = true)) {
+                            notepad.workspace.cancelTransfer(token)
+                            notepad.workspace.abandonWindow(notepad.window)
+                            finishAndRemoveTask()
+                        } else if (transfer == null && notepad.workspace.windows.count { !it.closed } > 1) {
+                            notepad.workspace.abandonWindow(notepad.window)
+                            notepad.workspace.windows.firstOrNull { !it.closed }?.let { notepad.workspace.bringToFront(it) }
+                            finishAndRemoveTask()
+                        }
+                        // An old token after process death leaves the merged recovery window intact.
+                    }
+                }
+            }
             val active = notepad.active
             val title = active?.let { documentTitle(it) }
             SideEffect {
@@ -109,7 +158,22 @@ class NotepadActivity : ComponentActivity() {
     }
 
     override fun onStop() {
-        notepad.checkpoint()
+        if (::notepad.isInitialized) notepad.checkpoint()
         super.onStop()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && boundWindow) notepad.workspace.focus(notepad.window)
+    }
+
+    override fun onDestroy() {
+        if (boundWindow) {
+            notepad.window.attached = false
+            notepad.window.bringToFront = {}
+            notepad.window.prepareTransfer = {}
+            notepad.window.modalOpen = false
+        }
+        super.onDestroy()
     }
 }

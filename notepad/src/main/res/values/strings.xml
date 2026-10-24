@@ -71,4 +71,10 @@
     <string name="error_already_open">That file is already open in another tab. Choose a different location.</string>
     <string name="error_drop">Drop one text document at a time.</string>
     <string name="error_clipboard">Could not access the clipboard.</string>
+    <string name="error_window">Could not move this tab to a new window. Your document is still open.</string>
+    <string name="move_tab_left">Move left</string>
+    <string name="move_tab_right">Move right</string>
+    <string name="move_to_window">Move to window…</string>
+    <string name="new_window">New window</string>
+    <string name="window_title">Window %1$d: %2$s</string>
 </resources>

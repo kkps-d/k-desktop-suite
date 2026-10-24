@@ -9,11 +9,15 @@ import android.view.WindowInsetsController
 import androidx.annotation.StringRes
 import androidx.annotation.DrawableRes
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -53,16 +57,19 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
@@ -120,6 +127,17 @@ internal fun NotepadScreen(
     val active = notepad.active
     val focusManager = LocalFocusManager.current
     var aboutOpen by rememberSaveable { mutableStateOf(false) }
+    var moveDocumentId by rememberSaveable { mutableStateOf<String?>(null) }
+    val view = LocalView.current
+    DisposableEffect(notepad.window, focusManager) {
+        notepad.window.prepareTransfer = { focusManager.clearFocus(force = true) }
+        onDispose { notepad.window.prepareTransfer = {} }
+    }
+    SideEffect { notepad.window.modalOpen = aboutOpen }
+    BackHandler(enabled = notepad.workspace.dragging != null) {
+        notepad.workspace.dragging?.let { notepad.workspace.cancelTransfer(it.token) }
+        view.cancelDragAndDrop()
+    }
     BackHandler(enabled = notepad.settingsOpen) { notepad.showSettings(false) }
     val tabs = rememberLazyListState()
     val headerColor = if (notepad.settingsOpen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh
@@ -210,7 +228,10 @@ internal fun NotepadScreen(
         ReceiveContentListener { content ->
             val data = content.clipEntry.clipData
             val hasUri = (0 until data.itemCount).any { data.getItemAt(it).uri != null }
-            if (content.source == TransferableContent.Source.DragAndDrop && hasUri) {
+            if (data.description.hasMimeType(TabWindows.mimeType)) {
+                notepad.workspace.dragging?.let { notepad.workspace.cancelTransfer(it.token) }
+                null
+            } else if (content.source == TransferableContent.Source.DragAndDrop && hasUri) {
                 if (data.itemCount == 1) {
                     val uri = data.getItemAt(0).uri
                     activity?.retainPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
@@ -224,9 +245,18 @@ internal fun NotepadScreen(
     Surface(Modifier.fillMaxSize()) {
         BoxWithConstraints(
             Modifier.fillMaxSize().windowInsetsPadding(layoutInsets)
+                .tabDropTarget(notepad, dropped = { token ->
+                    // Consume internal drops outside the header so SystemUI cannot detach them.
+                    notepad.workspace.cancelTransfer(token)
+                    true
+                })
                 .contentReceiver(receiveContent)
                 .onPreviewKeyEvent { event ->
-                    if (notepad.settingsOpen) {
+                    if (event.type == KeyEventType.KeyDown && event.key == Key.Escape && notepad.workspace.dragging != null) {
+                        notepad.workspace.dragging?.let { notepad.workspace.cancelTransfer(it.token) }
+                        view.cancelDragAndDrop()
+                        true
+                    } else if (notepad.settingsOpen) {
                         if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
                             notepad.showSettings(false)
                             true
@@ -294,7 +324,8 @@ internal fun NotepadScreen(
                 } else {
                     DocumentHeader(notepad.documents, notepad.activeId, notepad.pickerPending,
                         notepad::select, notepad::requestClose, notepad::newDocument,
-                        caption, region.translate(origin), tabs, notepad.errorDocumentId)
+                        caption, region.translate(origin), tabs, notepad.errorDocumentId, notepad, activity,
+                        moveToWindow = { moveDocumentId = it })
                     CommandBar(compact, ::enabled, ::run, notepad.wordWrap, notepad.showStatusBar,
                         openSettings = {
                             focusManager.clearFocus()
@@ -343,6 +374,30 @@ internal fun NotepadScreen(
 
     if (aboutOpen) NotepadAboutDialog(onDismiss = { aboutOpen = false })
 
+    moveDocumentId?.let { id ->
+        AlertDialog(
+            onDismissRequest = { moveDocumentId = null },
+            title = { Text(stringResource(R.string.move_to_window)) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    notepad.workspace.windows.filter { it !== notepad.window && it.attached && !it.closed }.forEachIndexed { index, window ->
+                        val doc = window.documents.find { it.id == window.activeId }
+                        val title = doc?.let { documentTitle(it) }.orEmpty()
+                        TextButton(
+                            enabled = notepad.canTransfer(id) && !window.blocked(),
+                            onClick = { moveDocumentId = null; notepad.moveToWindow(id, window) },
+                        ) { Text(stringResource(R.string.window_title, index + 1, title)) }
+                    }
+                    TextButton(
+                        enabled = activity != null && TabWindows.supported(activity) && notepad.canTransfer(id) && notepad.documents.size > 1,
+                        onClick = { moveDocumentId = null; activity?.let { TabWindows.launch(it, notepad, id) } },
+                    ) { Text(stringResource(R.string.new_window)) }
+                }
+            },
+            confirmButton = { TextButton(onClick = { moveDocumentId = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+
     notepad.documents.find { it.id == notepad.closeConfirmation }?.let { doc ->
         AlertDialog(
             onDismissRequest = notepad::cancelClose,
@@ -380,6 +435,8 @@ internal fun DocumentHeader(
     select: (String, Boolean) -> Unit, close: (String) -> Unit, new: () -> Unit,
     caption: DesktopCaption, region: Rect, list: LazyListState = rememberLazyListState(),
     errorDocumentId: String? = null,
+    notepad: NotepadViewModel? = null, activity: NotepadActivity? = null,
+    moveToWindow: (String) -> Unit = {},
 ) {
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
@@ -412,10 +469,12 @@ internal fun DocumentHeader(
                 CompositionLocalProvider(LocalLayoutDirection provides direction) {
                     key(layout.mode, compact) {
                         if (compact) {
-                            DocumentSwitcher(documents, activeId, pickerPending, select, close, new, tabHeight, errorDocumentId)
+                            DocumentSwitcher(documents, activeId, pickerPending, select, close, new, tabHeight, errorDocumentId,
+                                notepad, activity, moveToWindow)
                         } else {
                             DocumentTabs(documents, activeId, pickerPending, select, close, new, list,
-                                if (layout.integrated) input else null, tabHeight, errorDocumentId, topPadding)
+                                if (layout.integrated) input else null, tabHeight, errorDocumentId, topPadding,
+                                notepad, activity, moveToWindow)
                         }
                     }
                 }
@@ -451,8 +510,14 @@ private fun DocumentSwitcher(
     documents: List<DocumentSession>, activeId: String, pickerPending: Boolean,
     select: (String, Boolean) -> Unit, close: (String) -> Unit, new: () -> Unit,
     minTabHeight: Dp, errorDocumentId: String?,
+    notepad: NotepadViewModel?, activity: NotepadActivity?, moveToWindow: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val moveLeftLabel = stringResource(R.string.move_tab_left)
+    val moveRightLabel = stringResource(R.string.move_tab_right)
+    val moveWindowLabel = stringResource(R.string.move_to_window)
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    var actionId by remember { mutableStateOf<String?>(null) }
     val active = documents.find { it.id == activeId }
     val title = active?.let { documentTitle(it) }.orEmpty()
     val accessibleTitle = if (active?.dirty == true) stringResource(R.string.unsaved_tab, title) else title
@@ -464,6 +529,10 @@ private fun DocumentSwitcher(
                 onClick = { expanded = true },
                 modifier = Modifier.fillMaxWidth().heightIn(min = minTabHeight)
                     .testTag("document-switcher")
+                    .tabDragSource(notepad, activity, activeId)
+                    .tabDropTarget(notepad, dropped = { token ->
+                        notepad?.let { it.workspace.move(token, it.window, it.documents.size) } == true
+                    })
                     .semantics { contentDescription = switcherLabel; stateDescription = state },
                 shape = DocumentTabShape,
                 colors = ButtonDefaults.textButtonColors(
@@ -493,10 +562,23 @@ private fun DocumentSwitcher(
                                 selected = doc.id == activeId
                                 contentDescription = label
                                 stateDescription = docState
+                                if (notepad != null) customActions = tabMoveActions(notepad, doc.id,
+                                    moveLeftLabel, moveRightLabel, moveWindowLabel,
+                                    { expanded = false; moveToWindow(it) }, rtl)
                             },
                             trailingIcon = if (doc.id == activeId) ({ Text("✓") }) else null,
                             onClick = { expanded = false; select(doc.id, true) },
                         )
+                        if (notepad != null) Box {
+                            TextButton(onClick = { actionId = doc.id }) {
+                                Text("⋮", Modifier.semantics { contentDescription = moveWindowLabel })
+                            }
+                            NotepadDropdownMenu(expanded = actionId == doc.id, onDismissRequest = { actionId = null }) {
+                                TabMoveMenu(notepad, doc.id, moveToWindow = {
+                                    actionId = null; expanded = false; moveToWindow(it)
+                                }, dismiss = { actionId = null })
+                            }
+                        }
                         TooltipAction(stringResource(R.string.close_tab, docTitle), R.drawable.ic_tab_close,
                             enabled = !doc.saving && !pickerPending, targetHeight = DropdownMenuDimensions.itemHeight) {
                             expanded = false
@@ -515,12 +597,22 @@ private fun DocumentTabs(
     documents: List<DocumentSession>, activeId: String, pickerPending: Boolean,
     select: (String, Boolean) -> Unit, close: (String) -> Unit, new: () -> Unit,
     list: LazyListState, input: CaptionInput?, minTabHeight: Dp, errorDocumentId: String?, topPadding: Dp,
+    notepad: NotepadViewModel?, activity: NotepadActivity?, moveToWindow: (String) -> Unit,
 ) {
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val scope = rememberCoroutineScope()
     var contextId by remember { mutableStateOf<String?>(null) }
     val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
     val separatorColor = MaterialTheme.colorScheme.outlineVariant
+    val moveLeftLabel = stringResource(R.string.move_tab_left)
+    val moveRightLabel = stringResource(R.string.move_tab_right)
+    val moveWindowLabel = stringResource(R.string.move_to_window)
+    var insertion by remember { mutableStateOf<Int?>(null) }
+    var dragPosition by remember { mutableStateOf<Offset?>(null) }
+    var stripBounds by remember { mutableStateOf(Rect.Zero) }
+    val transfer = notepad?.workspace?.dragging
+    val dragged = transfer?.let { notepad.workspace.document(it) }
+    val displayed = previewTabOrder(documents, dragged, insertion)
     BoxWithConstraints(
         Modifier.fillMaxWidth().heightIn(min = topPadding + minTabHeight).padding(top = topPadding),
     ) {
@@ -531,7 +623,8 @@ private fun DocumentTabs(
             .coerceIn(TabBarDimensions.minTabWidth, TabBarDimensions.maxTabWidth)
         val viewportWidth = (tabWidth * documents.size - sharedWidth).coerceAtMost(availableWidth)
         val density = LocalDensity.current
-        LaunchedEffect(activeId, documents.size, tabWidth, viewportWidth, density) {
+        LaunchedEffect(activeId, documents.map { it.id }, tabWidth, viewportWidth, density, transfer) {
+            if (transfer != null) return@LaunchedEffect
             val index = documents.indexOfFirst { it.id == activeId }
             val item = list.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
             val fits = with(density) {
@@ -539,7 +632,47 @@ private fun DocumentTabs(
             }
             if (index >= 0 && !fits) list.scrollToItem(index)
         }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        val widthPx = with(density) { tabWidth.toPx() }
+        val stridePx = with(density) { (tabWidth - overlap).toPx() }
+        val edgePx = with(density) { 32.dp.toPx() }
+        fun previewAt(index: Int) {
+            if (index == insertion) return
+            // Keep the viewport fixed when its first visible key moves in the preview order.
+            list.requestScrollToItem(list.firstVisibleItemIndex, list.firstVisibleItemScrollOffset)
+            insertion = index
+        }
+        fun updateInsertion(position: Offset) {
+            val x = if (rtl) stripBounds.right - position.x else position.x - stripBounds.left
+            dragPosition = Offset(x, position.y)
+            val scroll = list.firstVisibleItemIndex * stridePx + list.firstVisibleItemScrollOffset
+            previewAt(tabInsertionIndex(x + scroll, widthPx, stridePx, documents.size,
+                documents.indexOfFirst { it.id == dragged?.id }))
+        }
+        LaunchedEffect(dragPosition, transfer, viewportWidth, rtl) {
+            val position = dragPosition ?: return@LaunchedEffect
+            if (transfer == null) return@LaunchedEffect
+            val viewport = with(density) { viewportWidth.toPx() }
+            val speed = when {
+                position.x < edgePx -> -((edgePx - position.x) / edgePx).coerceIn(0f, 1f)
+                position.x > viewport - edgePx -> ((position.x - viewport + edgePx) / edgePx).coerceIn(0f, 1f)
+                else -> 0f
+            }
+            while (speed != 0f) {
+                withFrameNanos { }
+                list.scrollBy(speed * with(density) { 8.dp.toPx() })
+                val scroll = list.firstVisibleItemIndex * stridePx + list.firstVisibleItemScrollOffset
+                previewAt(tabInsertionIndex(position.x + scroll, widthPx, stridePx, documents.size,
+                    documents.indexOfFirst { it.id == dragged?.id }))
+            }
+        }
+        Row(Modifier.fillMaxWidth()
+            .onGloballyPositioned { stripBounds = it.boundsInRoot() }
+            .tabDropTarget(notepad,
+                moved = { updateInsertion(it) },
+                exited = { insertion = null; dragPosition = null },
+                dropped = { token ->
+                    notepad?.let { it.workspace.move(token, it.window, insertion ?: it.documents.size) } == true
+                }), verticalAlignment = Alignment.CenterVertically) {
             LazyRow(
                 state = list,
                 horizontalArrangement = Arrangement.spacedBy(-overlap),
@@ -560,7 +693,7 @@ private fun DocumentTabs(
                         }
                     },
             ) {
-                items(documents, key = { it.id }) { doc ->
+                items(displayed, key = { it.id }) { doc ->
                     val title = documentTitle(doc)
                     val selected = doc.id == activeId
                     val shape = if (selected) DocumentTabShape else DocumentTabHoverShape
@@ -573,9 +706,12 @@ private fun DocumentTabs(
                         onDispose { focusRequesters.remove(doc.id) }
                     }
                     var focused by remember { mutableStateOf(false) }
-                    val index = documents.indexOf(doc)
-                    val separator = !selected && documents.getOrNull(index + 1)?.id != activeId
-                    Box(Modifier.zIndex(if (selected) 1f else 0f).drawBehind {
+                    val index = displayed.indexOf(doc)
+                    val separator = !selected && displayed.getOrNull(index + 1)?.id != activeId
+                    val placeholder = dragged?.id == doc.id
+                    Box(Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null,
+                        placementSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow))
+                        .zIndex(if (selected) 1f else 0f).drawBehind {
                         if (separator) {
                             val width = 1.dp.toPx()
                             val height = 20.dp.toPx()
@@ -587,6 +723,10 @@ private fun DocumentTabs(
                         Surface(
                             modifier = Modifier.width(tabWidth).heightIn(min = minTabHeight)
                                 .captionControl(input, doc.id).clip(shape)
+                                .tabDragSource(notepad, activity, doc.id)
+                                .alpha(if (placeholder) 0.35f else 1f)
+                                .then(if (placeholder && insertion != null) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape)
+                                    .testTag("tab-drag-placeholder") else Modifier)
                                 .focusRequester(tabFocus).onFocusChanged { focused = it.hasFocus }
                                 .then(if (focused) Modifier.border(TabBarDimensions.focusOutlineWidth, MaterialTheme.colorScheme.primary, shape) else Modifier)
                                 .semantics {
@@ -594,6 +734,8 @@ private fun DocumentTabs(
                                     role = Role.Tab
                                     contentDescription = accessibleTitle
                                     stateDescription = state
+                                    if (notepad != null) customActions = tabMoveActions(notepad, doc.id,
+                                        moveLeftLabel, moveRightLabel, moveWindowLabel, moveToWindow, rtl)
                                 }
                                 .onPreviewKeyEvent {
                                     if (it.type != KeyEventType.KeyDown || it.isCtrlPressed) false
@@ -649,6 +791,7 @@ private fun DocumentTabs(
                             }
                         }
                         NotepadDropdownMenu(expanded = contextId == doc.id, onDismissRequest = { contextId = null }) {
+                            TabMoveMenu(notepad, doc.id, moveToWindow, dismiss = { contextId = null })
                             NotepadMenuItem(
                                 text = { Text(stringResource(R.string.close_document)) },
                                 trailingIcon = { Text("Ctrl+W", style = MaterialTheme.typography.labelMedium) },
