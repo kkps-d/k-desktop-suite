@@ -84,6 +84,63 @@ class NotepadUiTest {
     }
 
     @Test
+    fun helpAboutShowsAppDetailsAndDismissalKeepsTheDraftAndSelection() {
+        showEditor()
+        compose.onNodeWithTag("document-editor").performTextReplacement("Draft behind About")
+        val activeId = notepad.activeId
+        compose.runOnIdle { notepad.active!!.editor.edit { selection = androidx.compose.ui.text.TextRange(2, 7) } }
+        compose.onNodeWithText("Help").performClick()
+        compose.onNodeWithText("About KD Notepad").performClick()
+        compose.onNodeWithTag("about-dialog").assertIsDisplayed()
+        compose.onNodeWithText("Version ${BuildConfig.VERSION_NAME}").assertIsDisplayed()
+        compose.onNodeWithText("Developed by kkps-d").assertIsDisplayed()
+        compose.onNodeWithText("Source code").assertIsDisplayed()
+        val screenshot = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "about-verification.png")
+        screenshot.outputStream().use {
+            compose.onNodeWithTag("about-dialog").captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+        }
+        compose.onNodeWithText("Dismiss").performClick()
+        compose.onNodeWithTag("about-dialog").assertDoesNotExist()
+        compose.onNodeWithTag("document-editor").assertTextContains("Draft behind About")
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals(activeId, notepad.activeId)
+            org.junit.Assert.assertEquals(androidx.compose.ui.text.TextRange(2, 7), notepad.active!!.editor.selection)
+            inputModeManager.requestInputMode(InputMode.Keyboard)
+        }
+        compose.onNodeWithText("Help").performClick()
+        compose.onNodeWithText("About KD Notepad").performClick()
+        compose.onNodeWithText("Dismiss").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus)
+        compose.onNodeWithText("Dismiss").performKeyInput { pressKey(Key.Escape) }
+        compose.onNodeWithTag("about-dialog").assertDoesNotExist()
+        compose.runOnIdle {
+            notepad.active!!.editor.undoState.undo()
+            org.junit.Assert.assertEquals("", notepad.active!!.editor.text.toString())
+        }
+    }
+
+    @Test
+    fun compactAboutRemainsReachableWithLargeFontsRtlAndShortWindows() {
+        windowSize = DpSize(320.dp, 600.dp)
+        showEditor(largeFontRtl = true)
+        listOf(DpSize(320.dp, 600.dp), DpSize(700.dp, 320.dp)).forEach { size ->
+            compose.runOnIdle { windowSize = size }
+            compose.onNodeWithText("Help").assertDoesNotExist()
+            compose.onNodeWithText("Commands").performClick()
+            compose.onNodeWithText("About KD Notepad").performScrollTo().assertIsDisplayed().performClick()
+            compose.onNodeWithTag("about-dialog").assertIsDisplayed()
+            compose.onNodeWithText("Source code").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("Dismiss").assertIsDisplayed()
+            val screenshot = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "about-${size.width.value.toInt()}-verification.png")
+            screenshot.outputStream().use {
+                compose.onNodeWithTag("about-dialog").captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+            }
+            androidx.test.espresso.Espresso.pressBack()
+            compose.onNodeWithTag("about-dialog").assertDoesNotExist()
+            compose.onNodeWithTag("document-editor").assertIsDisplayed()
+        }
+    }
+
+    @Test
     fun settingsChangesApplyAndBackKeepsTheActiveDraft() {
         windowSize = DpSize(700.dp, 800.dp)
         showEditor()

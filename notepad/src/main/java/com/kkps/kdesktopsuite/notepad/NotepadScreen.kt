@@ -41,6 +41,7 @@ import androidx.compose.material3.*
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -118,6 +119,7 @@ internal fun NotepadScreen(
     val focus = remember { FocusRequester() }
     val active = notepad.active
     val focusManager = LocalFocusManager.current
+    var aboutOpen by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = notepad.settingsOpen) { notepad.showSettings(false) }
     val tabs = rememberLazyListState()
     val headerColor = if (notepad.settingsOpen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh
@@ -200,8 +202,8 @@ internal fun NotepadScreen(
         }
     }
 
-    LaunchedEffect(notepad.focusRequest, notepad.settingsOpen) {
-        if (active != null && !notepad.settingsOpen) focus.requestFocus()
+    LaunchedEffect(notepad.focusRequest, notepad.settingsOpen, aboutOpen) {
+        if (active != null && !notepad.settingsOpen && !aboutOpen) focus.requestFocus()
     }
 
     val receiveContent = remember(notepad, activity) {
@@ -293,10 +295,15 @@ internal fun NotepadScreen(
                     DocumentHeader(notepad.documents, notepad.activeId, notepad.pickerPending,
                         notepad::select, notepad::requestClose, notepad::newDocument,
                         caption, region.translate(origin), tabs, notepad.errorDocumentId)
-                    CommandBar(compact, ::enabled, ::run, notepad.wordWrap, notepad.showStatusBar) {
-                        focusManager.clearFocus()
-                        notepad.showSettings(true)
-                    }
+                    CommandBar(compact, ::enabled, ::run, notepad.wordWrap, notepad.showStatusBar,
+                        openSettings = {
+                            focusManager.clearFocus()
+                            notepad.showSettings(true)
+                        },
+                        openAbout = {
+                            aboutOpen = true
+                        },
+                    )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     if (notepad.opening > 0) LinearProgressIndicator(Modifier.fillMaxWidth())
                     notepad.errorMessage?.let { message ->
@@ -333,6 +340,8 @@ internal fun NotepadScreen(
             }
         }
     }
+
+    if (aboutOpen) NotepadAboutDialog(onDismiss = { aboutOpen = false })
 
     notepad.documents.find { it.id == notepad.closeConfirmation }?.let { doc ->
         AlertDialog(
@@ -661,6 +670,7 @@ private fun CommandBar(
     compact: Boolean, enabled: (NotepadCommand) -> Boolean, run: (NotepadCommand) -> Unit,
     wordWrap: Boolean = true, showStatusBar: Boolean = true,
     openSettings: () -> Unit = {},
+    openAbout: () -> Unit = {},
 ) {
     var menu by remember { mutableStateOf<String?>(null) }
     val files = NotepadCommand.entries.take(5)
@@ -671,7 +681,7 @@ private fun CommandBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val groups = if (compact) listOf("all" to R.string.commands)
-                else listOf("file" to R.string.file, "edit" to R.string.edit, "view" to R.string.view)
+                else listOf("file" to R.string.file, "edit" to R.string.edit, "view" to R.string.view, "help" to R.string.help)
             groups.forEach { (id, title) ->
                 Box {
                     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
@@ -680,7 +690,9 @@ private fun CommandBar(
                         ) { Text(stringResource(title)) }
                     }
                     NotepadDropdownMenu(expanded = menu == id, onDismissRequest = { menu = null }) {
-                        val commands = when (id) { "file" -> files; "edit" -> edits; "view" -> views; else -> NotepadCommand.entries }
+                        val commands = when (id) {
+                            "file" -> files; "edit" -> edits; "view" -> views; "help" -> emptyList(); else -> NotepadCommand.entries
+                        }
                         commands.forEach { command ->
                             val checked = when (command) {
                                 NotepadCommand.WordWrap -> wordWrap
@@ -694,6 +706,13 @@ private fun CommandBar(
                                 checked = checked,
                                 enabled = enabled(command),
                                 onClick = { menu = null; run(command) },
+                            )
+                        }
+                        if (id == "all" || id == "help") {
+                            if (id == "all") HorizontalDivider()
+                            NotepadMenuItem(
+                                text = { Text(stringResource(R.string.about_notepad)) },
+                                onClick = { menu = null; openAbout() },
                             )
                         }
                     }

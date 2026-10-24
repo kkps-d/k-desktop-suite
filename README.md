@@ -147,6 +147,9 @@ Changes apply immediately and are restored on relaunch; Auto follows system
 appearance. System Back and Escape also return to the active draft. Settings uses
 Material 3 Expressive connected theme buttons and stacks choices for narrow
 windows or large fonts. A subtle divider separates the toolbar from the content area.
+Help > About KD Notepad opens a dialog with the app icon, version, developer, and
+source repository link. Compact windows place About at the bottom of Commands.
+Dismiss, system Back, and Escape return to the active draft.
 The shorter status bar matches the tab strip and has no top border.
 Dropdown items are at least 44dp high, with no top or bottom popup padding.
 View contains all zoom commands and checked toggles for word wrap and the status
