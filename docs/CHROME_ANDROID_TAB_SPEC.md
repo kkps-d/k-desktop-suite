@@ -39,7 +39,7 @@ Give inactive tabs subtle rounded hover feedback matching the selected tab's bod
 
 Keep the File/Edit/View toolbar 48dp high at normal font size, with 32dp controls and 8dp vertical clearance; grow for larger fonts. Place a 20dp cogwheel button at the trailing edge. Settings is a visual placeholder with no action yet. Icon tooltips appear after 500ms of continuous hover or keyboard focus and cancel when the pointer or focus leaves. Tabs and the document selector have no tooltips.
 
-Dropdown items have a 44dp minimum height, growing for multiline text or large fonts. Popup content has no top or bottom padding. View contains Zoom in, Zoom out, Reset zoom, Word wrap, and Status bar. The last two items expose checked states. Compact windows consolidate these commands into the Commands menu.
+Dropdown items have a 44dp minimum height, growing for multiline text or large fonts. Menus are at least 200dp wide and grow up to 320dp, constrained by the available window width. Popup content has no top or bottom padding. View contains Zoom in, Zoom out, Reset zoom, Word wrap, and Status bar. The last two items expose checked states. Compact windows consolidate these commands into the Commands menu.
 
 Separate the toolbar from the content area with a 1dp divider using `outlineVariant` at 50% opacity.
 

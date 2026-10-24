@@ -66,7 +66,7 @@ internal fun NotepadMenuItem(
     val interaction = remember { MutableInteractionSource() }
     val textColor = MaterialTheme.colorScheme.onSurface.let { if (enabled) it else it.copy(alpha = 0.38f) }
     Row(
-        modifier.widthIn(min = 112.dp, max = 280.dp).fillMaxWidth().heightIn(min = DropdownMenuDimensions.itemHeight)
+        modifier.widthIn(min = 200.dp, max = 320.dp).fillMaxWidth().heightIn(min = DropdownMenuDimensions.itemHeight)
             .semantics { if (checked != null) toggleableState = ToggleableState(checked) }
             .clickable(interactionSource = interaction, indication = ripple(focusRingShape = RectangleShape),
                 enabled = enabled, role = if (checked == null) Role.Button else Role.Checkbox, onClick = onClick)
