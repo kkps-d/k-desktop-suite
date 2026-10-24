@@ -129,11 +129,14 @@ Tab slots have no gaps and compress equally from 240dp to 120dp before scrolling
 New follows the last tab until the strip overflows, then stays at the viewport edge.
 The selected tab stays visible after selection or resizing. Titles use regular
 14sp text with 20sp line height; the header grows for larger fonts. Close and New
-use vector icons and 48dp targets. A reserved status slot prevents dirty/save/error
-indicators from shifting titles. The selected tab's outward feet join the neutral
+use vector icons and 48dp targets with smaller circular feedback. Dirty/save/error
+indicators add leading space only while shown. The selected tab's outward feet join the neutral
 File/Edit surface; separators appear only between inactive tabs and after a final
-inactive tab. Inactive tabs have subtle hover feedback; keyboard focus is distinct
-from selection. Arrow keys move tab focus, and Enter/Space activates a tab.
+inactive tab. Inactive hover matches the selected tab's body width with a 4dp bottom
+gap; keyboard focus is distinct from selection. Arrow keys move tab focus, and
+Enter/Space activates a tab. Tabs have no tooltips; icon tooltips wait one second.
+The 48dp toolbar has smaller inset controls and a trailing Settings cogwheel with
+no action yet. The shorter status bar matches the tab strip and has no top border.
 
 See the [tab implementation specification](docs/CHROME_ANDROID_TAB_SPEC.md) for
 layout rules and acceptance checks.

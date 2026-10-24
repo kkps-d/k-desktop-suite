@@ -108,6 +108,18 @@ class NotepadUiTest {
         inactive.performMouseInput { enter(center); moveTo(center) }
         compose.mainClock.advanceTimeBy(500)
         org.junit.Assert.assertNotEquals(resting, background(inactive))
+        val hover = inactive.captureToImage().toPixelMap()
+        val selectedPixels = active.captureToImage().toPixelMap()
+        val scanY = hover.height / 3
+        val hoverBody = (0 until hover.width).filter { hover[it, scanY] != resting }
+        val selectedBody = (0 until selectedPixels.width).filter { selectedPixels[it, scanY] != resting }
+        org.junit.Assert.assertEquals(selectedBody.first().toFloat(), hoverBody.first().toFloat(), 1f)
+        org.junit.Assert.assertEquals(selectedBody.last().toFloat(), hoverBody.last().toFloat(), 1f)
+        org.junit.Assert.assertEquals(resting, hover[hover.width / 2, hover.height - 2])
+        val screenshot = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "tab-hover-verification.png")
+        screenshot.outputStream().use { compose.onRoot().captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onAllNodesWithText("Untitled 1").assertCountEquals(1)
         inactive.performMouseInput { exit() }
         compose.mainClock.advanceTimeBy(500)
         val selected = background(active)
@@ -122,7 +134,8 @@ class NotepadUiTest {
         showEditor()
         val new = compose.onNodeWithContentDescription("New document")
         val first = compose.onNodeWithContentDescription("Untitled 1")
-        first.assertWidthIsEqualTo(240.dp)
+        val firstBounds = first.getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(240f, (firstBounds.right - firstBounds.left).value, 2f)
         new.assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)
         org.junit.Assert.assertEquals(8f, first.getUnclippedBoundsInRoot().top.value -
             compose.onNodeWithTag("document-header").getUnclippedBoundsInRoot().top.value, 1f)
@@ -156,7 +169,7 @@ class NotepadUiTest {
     }
 
     @Test
-    fun selectionAndDirtyStateDoNotMoveTitleOrClose() {
+    fun statusOnlyOffsetsTitleWhenDisplayedAndNeverMovesClose() {
         showEditor()
         compose.onNodeWithContentDescription("New document").performClick()
         lateinit var firstId: String
@@ -166,13 +179,96 @@ class NotepadUiTest {
         val titleBounds = title.getUnclippedBoundsInRoot()
         val closeBounds = close.getUnclippedBoundsInRoot()
         compose.onNodeWithContentDescription("Untitled 1").performClick()
+        val selectedTitleBounds = title.getUnclippedBoundsInRoot()
+        val selectedCloseBounds = close.getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(titleBounds.left.value, selectedTitleBounds.left.value, 2f)
+        org.junit.Assert.assertEquals(closeBounds.left.value, selectedCloseBounds.left.value, 2f)
         compose.onNodeWithTag("document-editor").performTextReplacement("Unsaved draft")
-        org.junit.Assert.assertEquals(titleBounds, title.getUnclippedBoundsInRoot())
-        org.junit.Assert.assertEquals(closeBounds, close.getUnclippedBoundsInRoot())
+        org.junit.Assert.assertEquals(16f, (title.getUnclippedBoundsInRoot().left - selectedTitleBounds.left).value, 2f)
+        org.junit.Assert.assertEquals(selectedCloseBounds, close.getUnclippedBoundsInRoot())
+        compose.onNodeWithTag("document-editor").performTextReplacement("")
+        org.junit.Assert.assertEquals(selectedTitleBounds, title.getUnclippedBoundsInRoot())
+        compose.onNodeWithTag("document-editor").performTextReplacement("Unsaved draft")
         compose.runOnIdle { notepad.reportError(R.string.error_save, firstId) }
         compose.onNodeWithContentDescription("Untitled 1, unsaved changes").assert(
             SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Document needs attention"))
-        org.junit.Assert.assertEquals(closeBounds, close.getUnclippedBoundsInRoot())
+        org.junit.Assert.assertEquals(selectedCloseBounds, close.getUnclippedBoundsInRoot())
+    }
+
+    @Test
+    fun iconFeedbackIsSmallWhileNewAndCloseKeepFullHitTargets() {
+        showEditor()
+        listOf("New document" to 20f, "Close Untitled 1" to 16f).forEach { (label, iconSize) ->
+            val button = compose.onNodeWithContentDescription(label)
+            button.assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)
+            val before = button.captureToImage().toPixelMap()
+            button.performMouseInput { enter(center); moveTo(center) }
+            compose.mainClock.advanceTimeBy(200)
+            val after = button.captureToImage().toPixelMap()
+            val scale = after.width / 48f
+            val inside = (after.width / 2 + (iconSize / 2 + 2) * scale).toInt()
+            val outside = (after.width / 2 + (iconSize / 2 + 6) * scale).toInt()
+            org.junit.Assert.assertNotEquals(before[inside, before.height / 2], after[inside, after.height / 2])
+            org.junit.Assert.assertEquals(before[outside, before.height / 2], after[outside, after.height / 2])
+            button.performMouseInput { exit() }
+            compose.mainClock.advanceTimeBy(300)
+        }
+    }
+
+    @Test
+    fun iconTooltipsWaitOneSecondAndCancelWhenPointerLeaves() {
+        showEditor()
+        compose.mainClock.autoAdvance = false
+        val new = compose.onNodeWithContentDescription("New document")
+        new.performMouseInput { enter(center); moveTo(center) }
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeByFrame()
+        compose.mainClock.advanceTimeBy(900)
+        compose.onNodeWithText("New document").assertDoesNotExist()
+        new.performMouseInput { exit() }
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeByFrame()
+        compose.mainClock.advanceTimeBy(1_100)
+        compose.onNodeWithText("New document").assertDoesNotExist()
+        new.performMouseInput { enter(center); moveTo(center) }
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeByFrame()
+        compose.mainClock.advanceTimeBy(900)
+        compose.onNodeWithText("New document").assertDoesNotExist()
+        compose.mainClock.advanceTimeBy(300)
+        compose.onNodeWithText("New document").assertIsDisplayed()
+        new.performMouseInput { exit() }
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeByFrame()
+        compose.mainClock.advanceTimeBy(300)
+        compose.onNodeWithText("New document").assertDoesNotExist()
+        compose.mainClock.autoAdvance = true
+    }
+
+    @Test
+    fun toolbarKeepsItsHeightAndStatusBarIsShorterWithoutADivider() {
+        showEditor()
+        val toolbar = compose.onNodeWithTag("command-bar").getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(48f, (toolbar.bottom - toolbar.top).value, 1f)
+        val file = compose.onNodeWithText("File").getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(8f, (file.top - toolbar.top).value, 1f)
+        org.junit.Assert.assertEquals(8f, (toolbar.bottom - file.bottom).value, 1f)
+        val settings = compose.onNodeWithContentDescription("Settings")
+        val settingsBounds = settings.getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(8f, (toolbar.right - settingsBounds.right).value, 1f)
+        settings.performClick()
+        compose.onAllNodes(isPopup()).assertCountEquals(0)
+        compose.runOnIdle { org.junit.Assert.assertEquals(1, notepad.documents.size) }
+
+        val statusBar = compose.onNodeWithTag("status-bar")
+        val statusBounds = statusBar.getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(28f, (statusBounds.bottom - statusBounds.top).value, 1f)
+        org.junit.Assert.assertEquals(16f,
+            (statusBounds.top - compose.onNodeWithTag("document-editor").getUnclippedBoundsInRoot().bottom).value, 1f)
+        val strip = compose.onNodeWithTag("document-header").captureToImage().toPixelMap()
+        val status = statusBar.captureToImage().toPixelMap()
+        org.junit.Assert.assertEquals(strip[strip.width / 2, 0], status[status.width / 2, 0])
+        org.junit.Assert.assertEquals(status[status.width / 2, 0], status[status.width / 2, status.height - 1])
     }
 
     @Test

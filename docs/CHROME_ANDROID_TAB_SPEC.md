@@ -19,8 +19,8 @@ The selected tab forms a continuous surface with the menu bar: rounded top corne
 | Inter-tab gap | 0dp |
 | Leading content inset | 20dp from the slot edge, clear of the bottom foot |
 | Title | Regular system sans-serif, 14sp with 20sp line height; one line with trailing ellipsis |
-| Close | 16dp vector icon in a separate 48 × 48dp target |
-| New | 20dp vector plus in a 48 × 48dp target |
+| Close | 16dp vector icon, 24dp circular feedback, separate 48 × 48dp target |
+| New | 20dp vector plus, 28dp circular feedback, 48 × 48dp target |
 | Separator | 1dp × 20dp, vertically centered |
 | Focus outline | 2dp, distinct from selection, without changing layout |
 
@@ -33,9 +33,13 @@ Use Material theme tokens:
 
 Support light, dark, and dynamic color palettes with the existing green fallback. Keep the editor background independently appropriate to editing.
 
-Draw the selected tab above inactive neighbors. Keep its feet within its slot bounds so scrolling does not clip them. Selection must not change slot width, title baseline, or Close position. Reserve a leading status slot for the dirty indicator so edits do not shift titles. Expose unsaved, saving, and error states accessibly without displacing Close or relying on color alone.
+Draw the selected tab above inactive neighbors. Keep its feet within its slot bounds so scrolling does not clip them. Selection must not change slot width, title baseline, or Close position. Show the title at the 20dp content inset when no status is displayed. An unsaved, saving, or error indicator adds 16dp before the title only while present; Close remains fixed. Expose states accessibly without relying on color alone.
 
-Give inactive tabs subtle rounded hover feedback and Close/New independent state feedback. Use native ripple/state feedback, retain visible focus on selected tabs, and respect reduced motion.
+Give inactive tabs subtle rounded hover feedback matching the selected tab's body width, inset by its 12dp feet on either side, with a 4dp bottom gap. Keep tab layout and content alignment unchanged by hovering. Close/New have independent, tightly bounded circular feedback. Use native ripple/state feedback, retain visible focus on selected tabs, and respect reduced motion.
+
+Keep the File/Edit toolbar 48dp high at normal font size, with 32dp controls and 8dp vertical clearance; grow for larger fonts. Place a 20dp cogwheel button at the trailing edge. Settings is a visual placeholder with no action yet. Icon tooltips appear after one second of continuous hover or keyboard focus and cancel when the pointer or focus leaves. Tabs and the document selector have no tooltips.
+
+Use `surfaceContainerHigh` for the status bar to match the tab strip, without a top divider. At normal font size, use a 28dp desktop row and a 40dp compact layout. Preserve status information and zoom reset while allowing the bar to grow for larger fonts.
 
 ## Width, overflow, and compact layout
 
@@ -58,13 +62,13 @@ The selector displays the active document's title and opens a scrollable documen
 - Closing the active tab selects its right neighbor, falling back to the left. Closing the final document creates a fresh untitled document.
 - Closing or replacing unsaved content offers Save / Discard / Cancel. Failed or canceled saving preserves the document and its tab.
 - Support logical Tab/Shift+Tab traversal, arrow navigation within tabs, Enter/Space activation, Escape dismissal, and independently labeled Close/New actions. Keep focus distinct from selection; moving focus must not unexpectedly move the editor caret.
-- Provide full-title tooltips, a tab context menu using existing commands, and horizontal wheel/trackpad scrolling.
+- Keep full titles in accessibility labels and the compact document list. Provide a tab context menu using existing commands and horizontal wheel/trackpad scrolling.
 - Keep tab and button interactions separate from system window dragging. Respect caption controls, cutouts, hinges, and system/IME insets.
 - Preserve working state during resizing and activity recreation, and recover drafts and the tab session on relaunch through the existing persistence contract.
 
 ## Implementation focus
 
-- [NotepadScreen.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadScreen.kt): continuous slots, 120–240dp sizing with equal compression before scrolling, 48dp controls, separators, stable status spacing, vector icons, and the compact document list.
+- [NotepadScreen.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadScreen.kt): continuous slots, 120–240dp sizing with equal compression before scrolling, 48dp tab controls, separators, conditional status spacing, vector icons, compact document list, toolbar, and status bar.
 - [NotepadTheme.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadTheme.kt): regular 14sp/20sp title typography and the neutral Material surface hierarchy above.
 - [NotepadChrome.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadChrome.kt): retain the existing 12dp top corners and bottom feet within the tab bounds.
 - [DesktopCaption.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/DesktopCaption.kt): adapt caption eligibility and fallback behavior to the required widths, heights, and system clearances.
@@ -75,7 +79,7 @@ The selector displays the active document's title and opens a scrollable documen
 1. Compare two tabs, a middle-selected tab among four, and five tabs with the visual references below. Verify continuous selected-tab/menu surfaces, zero gutters, hidden adjacent separators, aligned titles, and reachable New.
 2. Exercise 1, 2, 5, and 20 documents. Verify equal compression, scrolling at minimum width, selected-tab visibility, and Close/New availability.
 3. Resize through wide, narrow, compact, and short windows; test maximize/restore, split screen, fold changes, and external displays. Verify system controls and dragging remain usable and layout changes preserve documents.
-4. Check long, duplicate, and Unicode titles plus dirty/save/error states. Verify stable geometry and full-title access in tooltips and the document list.
+4. Check long, duplicate, and Unicode titles plus dirty/save/error states. Verify conditional title offsets, fixed Close positions, full titles in semantics and the document list, matching tab hover widths with bottom clearance, small icon feedback, and the one-second icon tooltip delay.
 5. Verify keyboard-only, touch, mouse, trackpad, TalkBack, RTL, 200% fonts, light/dark/dynamic themes, and reduced motion. Inspect actual 48dp hit bounds, visible focus, and at least 4.5:1 normal-text contrast.
 6. Verify active/inactive closing, Save / Discard / Cancel, failed or canceled saving, final-document behavior, and preservation of caret, selection, scroll, and undo history across switches. Check activity recreation and relaunch recovery.
 
