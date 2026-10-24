@@ -84,8 +84,11 @@ The selector displays the active document's title and opens a scrollable documen
   back, respect system animation settings, and auto-scroll at either viewport edge.
   Suppress selected-tab scrolling while a drag is active.
 - Accept a moved tab on another window's strip at the preview position, or append
-  through its compact selector. Drops on the editor or other app content cancel
-  the operation without inserting text or detaching. Escape and Back cancel too.
+  through its compact selector. Expand the strip into available caption space
+  during dragging and reserve room for an incoming tab, even with only one tab.
+  Below the source window's tabs and toolbar, a drop opens a new window where
+  multi-window is supported. Toolbar drops and drops on another window's editor
+  cancel without inserting text or detaching. Escape and Back cancel too.
 - Use application-owned live documents with stable window ownership. Transfer the
   same editor state, preserving draft, selection, scroll, file association, and
   undo/redo. Focus the destination after success. Remove from the source only after

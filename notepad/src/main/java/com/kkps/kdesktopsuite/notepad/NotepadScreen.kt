@@ -229,7 +229,11 @@ internal fun NotepadScreen(
             val data = content.clipEntry.clipData
             val hasUri = (0 until data.itemCount).any { data.getItemAt(it).uri != null }
             if (data.description.hasMimeType(TabWindows.mimeType)) {
-                notepad.workspace.dragging?.let { notepad.workspace.cancelTransfer(it.token) }
+                val token = data.takeIf { it.itemCount == 1 }?.getItemAt(0)?.text?.toString()
+                if (token != null && (content.source != TransferableContent.Source.DragAndDrop ||
+                    !TabWindows.launchTransfer(activity, notepad, token))) {
+                    notepad.workspace.cancelTransfer(token)
+                }
                 null
             } else if (content.source == TransferableContent.Source.DragAndDrop && hasUri) {
                 if (data.itemCount == 1) {
@@ -246,9 +250,7 @@ internal fun NotepadScreen(
         BoxWithConstraints(
             Modifier.fillMaxSize().windowInsetsPadding(layoutInsets)
                 .tabDropTarget(notepad, dropped = { token ->
-                    // Consume internal drops outside the header so SystemUI cannot detach them.
-                    notepad.workspace.cancelTransfer(token)
-                    true
+                    TabWindows.launchTransfer(activity, notepad, token)
                 })
                 .contentReceiver(receiveContent)
                 .onPreviewKeyEvent { event ->
@@ -322,19 +324,21 @@ internal fun NotepadScreen(
                         onBack = { notepad.showSettings(false) }, modifier = Modifier.weight(1f),
                     )
                 } else {
-                    DocumentHeader(notepad.documents, notepad.activeId, notepad.pickerPending,
-                        notepad::select, notepad::requestClose, notepad::newDocument,
-                        caption, region.translate(origin), tabs, notepad.errorDocumentId, notepad, activity,
-                        moveToWindow = { moveDocumentId = it })
-                    CommandBar(compact, ::enabled, ::run, notepad.wordWrap, notepad.showStatusBar,
-                        openSettings = {
-                            focusManager.clearFocus()
-                            notepad.showSettings(true)
-                        },
-                        openAbout = {
-                            aboutOpen = true
-                        },
-                    )
+                    Column(Modifier.tabDropTarget(notepad, dropped = { false })) {
+                        DocumentHeader(notepad.documents, notepad.activeId, notepad.pickerPending,
+                            notepad::select, notepad::requestClose, notepad::newDocument,
+                            caption, region.translate(origin), tabs, notepad.errorDocumentId, notepad, activity,
+                            moveToWindow = { moveDocumentId = it })
+                        CommandBar(compact, ::enabled, ::run, notepad.wordWrap, notepad.showStatusBar,
+                            openSettings = {
+                                focusManager.clearFocus()
+                                notepad.showSettings(true)
+                            },
+                            openAbout = {
+                                aboutOpen = true
+                            },
+                        )
+                    }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     if (notepad.opening > 0) LinearProgressIndicator(Modifier.fillMaxWidth())
                     notepad.errorMessage?.let { message ->
@@ -618,10 +622,12 @@ private fun DocumentTabs(
     ) {
         val availableWidth = (maxWidth - TabBarDimensions.buttonSize).coerceAtLeast(0.dp)
         val overlap = DocumentTabShapeDimensions.overlap
-        val sharedWidth = overlap * (documents.size - 1).coerceAtLeast(0)
-        val tabWidth = ((availableWidth + sharedWidth) / documents.size.coerceAtLeast(1))
+        val tabCount = documents.size + if (dragged != null && documents.none { it.id == dragged.id }) 1 else 0
+        val sharedWidth = overlap * (tabCount - 1).coerceAtLeast(0)
+        val tabWidth = ((availableWidth + sharedWidth) / tabCount.coerceAtLeast(1))
             .coerceIn(TabBarDimensions.minTabWidth, TabBarDimensions.maxTabWidth)
-        val viewportWidth = (tabWidth * documents.size - sharedWidth).coerceAtMost(availableWidth)
+        val viewportWidth = if (transfer != null) availableWidth
+            else (tabWidth * documents.size - sharedWidth).coerceAtMost(availableWidth)
         val density = LocalDensity.current
         LaunchedEffect(activeId, documents.map { it.id }, tabWidth, viewportWidth, density, transfer) {
             if (transfer != null) return@LaunchedEffect
@@ -666,6 +672,9 @@ private fun DocumentTabs(
             }
         }
         Row(Modifier.fillMaxWidth()
+            // Claim the spare caption space during dragging, preserving the system's drag margin.
+            .captionControl(if (transfer != null) input else null, "tab-drop-area")
+            .testTag("tab-drop-area")
             .onGloballyPositioned { stripBounds = it.boundsInRoot() }
             .tabDropTarget(notepad,
                 moved = { updateInsertion(it) },

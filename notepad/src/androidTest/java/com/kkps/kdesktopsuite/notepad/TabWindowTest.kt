@@ -75,7 +75,7 @@ class TabWindowTest {
     }
 
     @Test
-    fun nativeMouseDragReordersAndDroppingOnEditorCancels() {
+    fun nativeMouseDragReordersAndDroppingOnToolbarCancels() {
         val notepad = ready()
         compose.runOnIdle {
             notepad.newDocument()
@@ -97,12 +97,75 @@ class TabWindowTest {
         val before = notepad.documents.toList()
         val active = notepad.activeId
         val text = notepad.active!!.editor.text.toString()
-        mouseDrag(tabPosition(original[0].id), tabPosition(original[0].id) + Offset(0f, 160f))
+        val toolbar = compose.onNodeWithTag("command-bar").fetchSemanticsNode().boundsInWindow
+        val origin = IntArray(2)
+        compose.runOnIdle { compose.activity.window.decorView.getLocationOnScreen(origin) }
+        mouseDrag(tabPosition(original[0].id), Offset(origin[0] + toolbar.center.x, origin[1] + toolbar.center.y))
         compose.waitUntil(5_000) { notepad.workspace.dragging == null }
         compose.runOnIdle {
             assertEquals(before, notepad.documents)
             assertEquals(active, notepad.activeId)
             assertEquals(text, notepad.active!!.editor.text.toString())
+        }
+    }
+
+    @Test
+    fun nativeMouseDropBelowToolbarDetachesUsingTheExistingToken() {
+        val notepad = ready()
+        assumeTrue(TabWindows.supported(compose.activity))
+        compose.runOnIdle {
+            notepad.newDocument()
+            notepad.active!!.editor.edit { append("drop inside the source window") }
+            notepad.newDocument()
+        }
+        val document = notepad.documents[notepad.documents.lastIndex - 1]
+        val toolbar = compose.onNodeWithTag("command-bar").fetchSemanticsNode().boundsInWindow
+        val origin = IntArray(2)
+        compose.runOnIdle { compose.activity.window.decorView.getLocationOnScreen(origin) }
+        var token: String? = null
+        mouseDrag(tabPosition(document.id), Offset(origin[0] + toolbar.center.x, origin[1] + toolbar.bottom + 80f)) {
+            token = notepad.workspace.dragging?.token
+            assertNotNull(token)
+            assertSame(notepad.window, notepad.workspace.ownerOf(document.id))
+        }
+        compose.waitUntil(10_000) {
+            notepad.workspace.ownerOf(document.id)?.let { it !== notepad.window && it.attached } == true
+        }
+        val destination = notepad.workspace.ownerOf(document.id)!!
+        try {
+            compose.runOnIdle {
+                assertSame(document, destination.documents.single())
+                assertEquals("drop inside the source window", document.editor.text.toString())
+                assertNull(notepad.workspace.transfer(token!!))
+                document.editor.undoState.undo()
+                assertEquals("", document.editor.text.toString())
+                document.editor.undoState.redo()
+            }
+        } finally {
+            compose.runOnIdle {
+                val transfer = notepad.workspace.beginTransfer(destination, document.id)!!
+                assertTrue(notepad.workspace.move(transfer.token, notepad.window, notepad.documents.size))
+            }
+            compose.waitUntil(5_000) { !destination.attached }
+        }
+    }
+
+    @Test
+    fun contentDropRejectsAnotherWindowsTabAndTheOnlyTab() {
+        val notepad = ready()
+        compose.runOnIdle {
+            val destination = notepad.workspace.acquireWindow(null, true)
+            val transfer = notepad.workspace.beginTransfer(notepad.window, notepad.activeId)!!
+            val destinationViewModel = NotepadViewModel(FakeDocuments(), notepad.workspace,
+                androidx.lifecycle.SavedStateHandle(mapOf("windowId" to destination.id)))
+            assertFalse(TabWindows.launchTransfer(compose.activity, destinationViewModel, transfer.token))
+            assertSame(notepad.window, notepad.workspace.ownerOf(transfer.documentId))
+            notepad.workspace.cancelTransfer(transfer.token)
+            val only = notepad.workspace.beginTransfer(destination, destination.documents.single().id)!!
+            assertFalse(TabWindows.launchTransfer(compose.activity, destinationViewModel, only.token))
+            assertSame(destination, notepad.workspace.ownerOf(only.documentId))
+            notepad.workspace.cancelTransfer(only.token)
+            notepad.workspace.abandonWindow(destination)
         }
     }
 

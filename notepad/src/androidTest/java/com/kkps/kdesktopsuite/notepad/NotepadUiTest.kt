@@ -319,6 +319,37 @@ class NotepadUiTest {
     }
 
     @Test
+    fun incomingDragExpandsSingleTabViewportAndCaptionDropRegion() {
+        caption = desktopCaption()
+        showEditor()
+        val viewport = compose.onNodeWithTag("document-tabs")
+        val original = viewport.getUnclippedBoundsInRoot()
+        lateinit var transfer: TabTransfer
+        compose.runOnIdle {
+            val source = notepad.workspace.acquireWindow(null, true)
+            transfer = notepad.workspace.beginTransfer(source, source.documents.single().id)!!
+        }
+        val expanded = viewport.getUnclippedBoundsInRoot()
+        org.junit.Assert.assertTrue(expanded.right - expanded.left > (original.right - original.left) * 2)
+        val dropArea = compose.onNodeWithTag("tab-drop-area").fetchSemanticsNode().boundsInWindow
+        compose.runOnIdle {
+            // Unused caption space must reach the app during a tab drag.
+            val farEnd = androidx.compose.ui.geometry.Offset(dropArea.right - 2f, dropArea.center.y)
+            org.junit.Assert.assertTrue(compose.activity.window.decorView.systemGestureExclusionRects.any {
+                it.contains(farEnd.x.toInt(), farEnd.y.toInt())
+            })
+            notepad.workspace.cancelTransfer(transfer.token)
+        }
+        org.junit.Assert.assertEquals(original, viewport.getUnclippedBoundsInRoot())
+        compose.runOnIdle {
+            org.junit.Assert.assertFalse(compose.activity.window.decorView.systemGestureExclusionRects.any {
+                it.contains((dropArea.right - 2f).toInt(), dropArea.center.y.toInt())
+            })
+            org.junit.Assert.assertEquals(1, notepad.documents.size)
+        }
+    }
+
+    @Test
     fun tabsCompressEquallyBeforeScrollingAndNewRemainsReachable() {
         caption = desktopCaption()
         showEditor()

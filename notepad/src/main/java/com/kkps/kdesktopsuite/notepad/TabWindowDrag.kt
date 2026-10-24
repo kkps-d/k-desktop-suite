@@ -60,11 +60,19 @@ internal object TabWindows {
     fun launch(activity: NotepadActivity, notepad: NotepadViewModel, id: String) {
         if (notepad.documents.size == 1 || !supported(activity)) return
         val transfer = notepad.workspace.beginTransfer(notepad.window, id) ?: return
-        try {
-            activity.startActivity(launchIntent(activity, transfer.token))
+        if (!launchTransfer(activity, notepad, transfer.token)) notepad.workspace.cancelTransfer(transfer.token)
+    }
+
+    fun launchTransfer(activity: NotepadActivity?, notepad: NotepadViewModel, token: String): Boolean {
+        val transfer = notepad.workspace.transfer(token) ?: return false
+        if (activity == null || transfer.sourceId != notepad.window.id || notepad.documents.size == 1 ||
+            !notepad.canTransfer(transfer.documentId) || !supported(activity)) return false
+        return try {
+            activity.startActivity(launchIntent(activity, token))
+            true
         } catch (_: RuntimeException) {
-            notepad.workspace.cancelTransfer(transfer.token)
             notepad.reportError(R.string.error_window)
+            false
         }
     }
 

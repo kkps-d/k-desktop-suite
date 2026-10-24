@@ -167,14 +167,17 @@ layout rules and acceptance checks.
   undo history across switches, resizing, and activity recreation.
 - Drag a tab with a mouse or trackpad to reorder it; touch uses a long press.
   Neighboring tabs slide aside to preview the position. Releasing commits the
-  order; Escape or dropping over the editor cancels it. Overflowing strips
+  order; Escape or dropping over the toolbar cancels it. Overflowing strips
   scroll when the pointer approaches an edge. Motion follows system animation settings.
 - Move a tab between Notepad windows by dropping it onto the destination tab bar.
+  The strip expands during dragging to make room, including in a single-tab window.
   Drop it onto the compact document selector to append it. The live document,
   including undo/redo history, moves with it. A window emptied by a transfer closes;
   ordinary Close on the final tab still opens a fresh untitled document.
 - On Android 15 / API 35 and newer, dropping a tab onto empty desktop space can
-  create a separate window when the system permits it. A window's only tab stays
+  create a separate window when the system permits it. In desktop or split-screen
+  mode, dropping below the source window's tabs and toolbar also opens a new window;
+  dropping on another window's editor cancels. A window's only tab stays
   in its current window when dropped outside. Right-click a tab for Move left,
   Move right, or Move to window; these commands also appear as accessibility
   actions and in the compact document list. New window is available in desktop
