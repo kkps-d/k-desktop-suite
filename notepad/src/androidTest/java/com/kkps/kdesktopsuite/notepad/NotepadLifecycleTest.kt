@@ -54,6 +54,27 @@ class NotepadLifecycleTest {
     }
 
     @Test
+    fun settingsAndAppearanceSurviveActivityRecreation() {
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("document-editor").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithContentDescription("New document").performClick()
+        compose.onNodeWithTag("document-editor").performTextReplacement("Draft behind settings")
+        compose.onNodeWithContentDescription("Settings").performClick()
+        compose.onNodeWithTag("theme-Dark").performClick()
+        compose.onNodeWithTag("font-Serif").performScrollTo().performClick()
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithTag("settings-page").assertIsDisplayed()
+        compose.onNodeWithTag("theme-Dark").assertIsOn()
+        compose.onNodeWithTag("font-Serif").performScrollTo().assertIsSelected()
+        compose.onNodeWithContentDescription("Back").performClick()
+        compose.onNodeWithTag("document-editor").assertTextContains("Draft behind settings")
+        // Leave the real app's preferences at their defaults for subsequent lifecycle tests.
+        compose.onNodeWithContentDescription("Settings").performClick()
+        compose.onNodeWithTag("theme-Auto").performClick()
+        compose.onNodeWithTag("font-Monospace").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Back").performClick()
+    }
+
+    @Test
     fun activityRecreationKeepsTheSelectedTabAndItsDraft() {
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("document-editor").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithContentDescription("New document").performClick()

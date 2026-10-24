@@ -140,8 +140,13 @@ inactive tab. Inactive hover matches the selected tab's body width with a 4dp bo
 gap; keyboard focus is distinct from selection. Arrow keys move tab focus, and
 Enter/Space activates a tab. Tabs have no tooltips; icon tooltips wait 500ms.
 Outward feet retain their 12dp radius; overlap keeps the visible gap between tab bodies at 8dp.
-The 48dp toolbar has smaller inset controls and a trailing Settings cogwheel with
-no action yet. A subtle divider separates the toolbar from the content area.
+The 48dp toolbar has smaller inset controls and a trailing Settings cogwheel that
+opens a settings page with a Back button. Settings includes Light / Dark / Auto
+appearance and Monospace / Serif / Sans-serif note fonts, with a live preview.
+Changes apply immediately and are restored on relaunch; Auto follows system
+appearance. System Back and Escape also return to the active draft. Settings uses
+Material 3 Expressive connected theme buttons and stacks choices for narrow
+windows or large fonts. A subtle divider separates the toolbar from the content area.
 The shorter status bar matches the tab strip and has no top border.
 Dropdown items are at least 44dp high, with no top or bottom popup padding.
 View contains all zoom commands and checked toggles for word wrap and the status

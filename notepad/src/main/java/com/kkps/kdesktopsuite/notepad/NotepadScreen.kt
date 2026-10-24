@@ -8,6 +8,7 @@ import android.os.Build
 import android.view.WindowInsetsController
 import androidx.annotation.StringRes
 import androidx.annotation.DrawableRes
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -59,6 +60,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -115,8 +117,10 @@ internal fun NotepadScreen(
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
     val active = notepad.active
+    val focusManager = LocalFocusManager.current
+    BackHandler(enabled = notepad.settingsOpen) { notepad.showSettings(false) }
     val tabs = rememberLazyListState()
-    val headerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val headerColor = if (notepad.settingsOpen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh
     SideEffect {
         if (activity != null && Build.VERSION.SDK_INT >= 35) {
             activity.window.insetsController?.setSystemBarsAppearance(
@@ -196,8 +200,8 @@ internal fun NotepadScreen(
         }
     }
 
-    LaunchedEffect(notepad.focusRequest) {
-        if (active != null) focus.requestFocus()
+    LaunchedEffect(notepad.focusRequest, notepad.settingsOpen) {
+        if (active != null && !notepad.settingsOpen) focus.requestFocus()
     }
 
     val receiveContent = remember(notepad, activity) {
@@ -220,7 +224,12 @@ internal fun NotepadScreen(
             Modifier.fillMaxSize().windowInsetsPadding(layoutInsets)
                 .contentReceiver(receiveContent)
                 .onPreviewKeyEvent { event ->
-                    if (event.type != KeyEventType.KeyDown || !event.isCtrlPressed || notepad.closeConfirmation != null || notepad.conflict != null) false
+                    if (notepad.settingsOpen) {
+                        if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
+                            notepad.showSettings(false)
+                            true
+                        } else false
+                    } else if (event.type != KeyEventType.KeyDown || !event.isCtrlPressed || notepad.closeConfirmation != null || notepad.conflict != null) false
                     else if (event.key == Key.Tab) {
                         notepad.cycleTab(if (event.isShiftPressed) -1 else 1)
                         true
@@ -272,11 +281,22 @@ internal fun NotepadScreen(
                     Spacer(Modifier.height(with(density) { (caption.height - origin.y - region.top).coerceAtLeast(0f).toDp() }))
                     LinearProgressIndicator(Modifier.fillMaxWidth())
                     Text(stringResource(R.string.loading), Modifier.padding(NotepadSpacing.medium))
+                } else if (notepad.settingsOpen) {
+                    // Keep settings below desktop caption controls and retain the system drag area.
+                    Spacer(Modifier.height(with(density) { (caption.height - origin.y - region.top).coerceAtLeast(0f).toDp() }))
+                    NotepadSettingsScreen(
+                        appTheme = notepad.appTheme, fontStyle = notepad.fontStyle,
+                        changeAppTheme = notepad::changeAppTheme, changeFontStyle = notepad::changeFontStyle,
+                        onBack = { notepad.showSettings(false) }, modifier = Modifier.weight(1f),
+                    )
                 } else {
                     DocumentHeader(notepad.documents, notepad.activeId, notepad.pickerPending,
                         notepad::select, notepad::requestClose, notepad::newDocument,
                         caption, region.translate(origin), tabs, notepad.errorDocumentId)
-                    CommandBar(compact, ::enabled, ::run, notepad.wordWrap, notepad.showStatusBar)
+                    CommandBar(compact, ::enabled, ::run, notepad.wordWrap, notepad.showStatusBar) {
+                        focusManager.clearFocus()
+                        notepad.showSettings(true)
+                    }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     if (notepad.opening > 0) LinearProgressIndicator(Modifier.fillMaxWidth())
                     notepad.errorMessage?.let { message ->
@@ -305,7 +325,7 @@ internal fun NotepadScreen(
                                     contextCommands.filter(::enabled).forEach { command ->
                                         item(command, contextLabels.getValue(command)) { close(); run(command) }
                                     }
-                                }, wordWrap = notepad.wordWrap,
+                                }, wordWrap = notepad.wordWrap, fontFamily = notepad.fontStyle.fontFamily,
                         )
                         if (notepad.showStatusBar) StatusBar(active, notepad.zoom, compact, ::run)
                     }
@@ -640,13 +660,14 @@ private fun DocumentTabs(
 private fun CommandBar(
     compact: Boolean, enabled: (NotepadCommand) -> Boolean, run: (NotepadCommand) -> Unit,
     wordWrap: Boolean = true, showStatusBar: Boolean = true,
+    openSettings: () -> Unit = {},
 ) {
     var menu by remember { mutableStateOf<String?>(null) }
     val files = NotepadCommand.entries.take(5)
     val edits = NotepadCommand.entries.filter { it in NotepadCommand.Undo..NotepadCommand.SelectAll }
     val views = NotepadCommand.entries.filter { it in NotepadCommand.ZoomIn..NotepadCommand.StatusBar }
     Surface(color = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("command-bar").padding(horizontal = 8.dp, vertical = 8.dp),
+        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("command-bar").padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val groups = if (compact) listOf("all" to R.string.commands)
@@ -679,7 +700,7 @@ private fun CommandBar(
                 }
             }
             Spacer(Modifier.weight(1f))
-            TooltipAction(stringResource(R.string.settings), R.drawable.ic_settings, iconSize = 20.dp, targetSize = 32.dp, onClick = {})
+            TooltipAction(stringResource(R.string.settings), R.drawable.ic_settings, iconSize = 20.dp, onClick = openSettings)
         }
     }
 }
@@ -688,6 +709,7 @@ private fun CommandBar(
 private fun DocumentEditor(
     doc: DocumentSession, zoom: Int, changeZoom: (Int) -> Unit, focus: FocusRequester, modifier: Modifier,
     wordWrap: Boolean = true,
+    fontFamily: FontFamily = FontFamily.Monospace,
 ) {
     val editorLabel = stringResource(R.string.document_editor)
     val latestZoom by rememberUpdatedState(zoom)
@@ -695,7 +717,7 @@ private fun DocumentEditor(
         state = doc.editor,
         scrollState = doc.scroll,
         textStyle = MaterialTheme.typography.bodyLarge.copy(
-            fontFamily = FontFamily.Monospace,
+            fontFamily = fontFamily,
             fontSize = (16f * zoom / 100f).sp,
             lineHeight = (24f * zoom / 100f).sp,
             color = MaterialTheme.colorScheme.onSurface,

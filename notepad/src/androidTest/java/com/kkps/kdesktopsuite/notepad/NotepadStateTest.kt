@@ -318,6 +318,40 @@ class NotepadStateTest {
     }
 
     @Test
+    fun appearancePreferencesPersistAndOlderSessionsUseDefaults() = runBlocking {
+        val file = File(context.cacheDir, "appearance-${UUID.randomUUID()}.json")
+        val sessions = store(file)
+        val vm = create(store = sessions)
+        withContext(Dispatchers.Main) {
+            vm.active!!.editor.edit { append("A draft to recover") }
+            vm.changeAppTheme(AppTheme.Dark)
+            vm.changeFontStyle(NoteFontStyle.SansSerif)
+        }
+        withTimeout(5_000) {
+            while (sessions.read()?.fontStyle != NoteFontStyle.SansSerif) delay(10)
+        }
+        val recovered = create(store = store(file), savedState = SavedStateHandle(mapOf("settingsOpen" to true)))
+        withContext(Dispatchers.Main) {
+            assertEquals(AppTheme.Dark, recovered.appTheme)
+            assertEquals(NoteFontStyle.SansSerif, recovered.fontStyle)
+            assertEquals("A draft to recover", recovered.active!!.editor.text.toString())
+            assertTrue(recovered.settingsOpen)
+            recovered.showSettings(false)
+            assertFalse(recovered.settingsOpen)
+        }
+        val oldJson = org.json.JSONObject(file.readText()).apply {
+            remove("appTheme")
+            remove("fontStyle")
+        }
+        val oldFile = File(context.cacheDir, "old-appearance-${UUID.randomUUID()}.json").apply { writeText(oldJson.toString()) }
+        val legacy = create(store = store(oldFile))
+        withContext(Dispatchers.Main) {
+            assertEquals(AppTheme.Auto, legacy.appTheme)
+            assertEquals(NoteFontStyle.Monospace, legacy.fontStyle)
+        }
+    }
+
+    @Test
     fun missingUriAndInvalidFilesNeverReplaceWorkingDrafts() = runBlocking {
         val repo = FakeDocuments()
         val vm = create(repo)

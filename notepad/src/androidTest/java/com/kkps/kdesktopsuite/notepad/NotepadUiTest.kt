@@ -1,4 +1,4 @@
-@file:OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
+@file:OptIn(androidx.compose.ui.test.ExperimentalTestApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package com.kkps.kdesktopsuite.notepad
 
@@ -70,7 +70,7 @@ class NotepadUiTest {
                     val posture = if (separatingFold) Posture(hingeList = listOf(
                         HingeInfo(Rect(580f, 0f, 620f, 900f), isFlat = false, isVertical = true, isSeparating = true, isOccluding = true),
                     )) else adaptive.windowPosture
-                    NotepadTheme {
+                    NotepadTheme(notepad.appTheme) {
                         val density = LocalDensity.current.density
                         NotepadScreen(notepad, contentInsets = WindowInsets(0), adaptive = WindowAdaptiveInfo(adaptive.windowSizeClass, posture),
                             caption = DesktopCaption(caption.height * density, caption.obstructions.map {
@@ -81,6 +81,71 @@ class NotepadUiTest {
             }
         }
         compose.waitUntil(5_000) { !notepad.loading }
+    }
+
+    @Test
+    fun settingsChangesApplyAndBackKeepsTheActiveDraft() {
+        windowSize = DpSize(700.dp, 800.dp)
+        showEditor()
+        compose.onNodeWithTag("document-editor").performTextReplacement("Keep my draft and undo history")
+        val activeId = notepad.activeId
+        compose.onNodeWithContentDescription("Settings").performClick()
+        compose.onNodeWithTag("settings-page").assertIsDisplayed()
+        compose.onNodeWithTag("theme-Auto").assertIsOn()
+        compose.onNodeWithTag("theme-Light").performClick().assertIsOn()
+        val light = compose.onNodeWithTag("settings-page").captureToImage().toPixelMap()[0, 0]
+        compose.onNodeWithTag("theme-Dark").performClick().assertIsOn()
+        val dark = compose.onNodeWithTag("settings-page").captureToImage().toPixelMap()[0, 0]
+        org.junit.Assert.assertNotEquals(light, dark)
+        compose.onNodeWithTag("font-Serif").performClick().assertIsSelected()
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals(AppTheme.Dark, notepad.appTheme)
+            org.junit.Assert.assertEquals(NoteFontStyle.Serif, notepad.fontStyle)
+        }
+        val screenshot = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "settings-verification.png")
+        screenshot.outputStream().use {
+            compose.onNodeWithTag("settings-page").captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+        }
+        compose.onNodeWithContentDescription("Back").performClick()
+        compose.onNodeWithTag("document-editor").assertTextContains("Keep my draft and undo history")
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals(activeId, notepad.activeId)
+            notepad.active!!.editor.undoState.undo()
+            org.junit.Assert.assertEquals("", notepad.active!!.editor.text.toString())
+        }
+        compose.onNodeWithContentDescription("Settings").performClick()
+        compose.onNodeWithTag("theme-Auto").performClick().assertIsOn()
+        compose.runOnIdle { inputModeManager.requestInputMode(InputMode.Keyboard) }
+        compose.onNodeWithContentDescription("Back").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus)
+        compose.onNodeWithContentDescription("Back").performKeyInput { pressKey(Key.Escape) }
+        compose.onNodeWithTag("document-editor").assertIsDisplayed()
+    }
+
+    @Test
+    fun narrowLargeFontSettingsScrollAndSupportSystemBack() {
+        windowSize = DpSize(320.dp, 600.dp)
+        showEditor(largeFontRtl = true)
+        compose.onNodeWithContentDescription("Settings").performClick()
+        compose.onNodeWithContentDescription("Back").assertIsDisplayed()
+        compose.onNodeWithTag("theme-Light").assertIsDisplayed().performClick().assertIsOn()
+        compose.onNodeWithTag("font-SansSerif").performScrollTo().assertIsDisplayed().performClick().assertIsSelected()
+        val bounds = compose.onNodeWithTag("font-SansSerif").getUnclippedBoundsInRoot()
+        org.junit.Assert.assertTrue(bounds.right - bounds.left > 200.dp)
+        compose.onNodeWithTag("font-preview").performScrollTo().assertIsDisplayed()
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.onNodeWithTag("document-editor").assertIsDisplayed()
+    }
+
+    @Test
+    fun shortDesktopSettingsStayBelowCaptionControls() {
+        windowSize = DpSize(700.dp, 320.dp)
+        caption = desktopCaption(height = 40f)
+        showEditor()
+        compose.onNodeWithContentDescription("Settings").performClick()
+        org.junit.Assert.assertTrue(compose.onNodeWithTag("settings-page").getUnclippedBoundsInRoot().top >= 40.dp)
+        compose.onNodeWithTag("font-SansSerif").performScrollTo().performClick().assertIsSelected()
+        compose.onNodeWithContentDescription("Back").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("document-editor").assertIsDisplayed()
     }
 
     private fun desktopCaption(freeWidth: Float = 1032f, height: Float = 56f) = DesktopCaption(height, listOf(
@@ -344,6 +409,8 @@ class NotepadUiTest {
         settings.performClick()
         compose.onAllNodes(isPopup()).assertCountEquals(0)
         compose.runOnIdle { org.junit.Assert.assertEquals(1, notepad.documents.size) }
+        compose.onNodeWithTag("settings-page").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Back").performClick()
 
         val statusBar = compose.onNodeWithTag("status-bar")
         val statusBounds = statusBar.getUnclippedBoundsInRoot()

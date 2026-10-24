@@ -33,8 +33,12 @@ internal object NotepadSpacing {
 }
 
 @Composable
-internal fun NotepadTheme(content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
+internal fun NotepadTheme(appTheme: AppTheme = AppTheme.Auto, content: @Composable () -> Unit) {
+    val dark = when (appTheme) {
+        AppTheme.Light -> false
+        AppTheme.Dark -> true
+        AppTheme.Auto -> isSystemInDarkTheme()
+    }
     val context = LocalContext.current
     val colors = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)

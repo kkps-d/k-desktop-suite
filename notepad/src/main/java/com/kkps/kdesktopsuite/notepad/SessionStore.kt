@@ -65,6 +65,8 @@ internal class SessionStore(file: File) {
         put("nextUntitled", session.nextUntitled)
         put("wordWrap", session.wordWrap)
         put("showStatusBar", session.showStatusBar)
+        put("appTheme", session.appTheme.name)
+        put("fontStyle", session.fontStyle.name)
         put("documents", JSONArray().apply {
             session.documents.forEach { doc ->
                 put(JSONObject().apply {
@@ -113,6 +115,8 @@ internal class SessionStore(file: File) {
             documents, activeId, json.getInt("zoom").coerceIn(50, 300),
             maxOf(json.getInt("nextUntitled"), documents.maxOf { it.untitledNumber } + 1),
             json.optBoolean("wordWrap", true), json.optBoolean("showStatusBar", true),
+            AppTheme.entries.firstOrNull { it.name == json.optString("appTheme") } ?: AppTheme.Auto,
+            NoteFontStyle.entries.firstOrNull { it.name == json.optString("fontStyle") } ?: NoteFontStyle.Monospace,
         )
     }
 }

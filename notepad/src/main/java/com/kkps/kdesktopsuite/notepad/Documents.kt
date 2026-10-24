@@ -62,6 +62,8 @@ internal data class SessionSnapshot(
     val nextUntitled: Int = 2,
     val wordWrap: Boolean = true,
     val showStatusBar: Boolean = true,
+    val appTheme: AppTheme = AppTheme.Auto,
+    val fontStyle: NoteFontStyle = NoteFontStyle.Monospace,
 )
 
 internal class DocumentSession(snapshot: DocumentSnapshot) {

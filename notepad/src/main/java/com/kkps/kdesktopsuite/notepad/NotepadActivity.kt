@@ -9,9 +9,12 @@ import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.luminance
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
@@ -80,7 +83,19 @@ class NotepadActivity : ComponentActivity() {
                     }
                 }
             }
-            NotepadTheme { NotepadScreen(notepad, activity = this) }
+            NotepadTheme(notepad.appTheme) {
+                val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+                SideEffect {
+                    enableEdgeToEdge(
+                        statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT) { dark },
+                        navigationBarStyle = SystemBarStyle.auto(
+                            android.graphics.Color.argb(230, 255, 255, 255),
+                            android.graphics.Color.argb(128, 27, 27, 27),
+                        ) { dark },
+                    )
+                }
+                NotepadScreen(notepad, activity = this)
+            }
         }
     }
 

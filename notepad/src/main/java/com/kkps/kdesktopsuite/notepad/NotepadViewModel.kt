@@ -40,6 +40,12 @@ internal class NotepadViewModel(
         private set
     var showStatusBar by mutableStateOf(true)
         private set
+    var appTheme by mutableStateOf(AppTheme.Auto)
+        private set
+    var fontStyle by mutableStateOf(NoteFontStyle.Monospace)
+        private set
+    var settingsOpen by mutableStateOf(savedState.get<Boolean>("settingsOpen") == true)
+        private set
     var focusRequest by mutableIntStateOf(0)
         private set
     var closeConfirmation by mutableStateOf<String?>(null)
@@ -68,6 +74,8 @@ internal class NotepadViewModel(
                     nextUntitled = snapshot.nextUntitled
                     wordWrap = snapshot.wordWrap
                     showStatusBar = snapshot.showStatusBar
+                    appTheme = snapshot.appTheme
+                    fontStyle = snapshot.fontStyle
                     focusRequest++
                 }
             } catch (error: Exception) {
@@ -93,7 +101,7 @@ internal class NotepadViewModel(
         }
     }
 
-    fun snapshot() = SessionSnapshot(documents.map { it.snapshot() }, activeId, zoom, nextUntitled, wordWrap, showStatusBar)
+    fun snapshot() = SessionSnapshot(documents.map { it.snapshot() }, activeId, zoom, nextUntitled, wordWrap, showStatusBar, appTheme, fontStyle)
 
     fun checkpoint() {
         if (!loading) checkpoint(snapshot())
@@ -137,6 +145,21 @@ internal class NotepadViewModel(
     fun toggleWordWrap() { wordWrap = !wordWrap }
 
     fun toggleStatusBar() { showStatusBar = !showStatusBar }
+
+    fun showSettings(show: Boolean) {
+        settingsOpen = show
+        savedState["settingsOpen"] = show
+    }
+
+    fun changeAppTheme(theme: AppTheme) {
+        appTheme = theme
+        checkpoint()
+    }
+
+    fun changeFontStyle(style: NoteFontStyle) {
+        fontStyle = style
+        checkpoint()
+    }
 
     fun requestClose(id: String) {
         val doc = documents.find { it.id == id } ?: return
