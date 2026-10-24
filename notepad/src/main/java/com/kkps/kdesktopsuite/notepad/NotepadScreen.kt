@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -83,7 +84,7 @@ internal object TabBarDimensions {
     val topPadding = 8.dp
     val minTabWidth = 120.dp
     val maxTabWidth = 240.dp
-    val contentStartPadding = 20.dp
+    val contentStartPadding = 22.dp
     val contentEndPadding = 8.dp
     val buttonSize = 48.dp
     val minBarHeight get() = topPadding + buttonSize
@@ -96,6 +97,7 @@ internal enum class NotepadCommand(@StringRes val label: Int, val shortcut: Stri
     Undo(R.string.undo, "Ctrl+Z"), Redo(R.string.redo, "Ctrl+Y"),
     Cut(R.string.cut, "Ctrl+X"), Copy(R.string.copy, "Ctrl+C"), Paste(R.string.paste, "Ctrl+V"), SelectAll(R.string.select_all, "Ctrl+A"),
     ZoomIn(R.string.zoom_in, "Ctrl++"), ZoomOut(R.string.zoom_out, "Ctrl+−"), ZoomReset(R.string.zoom_reset, "Ctrl+0"),
+    WordWrap(R.string.word_wrap, ""), StatusBar(R.string.status_bar, ""),
 }
 
 @Composable
@@ -162,6 +164,8 @@ internal fun NotepadScreen(
             NotepadCommand.ZoomIn -> notepad.changeZoom(notepad.zoom + 10)
             NotepadCommand.ZoomOut -> notepad.changeZoom(notepad.zoom - 10)
             NotepadCommand.ZoomReset -> notepad.changeZoom(100)
+            NotepadCommand.WordWrap -> notepad.toggleWordWrap()
+            NotepadCommand.StatusBar -> notepad.toggleStatusBar()
             NotepadCommand.Cut, NotepadCommand.Copy, NotepadCommand.Paste -> scope.launch {
                 try {
                     if (command == NotepadCommand.Paste) {
@@ -272,7 +276,8 @@ internal fun NotepadScreen(
                     DocumentHeader(notepad.documents, notepad.activeId, notepad.pickerPending,
                         notepad::select, notepad::requestClose, notepad::newDocument,
                         caption, region.translate(origin), tabs, notepad.errorDocumentId)
-                    CommandBar(compact, ::enabled, ::run)
+                    CommandBar(compact, ::enabled, ::run, notepad.wordWrap, notepad.showStatusBar)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     if (notepad.opening > 0) LinearProgressIndicator(Modifier.fillMaxWidth())
                     notepad.errorMessage?.let { message ->
                         Surface(color = MaterialTheme.colorScheme.errorContainer, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
@@ -300,9 +305,9 @@ internal fun NotepadScreen(
                                     contextCommands.filter(::enabled).forEach { command ->
                                         item(command, contextLabels.getValue(command)) { close(); run(command) }
                                     }
-                                },
+                                }, wordWrap = notepad.wordWrap,
                         )
-                        StatusBar(active, notepad.zoom, compact, ::run)
+                        if (notepad.showStatusBar) StatusBar(active, notepad.zoom, compact, ::run)
                     }
                 }
             }
@@ -349,14 +354,18 @@ internal fun DocumentHeader(
 ) {
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
-    val contentHeight = with(density) { NotepadTabTypography.title.lineHeight.toDp() }
-        .coerceAtLeast(TabBarDimensions.buttonSize)
-    val rowHeight = contentHeight + TabBarDimensions.topPadding
-    val layout = captionLayout(caption, region, density.density, with(density) { rowHeight.toPx() })
+    val lineHeight = with(density) { NotepadTabTypography.title.lineHeight.toDp() }
+    val contentHeight = lineHeight.coerceAtLeast(DesktopCaptionDimensions.minContentHeight)
+    val layout = captionLayout(caption, region, density.density, with(density) { contentHeight.toPx() })
     val controls = if (layout.integrated) layout.controls(density.density, direction == LayoutDirection.Rtl) else null
     val input = rememberCaptionInput(controls)
     val captionHeight = with(density) { if (layout.integrated) (caption.height - region.top).toDp() else 0.dp }
-    val tabHeight = (captionHeight - TabBarDimensions.topPadding).coerceAtLeast(contentHeight)
+    // Reduce the decorative top inset before giving up native caption integration.
+    val topPadding = if (layout.integrated) (captionHeight - contentHeight).coerceIn(0.dp, TabBarDimensions.topPadding)
+        else TabBarDimensions.topPadding
+    // Subtract rounded pixels so the tab and top inset exactly fill the caption.
+    val tabHeight = if (layout.integrated) with(density) { (captionHeight.roundToPx() - topPadding.roundToPx()).toDp() }
+        else lineHeight.coerceAtLeast(TabBarDimensions.buttonSize)
     if (layout.mode == CaptionMode.BelowCaption) {
         Spacer(Modifier.fillMaxWidth().height(with(density) { (caption.height - region.top).coerceAtLeast(0f).toDp() })
             .background(MaterialTheme.colorScheme.surfaceContainerHigh))
@@ -377,7 +386,7 @@ internal fun DocumentHeader(
                             DocumentSwitcher(documents, activeId, pickerPending, select, close, new, tabHeight, errorDocumentId)
                         } else {
                             DocumentTabs(documents, activeId, pickerPending, select, close, new, list,
-                                if (layout.integrated) input else null, tabHeight, errorDocumentId)
+                                if (layout.integrated) input else null, tabHeight, errorDocumentId, topPadding)
                         }
                     }
                 }
@@ -444,7 +453,7 @@ private fun DocumentSwitcher(
                     val label = if (doc.dirty) stringResource(R.string.unsaved_tab, docTitle) else docTitle
                     val docState = documentState(doc, doc.id == errorDocumentId)
                     Row(Modifier.widthIn(min = 240.dp), verticalAlignment = Alignment.CenterVertically) {
-                        DropdownMenuItem(
+                        NotepadMenuItem(
                             text = {
                                 Column {
                                     Text(docTitle, style = NotepadTabTypography.title)
@@ -460,7 +469,7 @@ private fun DocumentSwitcher(
                             onClick = { expanded = false; select(doc.id, true) },
                         )
                         TooltipAction(stringResource(R.string.close_tab, docTitle), R.drawable.ic_tab_close,
-                            enabled = !doc.saving && !pickerPending) {
+                            enabled = !doc.saving && !pickerPending, targetHeight = DropdownMenuDimensions.itemHeight) {
                             expanded = false
                             close(doc.id)
                         }
@@ -476,7 +485,7 @@ private fun DocumentSwitcher(
 private fun DocumentTabs(
     documents: List<DocumentSession>, activeId: String, pickerPending: Boolean,
     select: (String, Boolean) -> Unit, close: (String) -> Unit, new: () -> Unit,
-    list: LazyListState, input: CaptionInput?, minTabHeight: Dp, errorDocumentId: String?,
+    list: LazyListState, input: CaptionInput?, minTabHeight: Dp, errorDocumentId: String?, topPadding: Dp,
 ) {
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val scope = rememberCoroutineScope()
@@ -484,12 +493,14 @@ private fun DocumentTabs(
     val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
     val separatorColor = MaterialTheme.colorScheme.outlineVariant
     BoxWithConstraints(
-        Modifier.fillMaxWidth().heightIn(min = TabBarDimensions.minBarHeight).padding(top = TabBarDimensions.topPadding),
+        Modifier.fillMaxWidth().heightIn(min = topPadding + minTabHeight).padding(top = topPadding),
     ) {
         val availableWidth = (maxWidth - TabBarDimensions.buttonSize).coerceAtLeast(0.dp)
-        val tabWidth = (availableWidth / documents.size.coerceAtLeast(1))
+        val overlap = DocumentTabShapeDimensions.overlap
+        val sharedWidth = overlap * (documents.size - 1).coerceAtLeast(0)
+        val tabWidth = ((availableWidth + sharedWidth) / documents.size.coerceAtLeast(1))
             .coerceIn(TabBarDimensions.minTabWidth, TabBarDimensions.maxTabWidth)
-        val viewportWidth = (tabWidth * documents.size).coerceAtMost(availableWidth)
+        val viewportWidth = (tabWidth * documents.size - sharedWidth).coerceAtMost(availableWidth)
         val density = LocalDensity.current
         LaunchedEffect(activeId, documents.size, tabWidth, viewportWidth, density) {
             val index = documents.indexOfFirst { it.id == activeId }
@@ -502,6 +513,7 @@ private fun DocumentTabs(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             LazyRow(
                 state = list,
+                horizontalArrangement = Arrangement.spacedBy(-overlap),
                 modifier = Modifier.width(viewportWidth).testTag("document-tabs")
                     .pointerInput(list, rtl) {
                         awaitPointerEventScope {
@@ -538,7 +550,9 @@ private fun DocumentTabs(
                         if (separator) {
                             val width = 1.dp.toPx()
                             val height = 20.dp.toPx()
-                            drawRect(separatorColor, Offset(if (rtl) 0f else size.width - width, (size.height - height) / 2), Size(width, height))
+                            // Center the separator between tab bodies inside the shared feet.
+                            val inset = if (index < documents.lastIndex) overlap.toPx() / 2 else 0f
+                            drawRect(separatorColor, Offset(if (rtl) inset else size.width - inset - width, (size.height - height) / 2), Size(width, height))
                         }
                     }) {
                         Surface(
@@ -602,11 +616,11 @@ private fun DocumentTabs(
                                 Text(title, Modifier.weight(1f).testTag("tab-title-${doc.id}"), maxLines = 1,
                                     overflow = TextOverflow.Ellipsis, style = NotepadTabTypography.title)
                                 TooltipAction(stringResource(R.string.close_tab, title), R.drawable.ic_tab_close,
-                                    enabled = !doc.saving && !pickerPending) { close(doc.id) }
+                                    enabled = !doc.saving && !pickerPending, targetHeight = minTabHeight.coerceAtMost(TabBarDimensions.buttonSize)) { close(doc.id) }
                             }
                         }
                         NotepadDropdownMenu(expanded = contextId == doc.id, onDismissRequest = { contextId = null }) {
-                            DropdownMenuItem(
+                            NotepadMenuItem(
                                 text = { Text(stringResource(R.string.close_document)) },
                                 trailingIcon = { Text("Ctrl+W", style = MaterialTheme.typography.labelMedium) },
                                 enabled = !doc.saving && !pickerPending,
@@ -617,21 +631,26 @@ private fun DocumentTabs(
                 }
             }
             TooltipAction(stringResource(R.string.new_tab), R.drawable.ic_tab_new, iconSize = 20.dp,
-                modifier = Modifier.captionControl(input, "new"), onClick = new)
+                modifier = Modifier.captionControl(input, "new"), targetHeight = minTabHeight.coerceAtMost(TabBarDimensions.buttonSize), onClick = new)
         }
     }
 }
 
 @Composable
-private fun CommandBar(compact: Boolean, enabled: (NotepadCommand) -> Boolean, run: (NotepadCommand) -> Unit) {
+private fun CommandBar(
+    compact: Boolean, enabled: (NotepadCommand) -> Boolean, run: (NotepadCommand) -> Unit,
+    wordWrap: Boolean = true, showStatusBar: Boolean = true,
+) {
     var menu by remember { mutableStateOf<String?>(null) }
     val files = NotepadCommand.entries.take(5)
-    val edits = NotepadCommand.entries.drop(5)
+    val edits = NotepadCommand.entries.filter { it in NotepadCommand.Undo..NotepadCommand.SelectAll }
+    val views = NotepadCommand.entries.filter { it in NotepadCommand.ZoomIn..NotepadCommand.StatusBar }
     Surface(color = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface) {
         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("command-bar").padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val groups = if (compact) listOf("all" to R.string.commands) else listOf("file" to R.string.file, "edit" to R.string.edit)
+            val groups = if (compact) listOf("all" to R.string.commands)
+                else listOf("file" to R.string.file, "edit" to R.string.edit, "view" to R.string.view)
             groups.forEach { (id, title) ->
                 Box {
                     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
@@ -640,11 +659,18 @@ private fun CommandBar(compact: Boolean, enabled: (NotepadCommand) -> Boolean, r
                         ) { Text(stringResource(title)) }
                     }
                     NotepadDropdownMenu(expanded = menu == id, onDismissRequest = { menu = null }) {
-                        val commands = when (id) { "file" -> files; "edit" -> edits; else -> NotepadCommand.entries }
+                        val commands = when (id) { "file" -> files; "edit" -> edits; "view" -> views; else -> NotepadCommand.entries }
                         commands.forEach { command ->
-                            DropdownMenuItem(
+                            val checked = when (command) {
+                                NotepadCommand.WordWrap -> wordWrap
+                                NotepadCommand.StatusBar -> showStatusBar
+                                else -> null
+                            }
+                            NotepadMenuItem(
                                 text = { Text(stringResource(command.label)) },
-                                trailingIcon = { Text(command.shortcut, style = MaterialTheme.typography.labelMedium) },
+                                trailingIcon = if (checked != null) ({ Text(if (checked) "✓" else "", Modifier.width(24.dp)) })
+                                    else ({ Text(command.shortcut, style = MaterialTheme.typography.labelMedium) }),
+                                checked = checked,
                                 enabled = enabled(command),
                                 onClick = { menu = null; run(command) },
                             )
@@ -659,7 +685,10 @@ private fun CommandBar(compact: Boolean, enabled: (NotepadCommand) -> Boolean, r
 }
 
 @Composable
-private fun DocumentEditor(doc: DocumentSession, zoom: Int, changeZoom: (Int) -> Unit, focus: FocusRequester, modifier: Modifier) {
+private fun DocumentEditor(
+    doc: DocumentSession, zoom: Int, changeZoom: (Int) -> Unit, focus: FocusRequester, modifier: Modifier,
+    wordWrap: Boolean = true,
+) {
     val editorLabel = stringResource(R.string.document_editor)
     val latestZoom by rememberUpdatedState(zoom)
     BasicTextField(
@@ -700,6 +729,7 @@ private fun DocumentEditor(doc: DocumentSession, zoom: Int, changeZoom: (Int) ->
                     } while (event.changes.any { it.pressed })
                 }
             }
+            .then(if (wordWrap) Modifier else Modifier.horizontalScroll(doc.horizontalScroll))
             .padding(NotepadSpacing.medium),
     )
 }
@@ -743,7 +773,8 @@ private fun StatusBar(doc: DocumentSession, zoom: Int, compact: Boolean, run: (N
 @Composable
 private fun TooltipAction(
     label: String, @DrawableRes icon: Int, modifier: Modifier = Modifier,
-    enabled: Boolean = true, iconSize: Dp = 16.dp, targetSize: Dp = TabBarDimensions.buttonSize, onClick: () -> Unit,
+    enabled: Boolean = true, iconSize: Dp = 16.dp, targetSize: Dp = TabBarDimensions.buttonSize,
+    targetHeight: Dp = targetSize, onClick: () -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
@@ -751,7 +782,7 @@ private fun TooltipAction(
     val tooltip = rememberTooltipState()
     LaunchedEffect(enabled, hovered, focused) {
         if (enabled && (hovered || focused)) {
-            delay(1_000)
+            delay(500)
             tooltip.show(MutatePriority.UserInput)
         } else tooltip.dismiss()
     }
@@ -763,7 +794,7 @@ private fun TooltipAction(
         enableUserInput = false,
     ) {
         // Keep the hit target independent of the smaller, bounded feedback around the icon.
-        Box(modifier.size(targetSize).semantics { contentDescription = label }
+        Box(modifier.size(width = targetSize, height = targetHeight).semantics { contentDescription = label }
             .onPreviewKeyEvent {
                 if (it.type == KeyEventType.KeyDown && it.key == Key.Escape && tooltip.isVisible) {
                     tooltip.dismiss()
@@ -773,7 +804,7 @@ private fun TooltipAction(
             .clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
-            Box(Modifier.size(iconSize + 8.dp).clip(CircleShape).indication(interaction, ripple(focusRingShape = CircleShape)),
+            Box(Modifier.size((iconSize + 8.dp).coerceAtMost(targetHeight)).clip(CircleShape).indication(interaction, ripple(focusRingShape = CircleShape)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(painterResource(icon), null, Modifier.size(iconSize), tint = if (enabled) colors.contentColor else colors.disabledContentColor)

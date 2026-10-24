@@ -247,6 +247,77 @@ class NotepadStateTest {
     }
 
     @Test
+    fun recoverySkipsEmptyTabsAndSelectsTheFirstSurvivingDocument() = runBlocking {
+        val sessions = store()
+        val first = DocumentSnapshot(text = "First content")
+        val empty = DocumentSnapshot(untitledNumber = 2)
+        val savedEmpty = DocumentSnapshot(untitledNumber = 3, uri = "file:empty", name = "empty.txt")
+        val whitespace = DocumentSnapshot(untitledNumber = 4, text = " \n")
+        val last = DocumentSnapshot(untitledNumber = 5, text = "Last content")
+        val written = CompletableDeferred<Boolean>()
+        sessions.checkpoint(SessionSnapshot(listOf(first, empty, savedEmpty, whitespace, last), empty.id, nextUntitled = 6)) { written.complete(it) }
+        assertTrue(written.await())
+        val recovered = create(store = sessions)
+        withContext(Dispatchers.Main) {
+            assertEquals(listOf(first.id, whitespace.id, last.id), recovered.documents.map { it.id })
+            assertEquals(first.id, recovered.activeId)
+            assertNull(recovered.errorMessage)
+            // Newly created blank tabs stay open during the current session.
+            recovered.newDocument()
+            assertEquals(4, recovered.documents.size)
+            assertEquals("", recovered.active!!.editor.text.toString())
+        }
+    }
+
+    @Test
+    fun restoringOnlyEmptyTabsCreatesOneFreshDocument() = runBlocking {
+        val sessions = store()
+        val empty = DocumentSnapshot()
+        val second = DocumentSnapshot(untitledNumber = 2)
+        val written = CompletableDeferred<Boolean>()
+        sessions.checkpoint(SessionSnapshot(listOf(empty, second), second.id, nextUntitled = 3)) { written.complete(it) }
+        assertTrue(written.await())
+        val recovered = create(store = sessions)
+        withContext(Dispatchers.Main) {
+            assertEquals(1, recovered.documents.size)
+            assertFalse(recovered.activeId in listOf(empty.id, second.id))
+            assertEquals("", recovered.active!!.editor.text.toString())
+        }
+    }
+
+    @Test
+    fun viewPreferencesAndHorizontalScrollRestoreWithCompatibleDefaults() = runBlocking {
+        val file = File(context.cacheDir, "view-${UUID.randomUUID()}.json")
+        val sessions = store(file)
+        val document = DocumentSnapshot(text = "A document with content", horizontalScroll = 17)
+        val snapshot = SessionSnapshot(listOf(document), document.id, wordWrap = false, showStatusBar = false)
+        val written = CompletableDeferred<Boolean>()
+        sessions.checkpoint(snapshot) { written.complete(it) }
+        assertTrue(written.await())
+        val oldJson = org.json.JSONObject(file.readText()).apply {
+            remove("wordWrap")
+            remove("showStatusBar")
+            getJSONArray("documents").getJSONObject(0).remove("horizontalScroll")
+        }
+        val oldFile = File(context.cacheDir, "old-view-${UUID.randomUUID()}.json").apply { writeText(oldJson.toString()) }
+        val recovered = create(store = sessions)
+        val legacy = create(store = store(oldFile))
+        withContext(Dispatchers.Main) {
+            assertEquals(snapshot, recovered.snapshot())
+            assertFalse(recovered.wordWrap)
+            assertFalse(recovered.showStatusBar)
+            assertEquals(17, recovered.active!!.horizontalScroll.value)
+            recovered.toggleWordWrap()
+            recovered.toggleStatusBar()
+            assertTrue(recovered.snapshot().wordWrap)
+            assertTrue(recovered.snapshot().showStatusBar)
+            assertTrue(legacy.wordWrap)
+            assertTrue(legacy.showStatusBar)
+            assertEquals(0, legacy.active!!.horizontalScroll.value)
+        }
+    }
+
+    @Test
     fun missingUriAndInvalidFilesNeverReplaceWorkingDrafts() = runBlocking {
         val repo = FakeDocuments()
         val vm = create(repo)

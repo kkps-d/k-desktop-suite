@@ -44,22 +44,24 @@ class DesktopCaptionTest {
     @Test
     fun respectsContentOriginAndHingeRegion() {
         val caption = DesktopCaption(80f, listOf(Rect(1080f, 0f, 1200f, 80f)))
-        val layout = captionLayout(caption, Rect(620f, 24f, 1180f, 800f), 1f)
-        assertEquals(Rect(620f, 24f, 1080f, 80f), layout.span)
+        val layout = captionLayout(caption, Rect(620f, 56f, 1180f, 800f), 1f)
+        assertEquals(Rect(620f, 56f, 1080f, 80f), layout.span)
         assertEquals(CaptionMode.Tabs, layout.mode)
-        assertEquals(CaptionMode.BelowCaption, captionLayout(caption, Rect(620f, 25f, 1180f, 800f), 1f).mode)
+        assertEquals(CaptionMode.BelowCaption, captionLayout(caption, Rect(620f, 57f, 1180f, 800f), 1f).mode)
         assertEquals(CaptionMode.BelowCaption, captionLayout(caption, Rect(0f, 400f, 1200f, 800f), 1f).mode)
     }
 
     @Test
-    fun shortCaptionsAndScaledTextMoveTabsBelowCaption() {
+    fun systemHeightCaptionsIntegrateAndScaledTextFallsBackOnlyWhenNecessary() {
         listOf(1f, 1.5f, 2.75f).forEach { density ->
             val bounds = Rect(0f, 0f, 1200f * density, 800f * density)
             fun caption(height: Float) = DesktopCaption(height * density, listOf(Rect(0f, 0f, 48f * density, height * density)))
-            assertEquals(CaptionMode.BelowCaption, captionLayout(caption(55f), bounds, density).mode)
-            assertEquals(CaptionMode.Tabs, captionLayout(caption(56f), bounds, density).mode)
-            assertEquals(CaptionMode.BelowCaption, captionLayout(caption(56f), bounds, density, 68f * density).mode)
-            assertEquals(CaptionMode.Tabs, captionLayout(caption(68f), bounds, density, 68f * density).mode)
+            assertEquals(CaptionMode.BelowCaption, captionLayout(caption(23f), bounds, density).mode)
+            assertEquals(CaptionMode.Tabs, captionLayout(caption(24f), bounds, density).mode)
+            assertEquals(CaptionMode.Tabs, captionLayout(caption(32f), bounds, density).mode)
+            assertEquals(CaptionMode.Tabs, captionLayout(caption(40f), bounds, density).mode)
+            assertEquals(CaptionMode.BelowCaption, captionLayout(caption(40f), bounds, density, 48f * density).mode)
+            assertEquals(CaptionMode.Tabs, captionLayout(caption(48f), bounds, density, 48f * density).mode)
         }
     }
 

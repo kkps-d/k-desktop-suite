@@ -112,12 +112,15 @@ its application ID are unchanged. Theme and tab code stay inside Notepad until
 KD Paint establishes what should be shared.
 
 Notepad uses a Windows-inspired document layout with Material 3 Expressive:
-scrollable document tabs above File/Edit menus, a monospace editor, and a quiet
+scrollable document tabs above File/Edit/View menus, a monospace editor, and a quiet
 status bar. Narrow or short windows consolidate commands into an overflow menu.
 It follows system appearance and dynamic color, with a green fallback palette.
 
 On Android 15 / API 35 and newer desktop windows, document tabs share the system
-title bar when it can fit the 8dp top inset, 48dp controls, and system clearances.
+title bar using the actual system caption height and control exclusion regions.
+The decorative top inset shrinks when needed, and tab controls fit the caption
+instead of forcing an extra row below it. Large text that cannot fit still uses
+the standalone row.
 The integrated strip reserves 8dp for window dragging and requires at least 176dp
 of unobstructed width for a tab, New, and that clearance. Otherwise tabs move below
 the caption. Caption-free windows and older Android versions use a standalone row.
@@ -125,18 +128,25 @@ If that row is narrower than 168dp, an active-document selector opens a scrollab
 list with full titles, document status, selection, and individual close actions.
 New remains alongside the selector.
 
-Tab slots have no gaps and compress equally from 240dp to 120dp before scrolling.
+Tab slots overlap by 16dp and compress equally from 240dp to 120dp before scrolling.
 New follows the last tab until the strip overflows, then stays at the viewport edge.
 The selected tab stays visible after selection or resizing. Titles use regular
-14sp text with 20sp line height; the header grows for larger fonts. Close and New
-use vector icons and 48dp targets with smaller circular feedback. Dirty/save/error
+14sp text with 20sp line height and a 22dp leading inset. Close and New
+use vector icons with smaller circular feedback; standalone targets are 48dp,
+while caption controls use its available height. Dirty/save/error
 indicators add leading space only while shown. The selected tab's outward feet join the neutral
 File/Edit surface; separators appear only between inactive tabs and after a final
 inactive tab. Inactive hover matches the selected tab's body width with a 4dp bottom
 gap; keyboard focus is distinct from selection. Arrow keys move tab focus, and
-Enter/Space activates a tab. Tabs have no tooltips; icon tooltips wait one second.
+Enter/Space activates a tab. Tabs have no tooltips; icon tooltips wait 500ms.
+Outward feet retain their 12dp radius; overlap keeps the visible gap between tab bodies at 8dp.
 The 48dp toolbar has smaller inset controls and a trailing Settings cogwheel with
-no action yet. The shorter status bar matches the tab strip and has no top border.
+no action yet. A subtle divider separates the toolbar from the content area.
+The shorter status bar matches the tab strip and has no top border.
+Dropdown items are at least 44dp high, with no top or bottom popup padding.
+View contains all zoom commands and checked toggles for word wrap and the status
+bar. Wrapping off preserves line breaks and enables per-document horizontal
+scrolling. These view preferences are restored on relaunch.
 
 See the [tab implementation specification](docs/CHROME_ANDROID_TAB_SPEC.md) for
 layout rules and acceptance checks.
@@ -154,7 +164,10 @@ layout rules and acceptance checks.
   retained; mixed line endings normalize to CRLF if any CRLF is present. New files
   use UTF-8 without a BOM and LF. Invalid UTF-8 and NUL-containing files are rejected.
 - Private recovery snapshots restore documents, tab order, the active tab,
-  selection, scroll positions, and zoom on relaunch. Recovery never overwrites
+  selection, vertical/horizontal scroll positions, zoom, and view preferences on
+  relaunch. Empty tabs are discarded at startup; whitespace counts as content.
+  If the active tab was empty, the first retained document is selected; if none
+  remain, one fresh untitled document opens. Recovery never overwrites
   original files. Snapshots follow 500 ms of inactivity and flush on backgrounding;
   an abrupt termination can lose edits newer than the last successful checkpoint.
   Undo history resets after process restart. Uninstalling removes private recovery.

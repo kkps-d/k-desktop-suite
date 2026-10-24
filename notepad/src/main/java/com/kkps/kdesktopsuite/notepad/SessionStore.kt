@@ -63,6 +63,8 @@ internal class SessionStore(file: File) {
         put("activeId", session.activeId)
         put("zoom", session.zoom)
         put("nextUntitled", session.nextUntitled)
+        put("wordWrap", session.wordWrap)
+        put("showStatusBar", session.showStatusBar)
         put("documents", JSONArray().apply {
             session.documents.forEach { doc ->
                 put(JSONObject().apply {
@@ -78,6 +80,7 @@ internal class SessionStore(file: File) {
                     put("selectionStart", doc.selectionStart)
                     put("selectionEnd", doc.selectionEnd)
                     put("scroll", doc.scroll)
+                    put("horizontalScroll", doc.horizontalScroll)
                 })
             }
         })
@@ -100,6 +103,7 @@ internal class SessionStore(file: File) {
                 selectionStart = doc.getInt("selectionStart"),
                 selectionEnd = doc.getInt("selectionEnd"),
                 scroll = doc.getInt("scroll"),
+                horizontalScroll = doc.optInt("horizontalScroll", 0),
             )
         }
         require(documents.isNotEmpty() && documents.map { it.id }.distinct().size == documents.size)
@@ -108,6 +112,7 @@ internal class SessionStore(file: File) {
         return SessionSnapshot(
             documents, activeId, json.getInt("zoom").coerceIn(50, 300),
             maxOf(json.getInt("nextUntitled"), documents.maxOf { it.untitledNumber } + 1),
+            json.optBoolean("wordWrap", true), json.optBoolean("showStatusBar", true),
         )
     }
 }

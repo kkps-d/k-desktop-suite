@@ -40,6 +40,7 @@ class NotepadLifecycleTest {
             return
         }
         assertTrue("Header should occupy the caption", bounds.top < caption.height)
+        assertTrue("Tabs must fit within the system caption", bounds.bottom <= caption.height + 1f)
         compose.runOnIdle {
             val exclusions = compose.activity.window.decorView.systemGestureExclusionRects
             assertTrue("Interactive caption controls must receive input", exclusions.isNotEmpty())

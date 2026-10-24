@@ -1,43 +1,47 @@
 # KD Notepad tab implementation specification
 
-Updated 23 October 2026. Status: implementation requirements.
+Updated 24 October 2026. Status: implementation requirements.
 
 Apply the relevant Chrome Android tab-strip patterns to KD Notepad using the [design guidelines](../DESIGN_GUIDELINES.md). Values below are KD Notepad design decisions. The linked screenshots illustrate visual relationships, not exact implementation measurements.
 
 ## Layout and appearance
 
-Place tabs above the File/Edit menu bar. Integrate them into the desktop caption when system clearances and accessible control sizes permit.
+Place tabs in the desktop caption above the File/Edit/View menu bar, respecting system control exclusions. Caption-free windows use a standalone tab row.
 
 The selected tab forms a continuous surface with the menu bar: rounded top corners, short vertical sides, and outward-curving bottom feet. Its bottom edge has no gap or stroke. Inactive tabs share the strip background. Thin separators divide adjacent inactive tabs and disappear on both sides of selection; a trailing separator may appear before New when the final tab is inactive.
 
 | Property | Requirement |
 |---|---|
 | Standalone row height | At least 56dp: 8dp top inset plus 48dp interaction height; grow for text scaling |
-| Integrated caption | Use actual system caption height and exclusion regions; move below the caption if the top inset and accessible controls cannot fit |
-| Selected shape | 8dp top inset, flush bottom, 12dp top corners and 12dp outward bottom feet |
+| Integrated caption | Fit the actual system caption height; reduce the top inset from 8dp toward zero before falling back for insufficient text/control space |
+| Selected shape | Up to 8dp top inset, flush bottom, 12dp top corners and 12dp outward bottom feet |
 | Tab slot width | 240dp preferred, 120dp minimum |
-| Inter-tab gap | 0dp |
-| Leading content inset | 20dp from the slot edge, clear of the bottom foot |
+| Inter-tab spacing | Slots overlap by 16dp, leaving 8dp between tab bodies |
+| Leading content inset | 22dp from the slot edge, clear of the bottom foot |
 | Title | Regular system sans-serif, 14sp with 20sp line height; one line with trailing ellipsis |
-| Close | 16dp vector icon, 24dp circular feedback, separate 48 × 48dp target |
-| New | 20dp vector plus, 28dp circular feedback, 48 × 48dp target |
+| Close | 16dp vector icon, up to 24dp circular feedback, 48dp target width; caption height or 48dp standalone height |
+| New | 20dp vector plus, up to 28dp circular feedback, 48dp target width; caption height or 48dp standalone height |
 | Separator | 1dp × 20dp, vertically centered |
 | Focus outline | 2dp, distinct from selection, without changing layout |
 
 Use Material theme tokens:
 
-- Selected tab and File/Edit bar: `surface`.
+- Selected tab and File/Edit/View bar: `surface`.
 - Strip: `surfaceContainerHigh`; inactive tab fills: transparent.
 - Titles: `onSurface`; secondary icons: `onSurfaceVariant`.
 - Separators: subdued `outlineVariant`.
 
 Support light, dark, and dynamic color palettes with the existing green fallback. Keep the editor background independently appropriate to editing.
 
-Draw the selected tab above inactive neighbors. Keep its feet within its slot bounds so scrolling does not clip them. Selection must not change slot width, title baseline, or Close position. Show the title at the 20dp content inset when no status is displayed. An unsaved, saving, or error indicator adds 16dp before the title only while present; Close remains fixed. Expose states accessibly without relying on color alone.
+Draw the selected tab above inactive neighbors. Keep its feet within its slot bounds so scrolling does not clip them. Selection must not change slot width, title baseline, or Close position. Show the title at the 22dp content inset when no status is displayed. An unsaved, saving, or error indicator adds 16dp before the title only while present; Close remains fixed. Expose states accessibly without relying on color alone.
 
-Give inactive tabs subtle rounded hover feedback matching the selected tab's body width, inset by its 12dp feet on either side, with a 4dp bottom gap. Keep tab layout and content alignment unchanged by hovering. Close/New have independent, tightly bounded circular feedback. Use native ripple/state feedback, retain visible focus on selected tabs, and respect reduced motion.
+Give inactive tabs subtle rounded hover feedback matching the selected tab's body width, inset by its 12dp feet on either side, with a 4dp bottom gap. Center separators between adjacent bodies in their overlapping feet. Keep tab layout and content alignment unchanged by hovering. Close/New have independent, tightly bounded circular feedback. Use native ripple/state feedback, retain visible focus on selected tabs, and respect reduced motion.
 
-Keep the File/Edit toolbar 48dp high at normal font size, with 32dp controls and 8dp vertical clearance; grow for larger fonts. Place a 20dp cogwheel button at the trailing edge. Settings is a visual placeholder with no action yet. Icon tooltips appear after one second of continuous hover or keyboard focus and cancel when the pointer or focus leaves. Tabs and the document selector have no tooltips.
+Keep the File/Edit/View toolbar 48dp high at normal font size, with 32dp controls and 8dp vertical clearance; grow for larger fonts. Place a 20dp cogwheel button at the trailing edge. Settings is a visual placeholder with no action yet. Icon tooltips appear after 500ms of continuous hover or keyboard focus and cancel when the pointer or focus leaves. Tabs and the document selector have no tooltips.
+
+Dropdown items have a 44dp minimum height, growing for multiline text or large fonts. Popup content has no top or bottom padding. View contains Zoom in, Zoom out, Reset zoom, Word wrap, and Status bar. The last two items expose checked states. Compact windows consolidate these commands into the Commands menu.
+
+Separate the toolbar from the content area with a 1dp divider using `outlineVariant` at 50% opacity.
 
 Use `surfaceContainerHigh` for the status bar to match the tab strip, without a top divider. At normal font size, use a 28dp desktop row and a 40dp compact layout. Preserve status information and zoom reset while allowing the bar to grow for larger fonts.
 
@@ -46,7 +50,7 @@ Use `surfaceContainerHigh` for the status bar to match the tab strip, without a 
 Calculate usable space from the current window, caption exclusions, insets, and folding regions. Preserve blank caption space for system dragging.
 
 1. Reserve New's 48dp slot before sizing tabs.
-2. For remaining width `A` and document count `N`, use equal slot widths of `min(240dp, max(120dp, A / N))`.
+2. For remaining width `A` and document count `N`, use equal slot widths of `min(240dp, max(120dp, (A + 16dp × (N − 1)) / N))`. Total strip width is `N × slotWidth − 16dp × (N − 1)`.
 3. Place New directly after the tab viewport. Leave unused space after New when few tabs are open.
 4. When minimum-width tabs no longer fit, scroll the tabs horizontally while keeping New outside the scrolling content and reachable. Keep Close available on inactive tabs too.
 5. Scroll the selected tab into view after selection, creation, closing, or resizing.
@@ -64,13 +68,14 @@ The selector displays the active document's title and opens a scrollable documen
 - Support logical Tab/Shift+Tab traversal, arrow navigation within tabs, Enter/Space activation, Escape dismissal, and independently labeled Close/New actions. Keep focus distinct from selection; moving focus must not unexpectedly move the editor caret.
 - Keep full titles in accessibility labels and the compact document list. Provide a tab context menu using existing commands and horizontal wheel/trackpad scrolling.
 - Keep tab and button interactions separate from system window dragging. Respect caption controls, cutouts, hinges, and system/IME insets.
-- Preserve working state during resizing and activity recreation, and recover drafts and the tab session on relaunch through the existing persistence contract.
+- Preserve working state during resizing and activity recreation. On relaunch, restore only documents with nonempty text, retaining their order and active selection when it survives. Whitespace counts as content. Otherwise select the first surviving document; if none survive, create one fresh untitled document. Never change the original files while filtering recovery tabs.
+- Persist word-wrap and status-bar preferences with the session. Wrapping off preserves hard line breaks and enables horizontal scrolling, with a separate horizontal scroll position for each document.
 
 ## Implementation focus
 
-- [NotepadScreen.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadScreen.kt): continuous slots, 120–240dp sizing with equal compression before scrolling, 48dp tab controls, separators, conditional status spacing, vector icons, compact document list, toolbar, and status bar.
+- [NotepadScreen.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadScreen.kt): overlapping slots, 120–240dp sizing with equal compression before scrolling, 48dp tab controls, separators, conditional status spacing, vector icons, compact document list, toolbar, and status bar.
 - [NotepadTheme.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadTheme.kt): regular 14sp/20sp title typography and the neutral Material surface hierarchy above.
-- [NotepadChrome.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadChrome.kt): retain the existing 12dp top corners and bottom feet within the tab bounds.
+- [NotepadChrome.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadChrome.kt): 12dp top corners and bottom feet within overlapping tab bounds, and compact dropdown items.
 - [DesktopCaption.kt](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/DesktopCaption.kt): adapt caption eligibility and fallback behavior to the required widths, heights, and system clearances.
 - Preserve the existing document command and recovery behavior while changing tab presentation.
 
@@ -79,9 +84,10 @@ The selector displays the active document's title and opens a scrollable documen
 1. Compare two tabs, a middle-selected tab among four, and five tabs with the visual references below. Verify continuous selected-tab/menu surfaces, zero gutters, hidden adjacent separators, aligned titles, and reachable New.
 2. Exercise 1, 2, 5, and 20 documents. Verify equal compression, scrolling at minimum width, selected-tab visibility, and Close/New availability.
 3. Resize through wide, narrow, compact, and short windows; test maximize/restore, split screen, fold changes, and external displays. Verify system controls and dragging remain usable and layout changes preserve documents.
-4. Check long, duplicate, and Unicode titles plus dirty/save/error states. Verify conditional title offsets, fixed Close positions, full titles in semantics and the document list, matching tab hover widths with bottom clearance, small icon feedback, and the one-second icon tooltip delay.
+4. Check long, duplicate, and Unicode titles plus dirty/save/error states. Verify conditional title offsets, fixed Close positions, full titles in semantics and the document list, matching tab hover widths with bottom clearance, small icon feedback, and the 500ms icon tooltip delay.
 5. Verify keyboard-only, touch, mouse, trackpad, TalkBack, RTL, 200% fonts, light/dark/dynamic themes, and reduced motion. Inspect actual 48dp hit bounds, visible focus, and at least 4.5:1 normal-text contrast.
 6. Verify active/inactive closing, Save / Discard / Cancel, failed or canceled saving, final-document behavior, and preservation of caret, selection, scroll, and undo history across switches. Check activity recreation and relaunch recovery.
+7. Check mixed empty/nonempty recovery sessions and all-empty sessions. Verify View preferences survive relaunch, wrapping preserves hard line breaks and document selection, status-bar toggling resizes the editor, and dropdowns have compact rows without outer vertical padding.
 
 ## Visual references
 

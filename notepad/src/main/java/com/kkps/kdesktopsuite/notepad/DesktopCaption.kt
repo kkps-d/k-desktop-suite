@@ -18,6 +18,7 @@ import kotlin.math.floor
 
 internal object DesktopCaptionDimensions {
     val dragAreaWidth = 8.dp
+    val minContentHeight = 24.dp
     val minTabStripWidth get() = TabBarDimensions.minTabWidth + TabBarDimensions.buttonSize + dragAreaWidth
 }
 
@@ -41,7 +42,7 @@ internal data class CaptionLayout(val mode: CaptionMode, val span: Rect = Rect.Z
 
 internal fun captionLayout(
     caption: DesktopCaption, region: Rect, density: Float,
-    minRowHeight: Float = TabBarDimensions.minBarHeight.value * density,
+    minRowHeight: Float = DesktopCaptionDimensions.minContentHeight.value * density,
 ): CaptionLayout {
     if (caption.height <= 0f) return CaptionLayout(CaptionMode.Regular)
     if (region.top >= caption.height || caption.obstructions.isEmpty()) return CaptionLayout(CaptionMode.BelowCaption)

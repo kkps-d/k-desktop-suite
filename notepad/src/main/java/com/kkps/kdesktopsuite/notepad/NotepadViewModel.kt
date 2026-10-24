@@ -36,6 +36,10 @@ internal class NotepadViewModel(
         private set
     var zoom by mutableIntStateOf(100)
         private set
+    var wordWrap by mutableStateOf(true)
+        private set
+    var showStatusBar by mutableStateOf(true)
+        private set
     var focusRequest by mutableIntStateOf(0)
         private set
     var closeConfirmation by mutableStateOf<String?>(null)
@@ -57,10 +61,14 @@ internal class NotepadViewModel(
         viewModelScope.launch {
             try {
                 store.read()?.let { snapshot ->
-                    documents.addAll(snapshot.documents.map(::DocumentSession))
-                    activeId = snapshot.activeId
+                    documents.addAll(snapshot.documents.filter { it.text.isNotEmpty() }.map(::DocumentSession))
+                    activeId = snapshot.activeId.takeIf { id -> documents.any { it.id == id } }
+                        ?: documents.firstOrNull()?.id.orEmpty()
                     zoom = snapshot.zoom
                     nextUntitled = snapshot.nextUntitled
+                    wordWrap = snapshot.wordWrap
+                    showStatusBar = snapshot.showStatusBar
+                    focusRequest++
                 }
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
@@ -85,7 +93,7 @@ internal class NotepadViewModel(
         }
     }
 
-    fun snapshot() = SessionSnapshot(documents.map { it.snapshot() }, activeId, zoom, nextUntitled)
+    fun snapshot() = SessionSnapshot(documents.map { it.snapshot() }, activeId, zoom, nextUntitled, wordWrap, showStatusBar)
 
     fun checkpoint() {
         if (!loading) checkpoint(snapshot())
@@ -125,6 +133,10 @@ internal class NotepadViewModel(
     fun changeZoom(value: Int) {
         zoom = value.coerceIn(50, 300)
     }
+
+    fun toggleWordWrap() { wordWrap = !wordWrap }
+
+    fun toggleStatusBar() { showStatusBar = !showStatusBar }
 
     fun requestClose(id: String) {
         val doc = documents.find { it.id == id } ?: return

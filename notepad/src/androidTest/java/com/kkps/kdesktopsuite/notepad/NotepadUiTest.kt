@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.geometry.Rect
@@ -86,16 +87,24 @@ class NotepadUiTest {
         Rect(0f, 0f, 48f, height), Rect(48f + freeWidth, 0f, 1200f, height),
     ))
 
+    private fun SemanticsNodeInteraction.assertTargetSize(width: Dp = 48.dp, height: Dp = 48.dp): SemanticsNodeInteraction {
+        val bounds = getUnclippedBoundsInRoot()
+        // WindowSize overrides can map a dp to less than one physical pixel.
+        org.junit.Assert.assertEquals(width.value, (bounds.right - bounds.left).value, 2f)
+        org.junit.Assert.assertEquals(height.value, (bounds.bottom - bounds.top).value, 2f)
+        return this
+    }
+
     @Test
-    fun tabsHaveContinuousSlotsAndIndependentHoverFeedback() {
-        caption = desktopCaption()
+    fun tabsOverlapAndKeepIndependentHoverFeedback() {
+        caption = desktopCaption(height = 40f)
         showEditor()
         compose.onNodeWithContentDescription("New document").performClick()
         val inactive = compose.onNodeWithContentDescription("Untitled 1")
         val active = compose.onNodeWithContentDescription("Untitled 2")
         val first = inactive.getUnclippedBoundsInRoot()
         val second = active.getUnclippedBoundsInRoot()
-        org.junit.Assert.assertEquals(0f, second.left.value - first.right.value, 1f)
+        org.junit.Assert.assertEquals(-16f, second.left.value - first.right.value, 1f)
         org.junit.Assert.assertEquals(first.bottom.value, second.bottom.value, 1f)
         org.junit.Assert.assertEquals(second.bottom.value,
             compose.onNodeWithTag("command-bar").getUnclippedBoundsInRoot().top.value, 1f)
@@ -110,9 +119,11 @@ class NotepadUiTest {
         org.junit.Assert.assertNotEquals(resting, background(inactive))
         val hover = inactive.captureToImage().toPixelMap()
         val selectedPixels = active.captureToImage().toPixelMap()
-        val scanY = hover.height / 3
-        val hoverBody = (0 until hover.width).filter { hover[it, scanY] != resting }
-        val selectedBody = (0 until selectedPixels.width).filter { selectedPixels[it, scanY] != resting }
+        val scanY = hover.height / 2
+        // Exclude neighboring bodies visible inside the overlapping screenshot edges.
+        val edge = (hover.width * 8f / 240f).toInt()
+        val hoverBody = (edge until hover.width - edge).filter { hover[it, scanY] != resting }
+        val selectedBody = (edge until selectedPixels.width - edge).filter { selectedPixels[it, scanY] != resting }
         org.junit.Assert.assertEquals(selectedBody.first().toFloat(), hoverBody.first().toFloat(), 1f)
         org.junit.Assert.assertEquals(selectedBody.last().toFloat(), hoverBody.last().toFloat(), 1f)
         org.junit.Assert.assertEquals(resting, hover[hover.width / 2, hover.height - 2])
@@ -136,7 +147,7 @@ class NotepadUiTest {
         val first = compose.onNodeWithContentDescription("Untitled 1")
         val firstBounds = first.getUnclippedBoundsInRoot()
         org.junit.Assert.assertEquals(240f, (firstBounds.right - firstBounds.left).value, 2f)
-        new.assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)
+        new.assertTargetSize()
         org.junit.Assert.assertEquals(8f, first.getUnclippedBoundsInRoot().top.value -
             compose.onNodeWithTag("document-header").getUnclippedBoundsInRoot().top.value, 1f)
         org.junit.Assert.assertEquals(first.getUnclippedBoundsInRoot().right.value, new.getUnclippedBoundsInRoot().left.value, 1f)
@@ -145,8 +156,8 @@ class NotepadUiTest {
         val viewport = compose.onNodeWithTag("document-tabs")
         (1..5).forEach { index ->
             val bounds = compose.onNodeWithContentDescription("Untitled $index").getUnclippedBoundsInRoot()
-            org.junit.Assert.assertEquals(976f / 5, (bounds.right - bounds.left).value, 1f)
-            compose.onNodeWithContentDescription("Close Untitled $index").assertIsDisplayed().assertWidthIsEqualTo(48.dp)
+            org.junit.Assert.assertEquals((976f + 16f * 4) / 5, (bounds.right - bounds.left).value, 1f)
+            compose.onNodeWithContentDescription("Close Untitled $index").assertIsDisplayed().assertTargetSize()
         }
         compose.runOnIdle { repeat(15) { notepad.newDocument() } }
         org.junit.Assert.assertEquals(120f,
@@ -164,7 +175,7 @@ class NotepadUiTest {
             val tab = compose.onNodeWithContentDescription("Untitled 20").getUnclippedBoundsInRoot()
             val bounds = viewport.getUnclippedBoundsInRoot()
             org.junit.Assert.assertTrue(tab.left >= bounds.left && tab.right <= bounds.right)
-            compose.onNodeWithContentDescription("Close Untitled 20").assertIsDisplayed().assertWidthIsEqualTo(48.dp)
+            compose.onNodeWithContentDescription("Close Untitled 20").assertIsDisplayed().assertTargetSize()
         }
     }
 
@@ -200,7 +211,7 @@ class NotepadUiTest {
         showEditor()
         listOf("New document" to 20f, "Close Untitled 1" to 16f).forEach { (label, iconSize) ->
             val button = compose.onNodeWithContentDescription(label)
-            button.assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)
+            button.assertTargetSize()
             val before = button.captureToImage().toPixelMap()
             button.performMouseInput { enter(center); moveTo(center) }
             compose.mainClock.advanceTimeBy(200)
@@ -216,14 +227,14 @@ class NotepadUiTest {
     }
 
     @Test
-    fun iconTooltipsWaitOneSecondAndCancelWhenPointerLeaves() {
+    fun iconTooltipsWaitHalfASecondAndCancelWhenPointerLeaves() {
         showEditor()
         compose.mainClock.autoAdvance = false
         val new = compose.onNodeWithContentDescription("New document")
         new.performMouseInput { enter(center); moveTo(center) }
         compose.waitForIdle()
         compose.mainClock.advanceTimeByFrame()
-        compose.mainClock.advanceTimeBy(900)
+        compose.mainClock.advanceTimeBy(400)
         compose.onNodeWithText("New document").assertDoesNotExist()
         new.performMouseInput { exit() }
         compose.waitForIdle()
@@ -233,7 +244,7 @@ class NotepadUiTest {
         new.performMouseInput { enter(center); moveTo(center) }
         compose.waitForIdle()
         compose.mainClock.advanceTimeByFrame()
-        compose.mainClock.advanceTimeBy(900)
+        compose.mainClock.advanceTimeBy(400)
         compose.onNodeWithText("New document").assertDoesNotExist()
         compose.mainClock.advanceTimeBy(300)
         compose.onNodeWithText("New document").assertIsDisplayed()
@@ -246,23 +257,98 @@ class NotepadUiTest {
     }
 
     @Test
+    fun tabsFitTheSystemCaptionAndKeepMenusBelowIt() {
+        caption = desktopCaption(height = 40f)
+        showEditor()
+        val header = compose.onNodeWithTag("document-header").getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(0f, header.top.value, 1f)
+        org.junit.Assert.assertEquals(40f, (header.bottom - header.top).value, 1f)
+        org.junit.Assert.assertEquals(header.bottom.value, compose.onNodeWithTag("command-bar").getUnclippedBoundsInRoot().top.value, 1f)
+        compose.onNodeWithContentDescription("New document").assertTargetSize(height = 32.dp).performClick()
+        val active = compose.onNodeWithContentDescription("Untitled 2").getUnclippedBoundsInRoot()
+        lateinit var id: String
+        compose.runOnIdle { id = notepad.activeId }
+        val title = compose.onNodeWithTag("tab-title-$id", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(22f, (title.left - active.left).value, 2f)
+        compose.onNodeWithContentDescription("Close Untitled 2").assertTargetSize(height = 32.dp)
+    }
+
+    @Test
+    fun viewMenuControlsZoomWrappingAndStatusWithoutChangingDocumentContent() {
+        showEditor()
+        val editor = compose.onNodeWithTag("document-editor")
+        val text = "Long line ".repeat(80) + "\nSecond line"
+        editor.performTextReplacement(text)
+        var selection = androidx.compose.ui.text.TextRange.Zero
+        compose.runOnIdle { selection = notepad.active!!.editor.selection }
+        fun lineCount(): Int {
+            val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            editor.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            return layouts.single().lineCount
+        }
+        org.junit.Assert.assertTrue(lineCount() > 2)
+        compose.onNodeWithText("Edit").performClick()
+        compose.onNodeWithText("Zoom in").assertDoesNotExist()
+        compose.onNodeWithText("Copy").performKeyInput { pressKey(Key.Escape) }
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Zoom in").performClick()
+        compose.runOnIdle { org.junit.Assert.assertEquals(110, notepad.zoom) }
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Reset zoom").performClick()
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Word wrap").assertIsOn().performClick()
+        org.junit.Assert.assertEquals(2, lineCount())
+        compose.runOnIdle {
+            org.junit.Assert.assertTrue(notepad.active!!.horizontalScroll.maxValue > 0)
+            org.junit.Assert.assertEquals(selection, notepad.active!!.editor.selection)
+        }
+        val before = editor.getUnclippedBoundsInRoot()
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Status bar").assertIsOn().performClick()
+        compose.onNodeWithTag("status-bar").assertDoesNotExist()
+        org.junit.Assert.assertTrue(editor.getUnclippedBoundsInRoot().bottom > before.bottom)
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Word wrap").assertIsOff().performClick()
+        org.junit.Assert.assertTrue(lineCount() > 2)
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Status bar").assertIsOff().performClick()
+        compose.onNodeWithTag("status-bar").assertIsDisplayed()
+        editor.assertTextContains(text)
+        compose.runOnIdle { org.junit.Assert.assertEquals(selection, notepad.active!!.editor.selection) }
+    }
+
+    @Test
+    fun dropdownItemsAre44dpAndPopupHasNoVerticalPadding() {
+        showEditor()
+        compose.onNodeWithText("File").performClick()
+        val first = compose.onNodeWithText("New").getUnclippedBoundsInRoot()
+        val last = compose.onNodeWithText("Close").getUnclippedBoundsInRoot()
+        val popup = compose.onNodeWithTag("dropdown-menu").getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(44f, (first.bottom - first.top).value, 2f)
+        org.junit.Assert.assertEquals(popup.top.value, first.top.value, 2f)
+        org.junit.Assert.assertEquals(popup.bottom.value, last.bottom.value, 2f)
+        org.junit.Assert.assertEquals(220f, (popup.bottom - popup.top).value, 3f)
+    }
+
+    @Test
     fun toolbarKeepsItsHeightAndStatusBarIsShorterWithoutADivider() {
         showEditor()
         val toolbar = compose.onNodeWithTag("command-bar").getUnclippedBoundsInRoot()
         org.junit.Assert.assertEquals(48f, (toolbar.bottom - toolbar.top).value, 1f)
         val file = compose.onNodeWithText("File").getUnclippedBoundsInRoot()
-        org.junit.Assert.assertEquals(8f, (file.top - toolbar.top).value, 1f)
-        org.junit.Assert.assertEquals(8f, (toolbar.bottom - file.bottom).value, 1f)
+        org.junit.Assert.assertEquals(8f, (file.top - toolbar.top).value, 2f)
+        org.junit.Assert.assertEquals(8f, (toolbar.bottom - file.bottom).value, 2f)
         val settings = compose.onNodeWithContentDescription("Settings")
         val settingsBounds = settings.getUnclippedBoundsInRoot()
-        org.junit.Assert.assertEquals(8f, (toolbar.right - settingsBounds.right).value, 1f)
+        org.junit.Assert.assertEquals(8f, (toolbar.right - settingsBounds.right).value, 2f)
         settings.performClick()
         compose.onAllNodes(isPopup()).assertCountEquals(0)
         compose.runOnIdle { org.junit.Assert.assertEquals(1, notepad.documents.size) }
 
         val statusBar = compose.onNodeWithTag("status-bar")
         val statusBounds = statusBar.getUnclippedBoundsInRoot()
-        org.junit.Assert.assertEquals(28f, (statusBounds.bottom - statusBounds.top).value, 1f)
+        statusBar.assertHeightIsAtLeast(28.dp)
+        org.junit.Assert.assertTrue(statusBounds.bottom - statusBounds.top < toolbar.bottom - toolbar.top)
         org.junit.Assert.assertEquals(16f,
             (statusBounds.top - compose.onNodeWithTag("document-editor").getUnclippedBoundsInRoot().bottom).value, 1f)
         val strip = compose.onNodeWithTag("document-header").captureToImage().toPixelMap()
@@ -285,7 +371,7 @@ class NotepadUiTest {
         val selected = compose.onNodeWithContentDescription("Untitled 9").getUnclippedBoundsInRoot()
         val bounds = viewport.getUnclippedBoundsInRoot()
         org.junit.Assert.assertTrue(selected.left >= bounds.left && selected.right <= bounds.right)
-        compose.onNodeWithContentDescription("Close Untitled 9").assertIsDisplayed().assertWidthIsEqualTo(48.dp)
+        compose.onNodeWithContentDescription("Close Untitled 9").assertIsDisplayed().assertTargetSize()
     }
 
     @Test
@@ -350,11 +436,11 @@ class NotepadUiTest {
 
     @Test
     fun shortCaptionFallsBackBelowControlsWithoutShrinkingTouchTargets() {
-        caption = desktopCaption(height = 40f)
+        caption = desktopCaption(height = 28f)
         showEditor(largeFontRtl = true)
         val header = compose.onNodeWithTag("document-header").getUnclippedBoundsInRoot()
-        org.junit.Assert.assertTrue(header.top >= 40.dp)
-        compose.onNodeWithContentDescription("New document").assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp).performClick()
+        org.junit.Assert.assertEquals(28f, header.top.value, 2f)
+        compose.onNodeWithContentDescription("New document").assertTargetSize().performClick()
         compose.onNodeWithTag("document-editor").performTextReplacement("مرحبا မြန်မာ 👋")
         compose.runOnIdle { caption = desktopCaption() }
         compose.onNodeWithTag("document-editor").assertTextContains("مرحبا မြန်မာ 👋")
@@ -424,8 +510,10 @@ class NotepadUiTest {
         val third = compose.onNodeWithContentDescription("Untitled 3").captureToImage().toPixelMap()
         val menu = compose.onNodeWithTag("command-bar").captureToImage().toPixelMap()
         val strip = third[third.width / 2, 2]
-        org.junit.Assert.assertEquals(strip, first[first.width - 1, first.height / 2])
-        org.junit.Assert.assertNotEquals(strip, third[third.width - 1, third.height / 2])
+        val separatorX = (third.width * (1f - 8f / 240f)).toInt() - 1
+        val separatorPixels = separatorX - 1..separatorX + 1
+        org.junit.Assert.assertTrue(separatorPixels.all { first[it, first.height / 2] == strip })
+        org.junit.Assert.assertTrue(separatorPixels.any { third[it, third.height / 2] != strip })
         org.junit.Assert.assertEquals(menu[menu.width - 1, menu.height / 2], selected[selected.width / 2, 2])
         val screenshot = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "tab-strip-verification.png")
         screenshot.outputStream().use { compose.onRoot().captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }

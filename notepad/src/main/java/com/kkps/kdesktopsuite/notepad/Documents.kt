@@ -52,6 +52,7 @@ internal data class DocumentSnapshot(
     val selectionStart: Int = 0,
     val selectionEnd: Int = 0,
     val scroll: Int = 0,
+    val horizontalScroll: Int = 0,
 )
 
 internal data class SessionSnapshot(
@@ -59,6 +60,8 @@ internal data class SessionSnapshot(
     val activeId: String,
     val zoom: Int = 100,
     val nextUntitled: Int = 2,
+    val wordWrap: Boolean = true,
+    val showStatusBar: Boolean = true,
 )
 
 internal class DocumentSession(snapshot: DocumentSnapshot) {
@@ -69,6 +72,7 @@ internal class DocumentSession(snapshot: DocumentSnapshot) {
         TextRange(snapshot.selectionStart.coerceIn(0, snapshot.text.length), snapshot.selectionEnd.coerceIn(0, snapshot.text.length)),
     )
     val scroll = ScrollState(snapshot.scroll.coerceAtLeast(0))
+    val horizontalScroll = ScrollState(snapshot.horizontalScroll.coerceAtLeast(0))
     var name by mutableStateOf(snapshot.name)
     var uri by mutableStateOf(snapshot.uri)
     var savedText by mutableStateOf(snapshot.savedText)
@@ -79,6 +83,6 @@ internal class DocumentSession(snapshot: DocumentSnapshot) {
 
     fun snapshot() = DocumentSnapshot(
         id, untitledNumber, name, uri, editor.text.toString(), savedText, diskFingerprint, format,
-        editor.selection.start, editor.selection.end, scroll.value,
+        editor.selection.start, editor.selection.end, scroll.value, horizontalScroll.value,
     )
 }
