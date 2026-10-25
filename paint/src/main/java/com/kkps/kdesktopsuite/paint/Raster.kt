@@ -37,14 +37,17 @@ internal data class PixelRect(val x: Int, val y: Int, val width: Int, val height
 internal class Raster(val width: Int, val height: Int, internal val pixels: IntArray) {
     init { require(width > 0 && height > 0 && pixels.size == width * height) }
     fun pixel(x: Int, y: Int) = pixels[y * width + x]
-    fun resizeCanvas(width: Int, height: Int, background: Int): Raster {
-        checkImageSize(width,height)
-        if (width == this.width && height == this.height) return this
-        val output = IntArray(width * height) { background or BLACK }
-        for (y in 0 until min(this.height,height)) {
-            pixels.copyInto(output,y * width,y * this.width,y * this.width + min(this.width,width))
+    fun resizeCanvas(width: Int, height: Int, background: Int) = resizeCanvas(PixelRect(0,0,width,height),background)
+    fun resizeCanvas(bounds: PixelRect, background: Int): Raster {
+        checkImageSize(bounds.width,bounds.height)
+        if (bounds == PixelRect(0,0,width,height)) return this
+        val output = IntArray(bounds.width * bounds.height) { background or BLACK }
+        val visible = bounds.clipped(width,height)
+        for (y in visible.y until visible.bottom) {
+            pixels.copyInto(output,(y - bounds.y) * bounds.width + visible.x - bounds.x,
+                y * width + visible.x,y * width + visible.right)
         }
-        return Raster(width,height,output)
+        return Raster(bounds.width,bounds.height,output)
     }
     fun extract(rect: PixelRect): Raster {
         val area = rect.clipped(width, height)

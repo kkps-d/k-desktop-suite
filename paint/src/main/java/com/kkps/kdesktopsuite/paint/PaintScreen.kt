@@ -42,6 +42,7 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
     val snackbar = remember { SnackbarHostState() }
     var cursor by remember { mutableStateOf<Point?>(Point(0f,0f)) }
     var selectionDrag by remember { mutableStateOf<PixelRect?>(null) }
+    var canvasResize by remember { mutableStateOf<PixelRect?>(null) }
     LaunchedEffect(state.message) { state.message?.let { snackbar.showSnackbar(it); model.message(null) } }
     val imeVisible = WindowInsets.isImeVisible
     BackHandler(!imeVisible && (state.dialog != null || state.preview != null || state.selection != null || state.focusMode)) { model.back() }
@@ -64,13 +65,14 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
                     TextButton(onClick = model::toggleRibbon,modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.ui_collapse_ribbon)) }
                 }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
-                    PaintCanvas(state,model,onCursorChange = { cursor = it },onSelectionChange = { selectionDrag = it })
+                    PaintCanvas(state,model,onCursorChange = { cursor = it },onSelectionChange = { selectionDrag = it },
+                        onCanvasResizeChange = { canvasResize = it })
                     if (state.loading || state.busy || state.saving) Row(Modifier.align(Alignment.TopEnd).padding(8.dp),verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.padding(12.dp).size(24.dp),strokeWidth = 2.dp)
                         if (state.busy && !state.loading) PaintButton(PaintIcon.Cancel,"Cancel operation",action = model::cancelOperation)
                     }
                 }
-                if (state.showInformation && !state.focusMode) PaintStatus(state,model,cursor,selectionDrag)
+                if (state.showInformation && !state.focusMode) PaintStatus(state,model,cursor,selectionDrag,canvasResize)
             }
             SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter))
             PaintDialogs(state,model)
@@ -336,7 +338,7 @@ private fun SelectionActions(s: PaintUiState, model: PaintViewModel) {
 }
 
 @Composable
-private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, selectionDrag: PixelRect?) {
+private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, selectionDrag: PixelRect?, canvasResize: PixelRect?) {
     val fieldWidth = 144.dp * LocalDensity.current.fontScale
     val selection = if (s.options.tool == Tool.Select) selectionDrag ?: s.preview?.bounds ?: s.selection else null
     val position = cursor?.let { "${it.x.toInt()}, ${it.y.toInt()} px" }.orEmpty()
@@ -359,7 +361,8 @@ private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, 
             TextButton(onClick = { model.dialog(PaintDialog.CanvasSize) },enabled = !s.busy && !s.loading,
                 modifier = Modifier.width(fieldWidth).testTag("paint-canvas-dimensions")
                     .semantics { contentDescription = "Resize canvas" },contentPadding = PaddingValues(horizontal = 12.dp)) {
-                Text("${s.raster.width} x ${s.raster.height} px",Modifier.fillMaxWidth(),style = MaterialTheme.typography.labelMedium,maxLines = 1)
+                Text("${canvasResize?.width ?: s.raster.width} x ${canvasResize?.height ?: s.raster.height} px",
+                    Modifier.fillMaxWidth(),style = MaterialTheme.typography.labelMedium,maxLines = 1)
             }
             Spacer(Modifier.weight(1f))
             TextButton({ model.viewport(s.viewport.fitted()) }) { Text(stringResource(R.string.ui_fit)) }

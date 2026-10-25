@@ -151,4 +151,77 @@ class PaintStatusTest {
         compose.onNodeWithText("25%",useUnmergedTree = true).performClick()
         compose.runOnIdle { assertEquals(0.25f,model.state.value.viewport.scale,0f) }
     }
+
+    @Test fun allEightHandlesResizeInImagePixelsAtDifferentZoomLevels() {
+        for (scale in listOf(0.5f,0.75f)) {
+            for (handle in CanvasResizeHandle.entries) {
+                compose.runOnIdle { model.resizeCanvas(800,600) }
+                compose.waitUntil(15000) { !model.state.value.busy && model.state.value.raster.width == 800 && model.state.value.raster.height == 600 }
+                compose.runOnIdle { model.viewport(model.state.value.viewport.zoomed(scale)) }
+                compose.onNodeWithTag("canvas-resize-${handle.name}").assertIsDisplayed().performTouchInput {
+                    swipe(center,center + Offset(-handle.horizontal * 80f * scale,-handle.vertical * 60f * scale),200)
+                }
+                val width = if (handle.horizontal == 0) 800 else 720
+                val height = if (handle.vertical == 0) 600 else 540
+                compose.waitUntil(15000) { !model.state.value.busy && model.state.value.raster.width == width && model.state.value.raster.height == height }
+            }
+        }
+    }
+
+    @Test fun handleDragPreviewsSizeAndCancellationLeavesPixelsAndHistoryUntouched() {
+        compose.runOnIdle { model.viewport(model.state.value.viewport.zoomed(0.5f)) }
+        compose.onNodeWithTag("canvas-resize-Right").performTouchInput {
+            down(center)
+            moveTo(center + Offset(40f,0f))
+        }
+        compose.onNodeWithTag("paint-canvas-dimensions").assertTextContains("880 x 600 px")
+        compose.runOnIdle {
+            assertEquals(800,model.state.value.raster.width)
+            assertFalse(model.state.value.canUndo)
+        }
+        compose.onNodeWithTag("canvas-resize-Right").performTouchInput { cancel() }
+        compose.onNodeWithTag("paint-canvas-dimensions").assertTextContains("800 x 600 px")
+        compose.runOnIdle { assertFalse(model.state.value.canUndo) }
+        compose.onNodeWithTag("canvas-resize-Right").performTouchInput {
+            down(center)
+            moveTo(center + Offset(40f,0f))
+        }
+        compose.onNodeWithTag("canvas-resize-Right").performKeyInput { pressKey(androidx.compose.ui.input.key.Key.Escape) }
+        compose.onNodeWithTag("canvas-resize-Right").performTouchInput { up() }
+        compose.onNodeWithTag("paint-canvas-dimensions").assertTextContains("800 x 600 px")
+        compose.runOnIdle { assertFalse(model.state.value.canUndo) }
+    }
+
+    @Test fun focusedHandleResizesWithArrowKeys() {
+        compose.runOnIdle { model.viewport(model.state.value.viewport.zoomed(0.5f)) }
+        compose.onNodeWithTag("canvas-resize-Right").performSemanticsAction(SemanticsActions.RequestFocus) { it() }
+        compose.onNodeWithTag("canvas-resize-Right").performKeyInput { pressKey(androidx.compose.ui.input.key.Key.DirectionRight) }
+        compose.waitUntil(15000) { !model.state.value.busy && model.state.value.raster.width == 801 }
+        compose.runOnIdle {
+            assertEquals(600,model.state.value.raster.height)
+            model.undo()
+            assertEquals(800,model.state.value.raster.width)
+            assertFalse(model.state.value.canUndo)
+        }
+    }
+
+    @Test fun draggingTopLeftPreservesOppositeCornerAndUndoRestoresOriginal() {
+        compose.runOnIdle {
+            model.viewport(model.state.value.viewport.zoomed(0.5f))
+            model.stroke(listOf(Point(100f,100f)))
+        }
+        compose.waitUntil(15000) { !model.state.value.busy && model.state.value.canUndo }
+        compose.onNodeWithTag("canvas-resize-TopLeft").performTouchInput {
+            swipe(center,center + Offset(20f,10f),200)
+        }
+        compose.waitUntil(15000) { !model.state.value.busy && model.state.value.raster.width == 760 }
+        compose.runOnIdle {
+            assertEquals(580,model.state.value.raster.height)
+            assertEquals(BLACK,model.state.value.raster.pixel(60,80))
+            model.undo()
+            assertEquals(800,model.state.value.raster.width)
+            assertEquals(600,model.state.value.raster.height)
+            assertEquals(BLACK,model.state.value.raster.pixel(100,100))
+        }
+    }
 }

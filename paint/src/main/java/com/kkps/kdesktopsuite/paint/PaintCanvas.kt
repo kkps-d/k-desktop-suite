@@ -41,6 +41,7 @@ import kotlin.math.*
 internal fun PaintCanvas(
     state: PaintUiState, model: PaintViewModel,
     onCursorChange: (Point?) -> Unit, onSelectionChange: (PixelRect?) -> Unit,
+    onCanvasResizeChange: (PixelRect?) -> Unit,
 ) {
     val current by rememberUpdatedState(state)
     val density = LocalDensity.current
@@ -60,6 +61,7 @@ internal fun PaintCanvas(
     var keyboardInput by remember { mutableStateOf(false) }
     var erasing by remember { mutableStateOf(false) }
     var contextMenu by remember { mutableStateOf<Offset?>(null) }
+    var canvasResize by remember { mutableStateOf<PixelRect?>(null) }
     val raster = if (state.preview?.tool == Tool.Text) state.raster else state.rendered ?: state.raster
     val image = remember(raster) { raster.bitmap().asImageBitmap() }
 
@@ -73,6 +75,7 @@ internal fun PaintCanvas(
             PixelRect.between(it,dragEnd ?: it).clipped(state.raster.width,state.raster.height)
         } else null)
     }
+    LaunchedEffect(canvasResize) { onCanvasResizeChange(canvasResize) }
 
     fun commandKey(event: KeyEvent): Boolean {
         if (event.key == Key.Spacebar) {
@@ -113,7 +116,25 @@ internal fun PaintCanvas(
 
     Box(Modifier.fillMaxSize().clipToBounds().background(surface).testTag("paint-viewport")
         .onSizeChanged { size ->
-            model.resizeViewport(size.width.toFloat(),size.height.toFloat(),with(density) { 8.dp.toPx() })
+            model.resizeViewport(size.width.toFloat(),size.height.toFloat(),with(density) { 24.dp.toPx() })
+        }.pointerInput(density.density,active) {
+            awaitPointerEventScope {
+                while (true) {
+                    val event = awaitPointerEvent()
+                    keyboardInput = false
+                    hovering = if (event.type == PointerEventType.Exit) null else event.changes.firstOrNull()?.position
+                    if (event.type != PointerEventType.Scroll) continue
+                    val change = event.changes.firstOrNull()?.takeUnless { it.isConsumed } ?: continue
+                    val s = current
+                    if (event.keyboardModifiers.isCtrlPressed) {
+                        model.viewport(s.viewport.zoomed(s.viewport.scale * if (change.scrollDelta.y < 0) 1.15f else 1/1.15f,Point(change.position.x,change.position.y)))
+                    } else {
+                        val delta = change.scrollDelta.y * -48 * density.density
+                        model.viewport(s.viewport.panned(if (event.keyboardModifiers.isShiftPressed) Point(delta,0f) else Point(-change.scrollDelta.x*48*density.density,delta)))
+                    }
+                    change.consume()
+                }
+            }
         }) {
         Canvas(Modifier.fillMaxSize().testTag("paint-canvas").focusRequester(focus)
             .onFocusChanged { if (!it.hasFocus) { stroke.clear(); keyboardDrawing = false; spacePressed = false } }
@@ -125,30 +146,12 @@ internal fun PaintCanvas(
                     CustomAccessibilityAction("Apply current edit") { model.applyPreview(); true },
                     CustomAccessibilityAction("Cancel current edit") { model.cancelPreview(); true },
                     CustomAccessibilityAction("Move or resize selection") { model.dialog(PaintDialog.Geometry); true },
+                    CustomAccessibilityAction("Resize canvas") { model.dialog(PaintDialog.CanvasSize); true },
                     CustomAccessibilityAction("Create text in the image") { model.tool(Tool.Text); model.tap(Point(16f,16f)); true },
                     CustomAccessibilityAction("Announce cursor coordinates") { model.message("Cursor ${keyboardCursor.x.toInt()}, ${keyboardCursor.y.toInt()} pixels"); true },
                 )
             }
             .pointerHoverIcon(PointerIcon.Crosshair)
-            .pointerInput(density.density,active) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        keyboardInput = false
-                        hovering = if (event.type == PointerEventType.Exit) null else event.changes.firstOrNull()?.position
-                        if (event.type != PointerEventType.Scroll) continue
-                        val change = event.changes.firstOrNull() ?: continue
-                        val s = current
-                        if (event.keyboardModifiers.isCtrlPressed) {
-                            model.viewport(s.viewport.zoomed(s.viewport.scale * if (change.scrollDelta.y < 0) 1.15f else 1/1.15f,Point(change.position.x,change.position.y)))
-                        } else {
-                            val delta = change.scrollDelta.y * -48 * density.density
-                            model.viewport(s.viewport.panned(if (event.keyboardModifiers.isShiftPressed) Point(delta,0f) else Point(-change.scrollDelta.x*48*density.density,delta)))
-                        }
-                        change.consume()
-                    }
-                }
-            }
             .pointerInput(density.density,active) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -225,10 +228,16 @@ internal fun PaintCanvas(
             }) {
             val view = state.viewport
             val origin = view.origin
-            drawImage(image,dstOffset = IntOffset(origin.x.roundToInt(),origin.y.roundToInt()),
-                dstSize = IntSize((raster.width*view.scale).roundToInt().coerceAtLeast(1),(raster.height*view.scale).roundToInt().coerceAtLeast(1)),
-                filterQuality = if (view.scale >= 1) FilterQuality.None else FilterQuality.Low)
-            drawRect(Color.Gray,Offset(origin.x,origin.y),Size(raster.width*view.scale,raster.height*view.scale),style = Stroke(1f))
+            val canvasBounds = canvasResize ?: PixelRect(0,0,raster.width,raster.height)
+            val canvasOrigin = view.screenPoint(Point(canvasBounds.x.toFloat(),canvasBounds.y.toFloat()))
+            val canvasSize = Size(canvasBounds.width * view.scale,canvasBounds.height * view.scale)
+            drawRect(Color(state.options.background),Offset(canvasOrigin.x,canvasOrigin.y),canvasSize)
+            clipRect(canvasOrigin.x,canvasOrigin.y,canvasOrigin.x + canvasSize.width,canvasOrigin.y + canvasSize.height) {
+                drawImage(image,dstOffset = IntOffset(origin.x.roundToInt(),origin.y.roundToInt()),
+                    dstSize = IntSize((raster.width*view.scale).roundToInt().coerceAtLeast(1),(raster.height*view.scale).roundToInt().coerceAtLeast(1)),
+                    filterQuality = if (view.scale >= 1) FilterQuality.None else FilterQuality.Low)
+            }
+            drawRect(Color.Gray,Offset(canvasOrigin.x,canvasOrigin.y),canvasSize,style = Stroke(1f))
             if (stroke.isNotEmpty()) {
                 val path = Path()
                 stroke.forEachIndexed { index, point ->
@@ -260,6 +269,7 @@ internal fun PaintCanvas(
             }
         }
         state.preview?.takeIf { it.tool == Tool.Text }?.let { preview -> key(preview.id) { TextOverlay(state,preview,model) } }
+        CanvasResizeHandles(state,model,canvasResize,active,onBoundsChange = { canvasResize = it })
         contextMenu?.let { position ->
             DropdownMenu(true,{ contextMenu = null },offset = with(density) { DpOffset(position.x.toDp(),position.y.toDp()) }) {
                 DropdownMenuItem({ Text(stringResource(R.string.ui_paste)) },{ contextMenu = null; model.paste() })

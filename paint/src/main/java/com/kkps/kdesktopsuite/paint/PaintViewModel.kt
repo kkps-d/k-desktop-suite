@@ -268,12 +268,14 @@ internal class PaintViewModel(
         }) { clearSelection(); viewport(state.value.viewport.copy(fit = true).resized(s.viewport.width,s.viewport.height,rect.width,rect.height)) }
     }
     fun undo() { if (state.value.busy) return; if (state.value.preview != null) cancelPreview() else { history.undo(); clearSelection(); sync(); updateImageBounds() } }
-    fun resizeCanvas(width: Int, height: Int) {
+    fun resizeCanvas(width: Int, height: Int) = resizeCanvas(PixelRect(0,0,width,height))
+    fun resizeCanvas(bounds: PixelRect) {
         if (state.value.busy || state.value.loading) return
-        checkImageSize(width,height)
+        try { checkImageSize(bounds.width,bounds.height) }
+        catch (invalid: IllegalArgumentException) { message(invalid.message); return }
         val background = state.value.options.background
         applyPreview {
-            operation({ it.resizeCanvas(width,height,background) }) { clearSelection() }
+            operation({ it.resizeCanvas(bounds,background) }) { clearSelection() }
         }
     }
     fun redo() { if (!state.value.busy) { cancelPreview(); history.redo(); sync(); updateImageBounds() } }
