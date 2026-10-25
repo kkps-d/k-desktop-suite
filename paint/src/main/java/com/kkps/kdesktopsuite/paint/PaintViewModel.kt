@@ -188,7 +188,8 @@ internal class PaintViewModel(
         if (state.value.busy) return
         applyPreview {
             if (tool == Tool.Eyedropper && state.value.options.tool != Tool.Eyedropper) previousDrawingTool = state.value.options.tool
-            mutableState.update { it.copy(options = it.options.copy(tool = tool)) }; checkpoint()
+            mutableState.update { it.copy(options = it.options.copy(tool = tool),
+                selection = if (tool != it.options.tool) null else it.selection) }; checkpoint()
         }
     }
     fun stroke(points: List<Point>, erasing: Boolean = false) {

@@ -8,6 +8,9 @@ each axis on which the image fits; larger images pan within the viewport.
 The core supports Pencil, Solid brush, Fill, Eraser, Eyedropper, rectangular
 selection and clipboard operations, Line/Rectangle/Ellipse, native multiline text,
 undo/redo, PNG/JPEG files, PNG sharing, settings, and durable private recovery.
+The Hand tool pans with one finger; pinch zoom and two-finger pan remain available
+with editing tools as well. Switching tools clears the selection and commits any
+pending move or paste.
 Modern desktop and the common mobile view remain deferred, as do the extended
 tools listed in the [Android specification](../docs/KD_PAINT_ANDROID_SPEC.md).
 

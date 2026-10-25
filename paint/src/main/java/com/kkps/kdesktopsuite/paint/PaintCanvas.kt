@@ -47,6 +47,8 @@ internal fun PaintCanvas(
 ) {
     val current by rememberUpdatedState(state)
     val density = LocalDensity.current
+    val context = LocalContext.current
+    val handCursor = remember(context) { PointerIcon(android.view.PointerIcon.getSystemIcon(context,android.view.PointerIcon.TYPE_GRAB)) }
     val surface = MaterialTheme.colorScheme.surfaceContainerHigh
     val outline = MaterialTheme.colorScheme.primary
     val focus = remember { FocusRequester() }
@@ -153,7 +155,7 @@ internal fun PaintCanvas(
                     CustomAccessibilityAction("Announce cursor coordinates") { model.message("Cursor ${keyboardCursor.x.toInt()}, ${keyboardCursor.y.toInt()} pixels"); true },
                 )
             }
-            .pointerHoverIcon(PointerIcon.Crosshair)
+            .pointerHoverIcon(if (state.options.tool == Tool.Pan) handCursor else PointerIcon.Crosshair)
             .pointerInput(density.density,active) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -180,7 +182,6 @@ internal fun PaintCanvas(
                         return@awaitEachGesture
                     }
                     var moved = false
-                    var last = down.position
                     if (!navigation && tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) stroke.add(imageStart)
                     else if (!navigation && !hitExisting && !resize && tool in listOf(Tool.Select,Tool.Line,Tool.Rectangle,Tool.Ellipse,Tool.Text)) {
                         dragStart = imageStart; dragEnd = imageStart
@@ -197,13 +198,13 @@ internal fun PaintCanvas(
                                 navigation = true; stroke.clear(); dragStart = null; dragEnd = null
                                 val pan = event.calculatePan(); val zoom = event.calculateZoom()
                                 val centroid = event.calculateCentroid(useCurrent = true)
-                                val view = current.viewport
+                                val view = model.state.value.viewport
                                 model.viewport(view.zoomed(view.scale*zoom,Point(centroid.x,centroid.y)).panned(Point(pan.x,pan.y)))
-                            } else if (pointer.pressed) {
-                                val delta = pointer.position - last
+                            } else if (pointer.pressed || navigation) {
+                                val delta = pointer.position - pointer.previousPosition
                                 if ((pointer.position-down.position).getDistance() > viewConfiguration.touchSlop) moved = true
-                                val point = current.viewport.imagePoint(Point(pointer.position.x,pointer.position.y))
-                                if (navigation) model.viewport(current.viewport.panned(Point(delta.x,delta.y)))
+                                val point = model.state.value.viewport.imagePoint(Point(pointer.position.x,pointer.position.y))
+                                if (navigation) model.viewport(model.state.value.viewport.panned(Point(delta.x,delta.y)))
                                 else if (resize) {
                                     requireNotNull(existing)
                                     val w = max(1,(point.x-existing.x).roundToInt()); val h = max(1,(point.y-existing.y).roundToInt())
@@ -214,7 +215,6 @@ internal fun PaintCanvas(
                                 } else if (tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) stroke.add(point)
                                 else if (dragStart != null) dragEnd = point
                             }
-                            last = pointer.position
                             event.changes.forEach { it.consume() }
                         } while (if (navigation) event.changes.any { it.pressed } else event.changes.any { it.id == down.id && it.pressed })
                         if (!navigation) {
@@ -271,7 +271,7 @@ internal fun PaintCanvas(
             }
         }
         state.preview?.takeIf { it.tool == Tool.Text }?.let { preview -> key(preview.id) { TextOverlay(state,preview,model) } }
-        CanvasResizeHandles(state,model,canvasResize,active,onBoundsChange = { canvasResize = it })
+        if (state.options.tool != Tool.Pan) CanvasResizeHandles(state,model,canvasResize,active,onBoundsChange = { canvasResize = it })
         contextMenu?.let { position ->
             AppDropdownMenu(true,{ contextMenu = null },offset = with(density) { DpOffset(position.x.toDp(),position.y.toDp()) }) {
                 AppMenuItem({ Text(stringResource(R.string.ui_paste)) },{ contextMenu = null; model.paste() })

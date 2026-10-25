@@ -17,7 +17,7 @@ import java.util.UUID
 internal enum class Tool(val label: String) {
     Pencil("Pencil"), Brush("Brush"), Fill("Fill"), Eraser("Eraser"), Text("Text"),
     Eyedropper("Eyedropper"), Select("Select"), Line("Line"), Rectangle("Rectangle"), Ellipse("Ellipse"),
-    Zoom("Zoom"), Pan("Pan"),
+    Zoom("Zoom"), Pan("Hand"),
 }
 internal data class ToolOptions(
     val tool: Tool = Tool.Brush, val foreground: Int = BLACK, val background: Int = WHITE,

@@ -203,7 +203,7 @@ private fun RibbonGroup(label: String, content: @Composable ColumnScope.() -> Un
 @Composable
 internal fun PaintRibbon(s: PaintUiState, model: PaintViewModel, width: Float) {
     val selected = s.selection != null || s.preview?.payload != null
-    val tools = listOf(Tool.Pencil,Tool.Fill,Tool.Text,Tool.Eraser,Tool.Eyedropper,Tool.Zoom)
+    val tools = listOf(Tool.Pencil,Tool.Fill,Tool.Text,Tool.Pan,Tool.Eraser,Tool.Eyedropper,Tool.Zoom)
     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).horizontalScroll(rememberScrollState()).background(MaterialTheme.colorScheme.surfaceContainerLow).testTag("classic-ribbon"),verticalAlignment = Alignment.Top) {
         if (width < 760) {
             RibbonGroup("Clipboard") { ClipboardMenu(s,model) }
@@ -227,7 +227,7 @@ internal fun PaintRibbon(s: PaintUiState, model: PaintViewModel, width: Float) {
                 }
             }
             RibbonGroup("Tools") {
-                Column { tools.chunked(3).forEach { row -> Row { row.forEach { tool ->
+                Column { tools.chunked(4).forEach { row -> Row { row.forEach { tool ->
                     PaintButton(tool.icon,tool.label,selected = s.options.tool == tool,enabled = !s.busy) { model.tool(tool) }
                 } } } }
             }

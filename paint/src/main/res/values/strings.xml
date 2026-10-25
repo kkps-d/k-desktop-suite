@@ -36,7 +36,7 @@
     <string name="ui_zoom_out_ctrl">Zoom out</string>
     <string name="ui_actual_size_ctrl_0">Actual</string>
     <string name="ui_fit_image">Fit image</string>
-    <string name="ui_pan_tool">Pan tool</string>
+    <string name="ui_pan_tool">Hand tool</string>
     <string name="ui_focus_mode">Focus mode</string>
     <string name="ui_all">All</string>
     <string name="ui_solid">Solid</string>
@@ -99,5 +99,5 @@
     <string name="ui_copy_selection">Copy selection</string>
     <string name="ui_cut_selection">Cut selection</string>
     <string name="ui_delete_selected_pixels">Delete selected pixels</string>
-    <string name="ui_pan">Pan</string>
+    <string name="ui_pan">Hand</string>
 </resources>
