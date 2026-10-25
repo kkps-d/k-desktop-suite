@@ -23,6 +23,9 @@ class TabWorkspaceTest {
     private suspend fun workspace(store: SessionStore = store()): NotepadWorkspace {
         val workspace = withContext(Dispatchers.Main) { NotepadWorkspace(store).also { workspaces.add(it) } }
         workspace.ready.await()
+        withContext(Dispatchers.Main) {
+            if (workspace.windows.first().documents.isEmpty()) workspace.addBlank(workspace.windows.first())
+        }
         return workspace
     }
 
@@ -168,6 +171,9 @@ class TabWorkspaceTest {
         val second = withContext(Dispatchers.Main) { NotepadViewModel(repository, workspace, SavedStateHandle(), newWindow = true) }
         second.openUri("file:shared").join()
         withContext(Dispatchers.Main) {
+            assertTrue(second.documents.isEmpty())
+            assertEquals(first.recentFiles, second.recentFiles)
+            second.newDocument()
             assertEquals(1, workspace.windows.sumOf { it.documents.count { doc -> doc.uri == "file:shared" } })
             assertEquals(first.documents.single().id, first.activeId)
             second.requestSaveAs()
@@ -187,6 +193,7 @@ class TabWorkspaceTest {
         val first = withContext(Dispatchers.Main) { NotepadViewModel(repository, workspace, SavedStateHandle()) }
         val second = withContext(Dispatchers.Main) { NotepadViewModel(repository, workspace, SavedStateHandle(), newWindow = true) }
         withContext(Dispatchers.Main) {
+            second.newDocument()
             first.requestSaveAs()
             first.pickerResult("file:new")
         }
@@ -212,6 +219,7 @@ class TabWorkspaceTest {
             first.documents.last().editor.edit { append("second") }
             workspace.reorder(first, first.documents.last().id, 0)
             val second = workspace.acquireWindow(null, true)
+            workspace.addBlank(second)
             second.documents.single().editor.edit { append("third") }
             workspace.focus(second)
             workspace.appTheme = AppTheme.Dark

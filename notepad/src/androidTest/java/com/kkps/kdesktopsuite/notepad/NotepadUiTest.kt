@@ -40,8 +40,9 @@ class NotepadUiTest {
     private val compactCaptionWidth = DesktopCaptionDimensions.minTabStripWidth.value - 12f
     private lateinit var notepad: NotepadViewModel
     private lateinit var inputModeManager: InputModeManager
+    private val repository = FakeDocuments()
 
-    private fun showEditor(largeFontRtl: Boolean = false, separatingFold: Boolean = false) {
+    private fun showEditor(largeFontRtl: Boolean = false, separatingFold: Boolean = false, startWithDocument: Boolean = true) {
         compose.activityRule.scenario.onActivity {
             it.enableEdgeToEdge()
             if (android.os.Build.VERSION.SDK_INT >= 35) {
@@ -53,7 +54,7 @@ class NotepadUiTest {
         }
         val file = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "ui-${UUID.randomUUID()}.json")
         compose.setContent {
-            notepad = remember { NotepadViewModel(FakeDocuments(), SessionStore(file), SavedStateHandle()) }
+            notepad = remember { NotepadViewModel(repository, SessionStore(file), SavedStateHandle()) }
             DisposableEffect(notepad) {
                 val owner = ViewModelStore().apply { put("notepad", notepad) }
                 onDispose { owner.clear() }
@@ -81,6 +82,159 @@ class NotepadUiTest {
             }
         }
         compose.waitUntil(5_000) { !notepad.loading }
+        if (startWithDocument) compose.runOnIdle { notepad.newDocument() }
+    }
+
+    @Test
+    fun welcomeTabIsReplacedByNewAndReturnsAfterTheLastDocumentCloses() {
+        showEditor(startWithDocument = false)
+        compose.onNodeWithTag("welcome-tab").assertIsDisplayed().assertIsSelected().assertTextEquals("Welcome")
+        compose.onNodeWithTag("document-editor").assertDoesNotExist()
+        compose.onNodeWithText("No recent files").assertIsDisplayed()
+        compose.onNodeWithTag("welcome-new").assertHeightIsAtLeast(48.dp).performClick()
+        compose.onNodeWithTag("welcome-tab").assertDoesNotExist()
+        compose.onNodeWithTag("document-editor").assertIsDisplayed()
+        compose.onNodeWithTag("document-editor").performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.W); keyUp(Key.CtrlLeft) }
+        compose.onNodeWithTag("welcome-tab").assertIsDisplayed().assertIsSelected()
+        compose.onNodeWithTag("welcome-screen").assertIsDisplayed()
+        compose.onNodeWithContentDescription("New document").performClick()
+        compose.onNodeWithTag("document-editor").assertIsDisplayed()
+    }
+
+    @Test
+    fun welcomeCommandsSupportKeyboardMenusAndCancelledOpen() {
+        showEditor(startWithDocument = false)
+        compose.runOnIdle { inputModeManager.requestInputMode(InputMode.Keyboard) }
+        compose.onNodeWithTag("welcome-new").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus)
+        compose.onNodeWithTag("welcome-new").performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.N); keyUp(Key.CtrlLeft) }
+        compose.onNodeWithTag("document-editor").assertIsDisplayed()
+        compose.runOnIdle { notepad.requestClose(notepad.activeId) }
+        compose.onNodeWithTag("welcome-new").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus)
+        compose.onNodeWithTag("welcome-new").performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.O); keyUp(Key.CtrlLeft) }
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals(PickerKind.Open, notepad.pickerRequest?.kind)
+            notepad.pickerResult(null)
+        }
+        compose.onNodeWithTag("welcome-open").assertIsEnabled().performClick()
+        compose.runOnIdle {
+            org.junit.Assert.assertTrue(notepad.pickerPending)
+            notepad.pickerResult(null)
+        }
+        compose.onNodeWithText("File").performClick()
+        compose.onNodeWithText("Save").assertIsNotEnabled()
+        compose.onNodeWithText("Open…").performClick()
+        compose.runOnIdle {
+            org.junit.Assert.assertTrue(notepad.pickerPending)
+            notepad.pickerResult(null)
+        }
+        compose.onNodeWithText("File").performClick()
+        compose.onNode(hasText("New") and !hasTestTag("welcome-new")).performClick()
+        compose.onNodeWithTag("welcome-tab").assertDoesNotExist()
+        compose.onNodeWithTag("document-editor").assertIsDisplayed()
+    }
+
+    @Test
+    fun welcomeColumnsStackBelow600dpAndSurviveResizingAndSettings() {
+        showEditor(startWithDocument = false)
+        captureWelcome("welcome-desktop.png")
+        listOf(1000, 600, 599, 400).forEach { width ->
+            compose.runOnIdle { windowSize = DpSize(width.dp, 800.dp) }
+            val start = compose.onNodeWithTag("welcome-start").getUnclippedBoundsInRoot()
+            val recent = compose.onNodeWithTag("welcome-recent").getUnclippedBoundsInRoot()
+            if (width >= 600) {
+                org.junit.Assert.assertEquals(start.top.value, recent.top.value, 1f)
+                org.junit.Assert.assertTrue(recent.left >= start.right)
+                org.junit.Assert.assertEquals((start.right - start.left).value, (recent.right - recent.left).value, 2f)
+            } else {
+                org.junit.Assert.assertTrue(recent.top >= start.bottom)
+            }
+        }
+        captureWelcome("welcome-phone.png")
+        compose.onNodeWithContentDescription("Settings").performClick()
+        compose.onNodeWithTag("welcome-screen").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Back").performClick()
+        compose.onNodeWithTag("welcome-tab").assertIsDisplayed()
+        compose.onNodeWithTag("welcome-screen").assertIsDisplayed()
+    }
+
+    @Test
+    fun recentFilesOpenFromWelcomeAndFailedRecentLeavesWelcomeVisible() {
+        repository.put("file:notes.txt", "Saved notes")
+        showEditor(startWithDocument = false)
+        kotlinx.coroutines.runBlocking { notepad.openUri("file:notes.txt").join() }
+        compose.runOnIdle { notepad.requestClose(notepad.activeId) }
+        compose.onNodeWithTag("recent-file-file:notes.txt").assertTextEquals("notes.txt").performClick()
+        compose.waitUntil(5_000) { notepad.active != null }
+        compose.onNodeWithTag("welcome-tab").assertDoesNotExist()
+        compose.onNodeWithTag("document-editor").assertTextContains("Saved notes")
+        compose.runOnIdle {
+            notepad.requestClose(notepad.activeId)
+            repository.files.clear()
+        }
+        compose.onNodeWithTag("recent-file-file:notes.txt").performClick()
+        compose.waitUntil(5_000) { notepad.errorMessage != null }
+        compose.onNodeWithTag("welcome-tab").assertIsDisplayed()
+        compose.onNodeWithTag("recent-file-file:notes.txt").assertIsDisplayed()
+        compose.onNodeWithTag("document-editor").assertDoesNotExist()
+    }
+
+    @Test
+    fun welcomeSupportsShortWindowsLargeFontsRtlAndNarrowHeaders() {
+        windowSize = DpSize(320.dp, 400.dp)
+        showEditor(largeFontRtl = true, startWithDocument = false)
+        compose.onNodeWithTag("welcome-tab").assertIsDisplayed().assertIsSelected()
+        compose.onNodeWithTag("welcome-open").performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithText("No recent files").performScrollTo().assertIsDisplayed()
+        compose.runOnIdle { windowSize = DpSize(144.dp, 800.dp) }
+        compose.onNodeWithTag("document-switcher").assertDoesNotExist()
+        compose.onNodeWithContentDescription("New document").assertIsDisplayed()
+        compose.onNodeWithContentDescription("New document").performClick()
+        compose.onNodeWithTag("document-editor").assertIsDisplayed()
+    }
+
+    @Test
+    fun welcomeHeaderKeepsCaptionClearancesAndAcceptsAMovedDocument() {
+        caption = desktopCaption(height = 40f)
+        showEditor(startWithDocument = false)
+        val welcome = compose.onNodeWithTag("welcome-tab").getUnclippedBoundsInRoot()
+        org.junit.Assert.assertTrue(welcome.bottom <= 40.dp)
+        lateinit var transfer: TabTransfer
+        compose.runOnIdle {
+            val source = notepad.workspace.acquireWindow(null, true)
+            notepad.workspace.addBlank(source)
+            source.documents.single().editor.edit { append("Moved into Welcome") }
+            transfer = notepad.workspace.beginTransfer(source, source.activeId)!!
+        }
+        val area = compose.onNodeWithTag("tab-drop-area").fetchSemanticsNode().boundsInWindow
+        compose.runOnIdle {
+            org.junit.Assert.assertTrue(compose.activity.window.decorView.systemGestureExclusionRects.any {
+                it.contains((area.right - 2f).toInt(), area.center.y.toInt())
+            })
+            org.junit.Assert.assertTrue(notepad.workspace.move(transfer.token, notepad.window, 0))
+            org.junit.Assert.assertTrue(notepad.workspace.windows.first { it.id == transfer.sourceId }.closed)
+        }
+        compose.onNodeWithTag("welcome-tab").assertDoesNotExist()
+        compose.onNodeWithTag("document-editor").assertTextContains("Moved into Welcome")
+    }
+
+    @Test
+    fun welcomeRecentListKeepsFiveFilesScrollableWithLargeText() {
+        (1..6).forEach { repository.put("file:$it.txt", "Saved file $it") }
+        windowSize = DpSize(320.dp, 480.dp)
+        showEditor(largeFontRtl = true, startWithDocument = false)
+        (1..6).forEach { index ->
+            kotlinx.coroutines.runBlocking { notepad.openUri("file:$index.txt").join() }
+            compose.runOnIdle { notepad.requestClose(notepad.activeId) }
+        }
+        compose.onNodeWithTag("recent-file-file:1.txt").assertDoesNotExist()
+        compose.onNodeWithTag("recent-file-file:6.txt").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("recent-file-file:2.txt").performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(48.dp)
+        captureWelcome("welcome-recents-rtl.png")
+    }
+
+    private fun captureWelcome(name: String) {
+        val file = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, name)
+        file.outputStream().use { compose.onRoot().captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }
 
     @Test
@@ -336,6 +490,7 @@ class NotepadUiTest {
         lateinit var transfer: TabTransfer
         compose.runOnIdle {
             val source = notepad.workspace.acquireWindow(null, true)
+            notepad.workspace.addBlank(source)
             transfer = notepad.workspace.beginTransfer(source, source.documents.single().id)!!
         }
         val expanded = viewport.getUnclippedBoundsInRoot()

@@ -48,6 +48,7 @@ internal class NotepadWorkspace(private val store: SessionStore) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     val ready = CompletableDeferred<Unit>()
     val windows = mutableStateListOf<NotepadWindow>()
+    val recentFiles = mutableStateListOf<RecentFile>()
     var showWindow: (NotepadWindow) -> Unit = {}
     private val main = NotepadWindow().also { windows.add(it) }
     private var claimed = false
@@ -76,12 +77,12 @@ internal class NotepadWorkspace(private val store: SessionStore) {
                     showStatusBar = snapshot.showStatusBar
                     appTheme = snapshot.appTheme
                     fontStyle = snapshot.fontStyle
+                    recentFiles.addAll(snapshot.recentFiles)
                 }
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 main.errorMessage = R.string.error_restore
             }
-            if (main.documents.isEmpty()) addBlank(main)
             main.focusRequest++
             loading = false
             ready.complete(Unit)
@@ -96,13 +97,17 @@ internal class NotepadWorkspace(private val store: SessionStore) {
             claimed = true
             return windows.first { !it.closed }
         }
-        return NotepadWindow().also { window ->
-            windows.add(window)
-            scope.launch { ready.await(); if (!window.closed && window.documents.isEmpty()) addBlank(window) }
-        }
+        return NotepadWindow().also { windows.add(it) }
     }
 
     fun focus(window: NotepadWindow) { if (!window.closed) focusedId = window.id }
+
+    fun rememberFile(uri: String, name: String?) {
+        recentFiles.removeAll { it.uri == uri }
+        recentFiles.add(0, RecentFile(uri, name))
+        while (recentFiles.size > 5) recentFiles.removeAt(recentFiles.lastIndex)
+        checkpoint()
+    }
 
     fun addBlank(window: NotepadWindow) {
         val doc = DocumentSession(DocumentSnapshot())
@@ -194,7 +199,7 @@ internal class NotepadWorkspace(private val store: SessionStore) {
             if (source.activeId == doc.id) {
                 source.documents.getOrNull(sourceIndex.coerceAtMost(source.documents.lastIndex))?.let { source.select(it.id) }
             }
-            // A freshly launched destination contains only its temporary blank tab.
+            // A newly launched transfer destination has no documents of its own.
             if (newWindow) destination.documents.clear()
             destination.documents.add(index.coerceIn(0, destination.documents.size), doc)
             destination.showDocument()
@@ -222,9 +227,9 @@ internal class NotepadWorkspace(private val store: SessionStore) {
     fun snapshot(): SessionSnapshot {
         val documents = windows.filter { !it.closed }.flatMap { it.documents }
         val active = windows.find { it.id == focusedId && !it.closed }?.activeId
-            ?.takeIf { id -> documents.any { it.id == id } } ?: documents.first().id
+            ?.takeIf { id -> documents.any { it.id == id } } ?: documents.firstOrNull()?.id.orEmpty()
         return SessionSnapshot(documents.map { it.snapshot() }, active, zoom,
-            wordWrap, showStatusBar, appTheme, fontStyle)
+            wordWrap, showStatusBar, appTheme, fontStyle, recentFiles.toList())
     }
 
     fun checkpoint() { if (!loading) checkpoint(snapshot()) }

@@ -63,12 +63,12 @@ The selector displays the active document's title and opens a scrollable documen
 
 - Selecting a tab restores its document's caret, selection, scroll position, and undo history. Closing an inactive tab must not first select it.
 - New appends and selects an untitled document and focuses its editor. Use the existing shared command handlers for Ctrl+N, Ctrl+Tab, Ctrl+Shift+Tab, and Ctrl+W.
-- Closing the active tab selects its right neighbor, falling back to the left. Closing the final document creates a fresh untitled document.
+- Closing the active tab selects its right neighbor, falling back to the left. Closing the final document opens the Welcome tab. New or Open replaces Welcome with the document.
 - Closing or replacing unsaved content offers Save / Discard / Cancel. Failed or canceled saving preserves the document and its tab.
 - Support logical Tab/Shift+Tab traversal, arrow navigation within tabs, Enter/Space activation, Escape dismissal, and independently labeled Close/New actions. Keep focus distinct from selection; moving focus must not unexpectedly move the editor caret.
 - Keep full titles in accessibility labels and the compact document list. Provide a tab context menu using existing commands and horizontal wheel/trackpad scrolling.
 - Keep tab and button interactions separate from system window dragging. Respect caption controls, cutouts, hinges, and system/IME insets.
-- Preserve working state during resizing and activity recreation. On relaunch, restore only documents with nonempty text, retaining their order and active selection when it survives. Whitespace counts as content. Otherwise select the first surviving document; if none survive, create one fresh untitled document. Never change the original files while filtering recovery tabs.
+- Preserve working state during resizing and activity recreation. On relaunch, restore only documents with nonempty text, retaining their order and active selection when it survives. Whitespace counts as content. Otherwise select the first surviving document; if none survive, show the Welcome tab. Never change the original files while filtering recovery tabs.
 - Persist word-wrap and status-bar preferences with the session. Wrapping off preserves hard line breaks and enables horizontal scrolling, with a separate horizontal scroll position for each document.
 
 ## Implementation focus

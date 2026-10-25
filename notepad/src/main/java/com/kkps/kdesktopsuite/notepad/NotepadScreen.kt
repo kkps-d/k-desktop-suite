@@ -160,22 +160,27 @@ internal fun NotepadScreen(
     val compact = !adaptive.windowSizeClass.isWidthAtLeastBreakpoint(600) || !adaptive.windowSizeClass.isHeightAtLeastBreakpoint(480)
 
     fun enabled(command: NotepadCommand): Boolean = !notepad.loading && when (command) {
+        NotepadCommand.New -> true
         NotepadCommand.Open -> !notepad.pickerPending
         NotepadCommand.Save, NotepadCommand.SaveAs, NotepadCommand.Close -> active != null && !active.saving && !notepad.pickerPending
         NotepadCommand.Undo -> active?.editor?.undoState?.canUndo == true
         NotepadCommand.Redo -> active?.editor?.undoState?.canRedo == true
         NotepadCommand.Cut, NotepadCommand.Copy -> active?.editor?.selection?.collapsed == false
-        NotepadCommand.ZoomIn -> notepad.zoom < 300
-        NotepadCommand.ZoomOut -> notepad.zoom > 50
+        NotepadCommand.ZoomIn -> active != null && notepad.zoom < 300
+        NotepadCommand.ZoomOut -> active != null && notepad.zoom > 50
         else -> active != null
     }
 
     fun run(command: NotepadCommand) {
         if (!enabled(command)) return
+        when (command) {
+            NotepadCommand.New -> { notepad.newDocument(); return }
+            NotepadCommand.Open -> { notepad.requestOpen(); return }
+            else -> Unit
+        }
         val doc = notepad.active ?: return
         when (command) {
-            NotepadCommand.New -> notepad.newDocument()
-            NotepadCommand.Open -> notepad.requestOpen()
+            NotepadCommand.New, NotepadCommand.Open -> Unit
             NotepadCommand.Save -> notepad.save()
             NotepadCommand.SaveAs -> notepad.requestSaveAs()
             NotepadCommand.Close -> notepad.requestClose(doc.id)
@@ -370,6 +375,16 @@ internal fun NotepadScreen(
                                 }, wordWrap = notepad.wordWrap, fontFamily = notepad.fontStyle.fontFamily,
                         )
                         if (notepad.showStatusBar) StatusBar(active, notepad.zoom, compact, ::run)
+                    } else {
+                        NotepadWelcome(
+                            recentFiles = notepad.recentFiles,
+                            new = { run(NotepadCommand.New) },
+                            open = { run(NotepadCommand.Open) },
+                            openRecent = { notepad.openUri(it) },
+                            openEnabled = !notepad.pickerPending && notepad.opening == 0,
+                            modifier = Modifier.weight(1f),
+                            focusRequest = notepad.focusRequest,
+                        )
                     }
                 }
             }
@@ -472,7 +487,23 @@ internal fun DocumentHeader(
                 val compact = maxWidth < TabBarDimensions.minTabWidth + TabBarDimensions.buttonSize
                 CompositionLocalProvider(LocalLayoutDirection provides direction) {
                     key(layout.mode, compact) {
-                        if (compact) {
+                        if (documents.isEmpty()) {
+                            Row(Modifier.fillMaxWidth().padding(top = topPadding)
+                                .captionControl(if (layout.integrated && notepad?.workspace?.dragging != null) input else null, "welcome-drop-area")
+                                .testTag("tab-drop-area")
+                                .tabDropTarget(notepad, dropped = { token ->
+                                    notepad?.let { it.workspace.move(token, it.window, 0) } == true
+                                }), verticalAlignment = Alignment.CenterVertically) {
+                                WelcomeTab(
+                                    onClick = { notepad?.window?.let { it.focusRequest++ } },
+                                    modifier = Modifier.weight(1f, fill = false).width(TabBarDimensions.maxTabWidth)
+                                        .heightIn(min = tabHeight).captionControl(if (layout.integrated) input else null, "welcome"),
+                                )
+                                TooltipAction(stringResource(R.string.new_tab), R.drawable.ic_tab_new, iconSize = 20.dp,
+                                    modifier = Modifier.captionControl(if (layout.integrated) input else null, "new"),
+                                    targetHeight = tabHeight.coerceAtMost(TabBarDimensions.buttonSize), onClick = new)
+                            }
+                        } else if (compact) {
                             DocumentSwitcher(documents, activeId, pickerPending, select, close, new, tabHeight, errorDocumentId,
                                 notepad, activity, moveToWindow)
                         } else {

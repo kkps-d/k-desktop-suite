@@ -105,6 +105,7 @@ class NotepadActivity : ComponentActivity() {
             }
             val active = notepad.active
             val title = active?.let { documentTitle(it) }
+                ?: if (!notepad.loading) getString(R.string.welcome) else null
             SideEffect {
                 this.title = if (title == null) getString(R.string.app_name) else "$title — ${getString(R.string.app_name)}"
             }

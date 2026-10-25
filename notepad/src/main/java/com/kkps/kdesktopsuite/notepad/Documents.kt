@@ -54,6 +54,8 @@ internal data class DocumentSnapshot(
     val horizontalScroll: Int = 0,
 )
 
+internal data class RecentFile(val uri: String, val name: String?)
+
 internal data class SessionSnapshot(
     val documents: List<DocumentSnapshot>,
     val activeId: String,
@@ -62,6 +64,7 @@ internal data class SessionSnapshot(
     val showStatusBar: Boolean = true,
     val appTheme: AppTheme = AppTheme.Auto,
     val fontStyle: NoteFontStyle = NoteFontStyle.Monospace,
+    val recentFiles: List<RecentFile> = emptyList(),
 )
 
 internal class DocumentSession(snapshot: DocumentSnapshot) {

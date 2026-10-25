@@ -28,6 +28,7 @@ internal class NotepadViewModel(
 
     val window = workspace.acquireWindow(savedState["windowId"], newWindow)
     val documents get() = window.documents
+    val recentFiles get() = workspace.recentFiles
     val activeId get() = window.activeId
     val active: DocumentSession? get() = documents.firstOrNull { it.id == activeId }
     val loading get() = workspace.loading
@@ -155,7 +156,7 @@ internal class NotepadViewModel(
         val index = documents.indexOfFirst { it.id == id }
         if (index == -1) return
         documents.removeAt(index)
-        if (documents.isEmpty()) addBlank()
+        if (documents.isEmpty()) window.activeId = ""
         else if (activeId == id) select(documents[index.coerceAtMost(documents.lastIndex)].id)
         checkpoint()
     }
@@ -207,11 +208,20 @@ internal class NotepadViewModel(
 
     fun openUri(uri: String, originatingId: String = activeId): Job = viewModelScope.launch {
         ready.await()
-        workspace.findUri(uri)?.let { workspace.selectDocument(it); return@launch }
+        workspace.findUri(uri)?.let {
+            workspace.selectDocument(it)
+            // A reserved Save as URI is not a saved file until the write succeeds.
+            if (it.uri == uri) workspace.rememberFile(uri, it.name)
+            return@launch
+        }
         opening++
         try {
             val loaded = repository.read(uri)
-            workspace.findUri(uri)?.let { workspace.selectDocument(it); return@launch }
+            workspace.findUri(uri)?.let {
+                workspace.selectDocument(it)
+                if (it.uri == uri) workspace.rememberFile(uri, it.name)
+                return@launch
+            }
             val doc = DocumentSession(DocumentSnapshot(
                 name = loaded.name, uri = uri, text = loaded.text, savedText = loaded.text,
                 diskFingerprint = loaded.fingerprint, format = loaded.format,
@@ -222,7 +232,7 @@ internal class NotepadViewModel(
             }
             if (blankIndex >= 0) documents[blankIndex] = doc else documents.add(doc)
             select(doc.id)
-            checkpoint()
+            workspace.rememberFile(uri, loaded.name)
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             reportError(if (error is UnsupportedTextException) R.string.error_encoding else R.string.error_open)
@@ -259,6 +269,7 @@ internal class NotepadViewModel(
                 doc.name = saved.name
                 doc.savedText = snapshot.text
                 doc.diskFingerprint = saved.fingerprint
+                workspace.rememberFile(uri, saved.name)
                 if (errorDocumentId == id) dismissError()
                 if (closeAfter && !doc.dirty) closeDocument(id)
                 checkpoint()

@@ -24,13 +24,14 @@ class NotepadStateTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private fun store(file: File = File(context.cacheDir, "session-${UUID.randomUUID()}.json")) = SessionStore(file)
 
-    private suspend fun create(repository: FakeDocuments = FakeDocuments(), store: SessionStore = store(), savedState: SavedStateHandle = SavedStateHandle()): NotepadViewModel {
+    private suspend fun create(repository: FakeDocuments = FakeDocuments(), store: SessionStore = store(), savedState: SavedStateHandle = SavedStateHandle(), startWithDocument: Boolean = true): NotepadViewModel {
         val vm = withContext(Dispatchers.Main) {
             NotepadViewModel(repository, store, savedState).also { vm ->
                 holders.add(ViewModelStore().apply { put("notepad", vm) })
             }
         }
         waitFor { !vm.loading }
+        withContext(Dispatchers.Main) { if (startWithDocument && vm.documents.isEmpty()) vm.newDocument() }
         return vm
     }
 
@@ -102,8 +103,9 @@ class NotepadStateTest {
             vm.requestClose(second.id)
             assertEquals(third.id, vm.activeId)
             vm.requestClose(third.id)
-            assertEquals(1, vm.documents.size)
-            assertEquals("", vm.active!!.editor.text.toString())
+            assertTrue(vm.documents.isEmpty())
+            assertNull(vm.active)
+            assertEquals("", vm.activeId)
         }
     }
 
@@ -178,6 +180,10 @@ class NotepadStateTest {
         }
         waitFor { vm.documents.none { it.id == id } }
         assertEquals("original saved", repo.files.getValue("file:one").text)
+        withContext(Dispatchers.Main) {
+            assertTrue(vm.documents.isEmpty())
+            assertEquals(listOf(RecentFile("file:one", "one")), vm.recentFiles)
+        }
     }
 
     @Test
@@ -270,18 +276,18 @@ class NotepadStateTest {
     }
 
     @Test
-    fun restoringOnlyEmptyTabsCreatesOneFreshDocument() = runBlocking {
+    fun restoringOnlyEmptyTabsLeavesTheWorkspaceEmpty() = runBlocking {
         val sessions = store()
         val empty = DocumentSnapshot()
         val second = DocumentSnapshot()
         val written = CompletableDeferred<Boolean>()
         sessions.checkpoint(SessionSnapshot(listOf(empty, second), second.id)) { written.complete(it) }
         assertTrue(written.await())
-        val recovered = create(store = sessions)
+        val recovered = create(store = sessions, startWithDocument = false)
         withContext(Dispatchers.Main) {
-            assertEquals(1, recovered.documents.size)
-            assertFalse(recovered.activeId in listOf(empty.id, second.id))
-            assertEquals("", recovered.active!!.editor.text.toString())
+            assertTrue(recovered.documents.isEmpty())
+            assertEquals("", recovered.activeId)
+            assertNull(recovered.active)
         }
     }
 
@@ -299,6 +305,7 @@ class NotepadStateTest {
             getJSONArray("documents").getJSONObject(0).put("untitledNumber", 999)
             remove("wordWrap")
             remove("showStatusBar")
+            remove("recentFiles")
             getJSONArray("documents").getJSONObject(0).remove("horizontalScroll")
         }
         val oldFile = File(context.cacheDir, "old-view-${UUID.randomUUID()}.json").apply { writeText(oldJson.toString()) }
@@ -318,6 +325,7 @@ class NotepadStateTest {
             assertEquals(0, legacy.active!!.horizontalScroll.value)
             assertEquals(document.id, legacy.activeId)
             assertEquals(document.text, legacy.active!!.editor.text.toString())
+            assertTrue(legacy.recentFiles.isEmpty())
         }
     }
 
@@ -445,6 +453,130 @@ class NotepadStateTest {
         file.copyTo(File(file.path + ".bak"))
         file.writeText("incomplete write")
         assertEquals(snapshot, sessions.read())
+    }
+
+    @Test
+    fun freshWorkspaceAndClosedLastTabPersistWithoutDocuments() = runBlocking {
+        val sessions = store()
+        val vm = create(store = sessions, startWithDocument = false)
+        withContext(Dispatchers.Main) {
+            assertTrue(vm.documents.isEmpty())
+            assertNull(vm.active)
+            assertEquals("", vm.snapshot().activeId)
+            vm.newDocument()
+            vm.requestClose(vm.activeId)
+            assertTrue(vm.documents.isEmpty())
+        }
+        val written = CompletableDeferred<Boolean>()
+        sessions.checkpoint(withContext(Dispatchers.Main) { vm.snapshot() }) { written.complete(it) }
+        assertTrue(written.await())
+        val recovered = create(store = sessions, startWithDocument = false)
+        withContext(Dispatchers.Main) {
+            assertTrue(recovered.documents.isEmpty())
+            assertNull(recovered.active)
+        }
+    }
+
+    @Test
+    fun recentFilesAreOrderedDeduplicatedAndLimitedToFive() = runBlocking {
+        val repo = FakeDocuments().apply { (1..6).forEach { put("file:$it.md", "Text $it") } }
+        val vm = create(repo, startWithDocument = false)
+        (1..6).forEach { vm.openUri("file:$it.md").join() }
+        withContext(Dispatchers.Main) {
+            assertEquals((6 downTo 2).map { "file:$it.md" }, vm.recentFiles.map { it.uri })
+            vm.active!!.editor.edit { append(" unsaved edits") }
+        }
+        vm.openUri("file:3.md").join()
+        withContext(Dispatchers.Main) {
+            assertEquals(listOf(3, 6, 5, 4, 2).map { "file:$it.md" }, vm.recentFiles.map { it.uri })
+            assertEquals(6, vm.documents.size)
+            assertEquals("3.md", vm.recentFiles.first().name)
+        }
+    }
+
+    @Test
+    fun savedFilesAndSaveAsEnterHistoryButDraftsAndFailuresDoNot() = runBlocking {
+        val repo = FakeDocuments()
+        val vm = create(repo)
+        withContext(Dispatchers.Main) {
+            vm.active!!.editor.edit { append("Draft") }
+            vm.requestSaveAs()
+            vm.pickerResult(null)
+            assertTrue(vm.recentFiles.isEmpty())
+            repo.failWrite = true
+            vm.requestSaveAs()
+            vm.pickerResult("file:failed.txt")
+        }
+        waitFor { vm.errorMessage == R.string.error_save }
+        withContext(Dispatchers.Main) {
+            assertTrue(vm.recentFiles.isEmpty())
+            repo.failWrite = false
+            vm.requestSaveAs()
+            vm.pickerResult("file:first.txt")
+        }
+        waitFor { vm.active?.uri == "file:first.txt" && vm.active?.saving == false }
+        withContext(Dispatchers.Main) {
+            vm.requestSaveAs()
+            vm.pickerResult("file:second.txt")
+        }
+        waitFor { vm.active?.uri == "file:second.txt" && vm.active?.saving == false }
+        vm.openUri("file:first.txt").join()
+        withContext(Dispatchers.Main) {
+            vm.save()
+        }
+        waitFor { vm.active?.saving == false }
+        withContext(Dispatchers.Main) {
+            assertEquals(listOf("file:first.txt", "file:second.txt"), vm.recentFiles.map { it.uri })
+        }
+    }
+
+    @Test
+    fun historyRestoresWithoutReopeningFilesOrStoringTheirContents() = runBlocking {
+        val file = File(context.cacheDir, "recent-${UUID.randomUUID()}.json")
+        val sessions = store(file)
+        val repo = FakeDocuments().apply { put("file:notes.txt", "Private file contents") }
+        val vm = create(repo, sessions, startWithDocument = false)
+        vm.openUri("file:notes.txt").join()
+        val snapshot = withContext(Dispatchers.Main) {
+            vm.requestClose(vm.activeId)
+            vm.snapshot()
+        }
+        val written = CompletableDeferred<Boolean>()
+        sessions.checkpoint(snapshot) { written.complete(it) }
+        assertTrue(written.await())
+        assertFalse(file.readText().contains("Private file contents"))
+        val recovered = create(store = store(file), startWithDocument = false)
+        withContext(Dispatchers.Main) {
+            assertEquals(snapshot, recovered.snapshot())
+            assertTrue(recovered.documents.isEmpty())
+            assertNull(recovered.errorMessage)
+        }
+        recovered.openUri("file:notes.txt").join()
+        withContext(Dispatchers.Main) {
+            assertTrue(recovered.documents.isEmpty())
+            assertEquals(snapshot.recentFiles, recovered.recentFiles)
+            assertEquals(R.string.error_open, recovered.errorMessage)
+        }
+    }
+
+    @Test
+    fun failedOrUnsupportedOpenFromWelcomeDoesNotCreateTabsOrHistory() = runBlocking {
+        val repo = FakeDocuments()
+        val vm = create(repo, startWithDocument = false)
+        withContext(Dispatchers.Main) {
+            vm.requestOpen()
+            assertTrue(vm.pickerPending)
+            vm.pickerResult(null)
+            assertFalse(vm.pickerPending)
+        }
+        vm.openUri("file:missing").join()
+        repo.invalid = true
+        vm.openUri("file:unsupported").join()
+        withContext(Dispatchers.Main) {
+            assertTrue(vm.documents.isEmpty())
+            assertTrue(vm.recentFiles.isEmpty())
+            assertEquals(R.string.error_encoding, vm.errorMessage)
+        }
     }
 }
 

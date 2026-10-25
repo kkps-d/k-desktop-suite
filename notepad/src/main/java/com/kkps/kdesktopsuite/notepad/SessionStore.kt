@@ -66,6 +66,14 @@ internal class SessionStore(file: File) {
         put("showStatusBar", session.showStatusBar)
         put("appTheme", session.appTheme.name)
         put("fontStyle", session.fontStyle.name)
+        put("recentFiles", JSONArray().apply {
+            session.recentFiles.forEach { file ->
+                put(JSONObject().apply {
+                    put("uri", file.uri)
+                    put("name", file.name)
+                })
+            }
+        })
         put("documents", JSONArray().apply {
             session.documents.forEach { doc ->
                 put(JSONObject().apply {
@@ -105,14 +113,20 @@ internal class SessionStore(file: File) {
                 horizontalScroll = doc.optInt("horizontalScroll", 0),
             )
         }
-        require(documents.isNotEmpty() && documents.map { it.id }.distinct().size == documents.size)
+        require(documents.map { it.id }.distinct().size == documents.size)
         val activeId = json.getString("activeId")
-        require(documents.any { it.id == activeId })
+        require(if (documents.isEmpty()) activeId.isEmpty() else documents.any { it.id == activeId })
+        val recent = json.optJSONArray("recentFiles") ?: JSONArray()
+        val recentFiles = List(recent.length()) { index ->
+            val file = recent.getJSONObject(index)
+            RecentFile(file.getString("uri"), if (file.isNull("name")) null else file.getString("name"))
+        }.distinctBy { it.uri }.take(5)
         return SessionSnapshot(
             documents, activeId, json.getInt("zoom").coerceIn(50, 300),
             json.optBoolean("wordWrap", true), json.optBoolean("showStatusBar", true),
             AppTheme.entries.firstOrNull { it.name == json.optString("appTheme") } ?: AppTheme.Auto,
             NoteFontStyle.entries.firstOrNull { it.name == json.optString("fontStyle") } ?: NoteFontStyle.Monospace,
+            recentFiles,
         )
     }
 }

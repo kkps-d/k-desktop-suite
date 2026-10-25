@@ -56,7 +56,7 @@ class NotepadLifecycleTest {
 
     @Test
     fun settingsAndAppearanceSurviveActivityRecreation() {
-        compose.waitUntil(5_000) { compose.onAllNodesWithTag("document-editor").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(5_000) { !compose.activity.notepad.loading }
         compose.onNodeWithContentDescription("New document").performClick()
         compose.onNodeWithTag("document-editor").performTextReplacement("Draft behind settings")
         compose.onNodeWithContentDescription("Settings").performClick()
@@ -77,7 +77,7 @@ class NotepadLifecycleTest {
 
     @Test
     fun activityRecreationKeepsTheSelectedTabAndItsDraft() {
-        compose.waitUntil(5_000) { compose.onAllNodesWithTag("document-editor").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(5_000) { !compose.activity.notepad.loading }
         compose.onNodeWithContentDescription("New document").performClick()
         compose.onNodeWithTag("document-editor").performTextReplacement("Draft across recreation")
         compose.onNodeWithContentDescription("New document").performClick()
@@ -88,7 +88,7 @@ class NotepadLifecycleTest {
 
     @Test
     fun rightClickEditingMenuUsesTheSameClipboardCommandsInTheRealWindow() {
-        compose.waitUntil(5_000) { compose.onAllNodesWithTag("document-editor").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(5_000) { !compose.activity.notepad.loading }
         compose.onNodeWithContentDescription("New document").performClick()
         compose.onNodeWithTag("document-editor").performTextReplacement("Right click")
         val editMenu = if (compose.onAllNodesWithText("Edit").fetchSemanticsNodes().isEmpty()) "Commands" else "Edit"

@@ -21,6 +21,7 @@ class TabWindowTest {
 
     private fun ready(): NotepadViewModel {
         compose.waitUntil(5_000) { !compose.activity.notepad.loading }
+        compose.runOnIdle { if (compose.activity.notepad.documents.isEmpty()) compose.activity.notepad.newDocument() }
         return compose.activity.notepad
     }
 
@@ -42,6 +43,7 @@ class TabWindowTest {
         lateinit var window: NotepadWindow
         compose.runOnIdle {
             window = workspace.acquireWindow(null, true)
+            workspace.addBlank(window)
             TabWindows.showWindow(compose.activity, window.id)
         }
         compose.waitUntil(10_000) { window.attached }
@@ -155,6 +157,7 @@ class TabWindowTest {
         val notepad = ready()
         compose.runOnIdle {
             val destination = notepad.workspace.acquireWindow(null, true)
+            notepad.workspace.addBlank(destination)
             val transfer = notepad.workspace.beginTransfer(notepad.window, notepad.activeId)!!
             val destinationViewModel = NotepadViewModel(FakeDocuments(), notepad.workspace,
                 androidx.lifecycle.SavedStateHandle(mapOf("windowId" to destination.id)))

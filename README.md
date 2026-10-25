@@ -165,6 +165,11 @@ layout rules and acceptance checks.
   operations are available through menus and keyboard shortcuts.
 - Each tab retains its text, selection, scroll position, file association, and
   undo history across switches, resizing, and activity recreation.
+- With no documents open, a Welcome tab shows the app logo, New and Open file
+  actions, and up to five recent saved text files. Start and Recent appear side
+  by side in wide windows and stack below 600dp. New or Open replaces Welcome;
+  closing the last document brings it back. Recent files persist across launches,
+  ordered by the latest successful open or save, and exclude unsaved drafts.
 - Drag a tab with a mouse or trackpad to reorder it; touch uses a long press.
   Neighboring tabs slide aside to preview the position. Releasing commits the
   order; Escape or dropping over the toolbar cancels it. Overflowing strips
@@ -173,7 +178,7 @@ layout rules and acceptance checks.
   The strip expands during dragging to make room, including in a single-tab window.
   Drop it onto the compact document selector to append it. The live document,
   including undo/redo history, moves with it. A window emptied by a transfer closes;
-  ordinary Close on the final tab still opens a fresh untitled document.
+  ordinary Close on the final tab returns to Welcome.
 - On Android 15 / API 35 and newer, dropping a tab onto empty desktop space can
   create a separate window when the system permits it. In desktop or split-screen
   mode, dropping below the source window's tabs and toolbar also opens a new window;
@@ -192,7 +197,7 @@ layout rules and acceptance checks.
   selection, vertical/horizontal scroll positions, zoom, and view preferences on
   relaunch. Empty tabs are discarded at startup; whitespace counts as content.
   If the active tab was empty, the first retained document is selected; if none
-  remain, one fresh untitled document opens. Recovery never overwrites
+  remain, the Welcome tab opens. Recovery never overwrites
   original files. Snapshots follow 500 ms of inactivity and flush on backgrounding;
   an abrupt termination can lose edits newer than the last successful checkpoint.
   Undo history resets after process restart. Uninstalling removes private recovery.
