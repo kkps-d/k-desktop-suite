@@ -15,6 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -29,6 +30,7 @@ class PaintStatusTest {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var size by mutableStateOf(DpSize(1200.dp,800.dp))
     private var fontScale by mutableFloatStateOf(1f)
+    private var operationVisible by mutableStateOf(false)
 
     @Before fun setup() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -40,7 +42,7 @@ class PaintStatusTest {
             val state by model.state.collectAsStateWithLifecycle()
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density,fontScale)) {
-                PaintTheme { Box(Modifier.requiredSize(size)) { PaintScreen(state,model) } }
+                PaintTheme { Box(Modifier.requiredSize(size)) { PaintScreen(if (operationVisible) state.copy(busy = true) else state,model) } }
             }
         }
         compose.waitUntil(15000) { !model.state.value.loading }
@@ -223,5 +225,87 @@ class PaintStatusTest {
             assertEquals(600,model.state.value.raster.height)
             assertEquals(BLACK,model.state.value.raster.pixel(100,100))
         }
+    }
+
+    @Test fun headerHasHelpSettingsAndLeadingUnsavedIndicator() {
+        compose.onNodeWithContentDescription("KD Paint").assertDoesNotExist()
+        compose.onNodeWithContentDescription("More commands").assertDoesNotExist()
+        compose.onNodeWithText("Help").assertIsDisplayed().performClick()
+        compose.onNodeWithText("About KD Paint").performClick()
+        compose.onNodeWithTag("about-dialog").assertIsDisplayed()
+        compose.onNodeWithText("Version ${BuildConfig.VERSION_NAME}").assertIsDisplayed()
+        compose.onNodeWithText("Developed by kkps-d").assertIsDisplayed()
+        compose.onNodeWithText("Source code").assertIsDisplayed()
+        compose.onNodeWithText("Dismiss").performClick()
+        compose.runOnIdle { model.stroke(listOf(Point(100f,100f))) }
+        compose.waitUntil(15000) { !model.state.value.busy && model.state.value.dirty }
+        val dot = compose.onNodeWithTag("paint-unsaved-indicator").fetchSemanticsNode().boundsInRoot
+        val title = compose.onNodeWithTag("paint-document-title").fetchSemanticsNode().boundsInRoot
+        assertTrue(dot.right < title.left)
+        compose.onNodeWithContentDescription("Settings").performClick()
+        compose.onNodeWithTag("settings-page").assertIsDisplayed()
+        compose.onNodeWithTag("classic-ribbon").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Back").performClick()
+        compose.onNodeWithTag("paint-unsaved-indicator").assertIsDisplayed()
+        compose.runOnIdle { assertEquals(BLACK,model.state.value.raster.pixel(100,100)) }
+    }
+
+    @Test fun operationControlsStayInTheHeaderAndStatusBarIsCompact() {
+        compose.onNodeWithTag("paint-status-bar").assertHeightIsEqualTo(32.dp)
+        compose.runOnIdle { operationVisible = true }
+        compose.onNode(hasTestTag("paint-operation-progress") and hasAnyAncestor(hasTestTag("paint-header"))).assertIsDisplayed()
+        compose.onNode(hasContentDescription("Cancel operation") and hasAnyAncestor(hasTestTag("paint-header"))).assertIsDisplayed()
+        val progress = compose.onNodeWithTag("paint-operation-progress").fetchSemanticsNode().boundsInRoot
+        val save = compose.onNodeWithContentDescription("Save (Ctrl+S)").fetchSemanticsNode().boundsInRoot
+        assertTrue(progress.right <= save.left)
+        compose.runOnIdle { size = DpSize(360.dp,640.dp) }
+        compose.onNodeWithText("Help").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Settings").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Cancel operation").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Redo (Ctrl+Shift+Z)").assertIsDisplayed()
+    }
+
+    @Test fun defaultCanvasSizePersistsAndOnlyChangesNewImages() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val settings = (context.applicationContext as PaintApplication).settings
+        val original = model.state.value.preferences
+        var reopened: PaintViewModel? = null
+        try {
+            compose.onNodeWithContentDescription("Settings").performClick()
+            compose.onNodeWithTag("canvas-width-input").performTextReplacement("0")
+            compose.onNodeWithText("Apply").performClick()
+            compose.onNodeWithText("Images must be",substring = true).assertIsDisplayed()
+            compose.onNodeWithTag("canvas-width-input").performTextReplacement("640")
+            compose.onNodeWithTag("canvas-height-input").performTextReplacement("480")
+            compose.onNodeWithText("Apply").performClick()
+            runBlocking { withTimeout(15000) { settings.preferences.first { it.defaultCanvasWidth == 640 && it.defaultCanvasHeight == 480 } } }
+            compose.runOnIdle { assertEquals(800,model.state.value.raster.width); assertEquals(600,model.state.value.raster.height) }
+            compose.onNodeWithContentDescription("Back").performClick()
+            compose.runOnIdle { model.newImage() }
+            compose.onNodeWithTag("paint-canvas-dimensions").assertTextContains("640 x 480 px")
+            compose.runOnIdle {
+                reopened = PaintViewModel(ImageRepository(context),PaintRecovery(File(context.cacheDir,"default-size-${UUID.randomUUID()}")),
+                    settings,SavedStateHandle(),scope)
+            }
+            compose.waitUntil(15000) { reopened?.state?.value?.loading == false }
+            compose.runOnIdle {
+                val reopenedState = requireNotNull(reopened).state.value
+                assertEquals(640,reopenedState.raster.width)
+                assertEquals(480,reopenedState.raster.height)
+            }
+        } finally {
+            compose.runOnIdle { reopened?.viewModelScope?.cancel(); model.preferences { original } }
+            runBlocking { withTimeout(15000) { settings.preferences.first { it == original } } }
+        }
+    }
+
+    @Test fun narrowSettingsPageScrollsAtLargeFontSizes() {
+        compose.runOnIdle { size = DpSize(360.dp,640.dp); fontScale = 2f }
+        compose.onNodeWithContentDescription("Settings").performClick()
+        compose.onNodeWithText("Auto").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("canvas-width-input").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("JPEG quality").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Back").performClick()
+        compose.onNodeWithTag("paint-canvas").assertIsDisplayed()
     }
 }

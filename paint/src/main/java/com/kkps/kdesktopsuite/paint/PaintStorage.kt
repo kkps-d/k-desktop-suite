@@ -128,19 +128,25 @@ internal class ImageRepository(private val context: Context, private val io: Cor
 
 private val Context.paintPreferences by preferencesDataStore("paint-preferences")
 internal data class PaintPreferences(val appearance: String = "System", val jpegQuality: Int = 90,
-    val customColors: List<Int> = List(10) { WHITE }, val recent: List<String> = emptyList())
+    val customColors: List<Int> = List(10) { WHITE }, val recent: List<String> = emptyList(),
+    val defaultCanvasWidth: Int = 800, val defaultCanvasHeight: Int = 600)
 
 internal class PaintSettings(context: Context) {
     private val store = context.paintPreferences
     private val key = stringPreferencesKey("settings")
     val preferences = store.data.map { data ->
         val json = runCatching { JSONObject(data[key] ?: "{}") }.getOrDefault(JSONObject())
+        val width = json.optInt("canvasWidth",800).coerceIn(1,8192)
+        val height = json.optInt("canvasHeight",600).coerceIn(1,8192)
+        val validSize = width.toLong() * height <= MAX_PIXELS
         PaintPreferences(json.optString("appearance", "System"), json.optInt("quality", 90).coerceIn(1, 100),
             List(10) { json.optJSONArray("colors")?.optInt(it, WHITE) ?: WHITE },
-            json.optJSONArray("recent")?.let { array -> List(array.length()) { array.getString(it) } } ?: emptyList())
+            json.optJSONArray("recent")?.let { array -> List(array.length()) { array.getString(it) } } ?: emptyList(),
+            if (validSize) width else 800,if (validSize) height else 600)
     }
     suspend fun save(value: PaintPreferences) {
         store.edit { it[key] = JSONObject().put("appearance", value.appearance).put("quality", value.jpegQuality)
+            .put("canvasWidth",value.defaultCanvasWidth).put("canvasHeight",value.defaultCanvasHeight)
             .put("colors", JSONArray(value.customColors)).put("recent", JSONArray(value.recent)).toString() }
     }
 }

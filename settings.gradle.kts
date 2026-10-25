@@ -18,3 +18,4 @@ rootProject.name = "K Desktop Suite"
 include(":app")
 include(":notepad")
 include(":paint")
+include(":core:ui")

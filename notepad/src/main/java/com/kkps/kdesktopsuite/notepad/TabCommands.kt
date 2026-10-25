@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.unit.LayoutDirection
+import com.kkps.kdesktopsuite.ui.AppMenuItem
 
 internal fun tabMoveActions(
     notepad: NotepadViewModel, id: String, left: String, right: String, window: String,
@@ -29,6 +30,6 @@ internal fun TabMoveMenu(notepad: NotepadViewModel?, id: String, moveToWindow: (
         stringResource(R.string.move_tab_right), stringResource(R.string.move_to_window), moveToWindow,
         LocalLayoutDirection.current == LayoutDirection.Rtl)
     actions.forEach { action ->
-        NotepadMenuItem(text = { Text(action.label) }, onClick = { dismiss(); action.action() })
+        AppMenuItem(text = { Text(action.label) }, onClick = { dismiss(); action.action() })
     }
 }

@@ -11,7 +11,7 @@ import java.io.File
 import java.util.UUID
 import kotlin.math.*
 
-internal enum class PaintDialog { Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Geometry, CanvasSize, Settings, About, Properties }
+internal enum class PaintDialog { Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Geometry, CanvasSize, About, Properties }
 internal enum class PickerKind { Open, Insert, Save }
 internal data class PickerRequest(val id: String = UUID.randomUUID().toString(), val kind: PickerKind, val mime: String = "image/png", val launched: Boolean = false)
 internal data class PlatformRequest(val id: String = UUID.randomUUID().toString(), val action: String, val file: File? = null)
@@ -24,6 +24,7 @@ internal data class PaintUiState(
     val message: String? = null, val picker: PickerRequest? = null, val platform: PlatformRequest? = null,
     val preferences: PaintPreferences = PaintPreferences(), val focusMode: Boolean = false,
     val ribbonCollapsed: Boolean = false, val showInformation: Boolean = true, val colorBackground: Boolean = false,
+    val settingsOpen: Boolean = false,
 )
 
 internal class PaintViewModel(
@@ -92,6 +93,13 @@ internal class PaintViewModel(
                         uri = snapshot.uri, title = snapshot.name, mime = snapshot.mime, dirty = snapshot.dirty) }
                     refreshPreview()
                     if (snapshot.dirty) message("Recovered draft. Undo history starts again after relaunch.")
+                } ?: run {
+                    val preferences = settings.preferences.first()
+                    history = RasterHistory(Raster.blank(preferences.defaultCanvasWidth,preferences.defaultCanvasHeight))
+                    mutableState.update { it.copy(raster = history.raster,
+                        viewport = it.viewport.copy(fit = history.raster.width > it.viewport.width - it.viewport.margin * 2 ||
+                            history.raster.height > it.viewport.height - it.viewport.margin * 2)
+                            .resized(it.viewport.width,it.viewport.height,history.raster.width,history.raster.height)) }
                 }
             } catch (error: Exception) { recoveryWritable = false; message(error.message ?: "Recovery could not be read.") }
             mutableState.update { it.copy(loading = false) }
@@ -292,10 +300,12 @@ internal class PaintViewModel(
     fun toggleRibbon() { mutableState.update { it.copy(ribbonCollapsed = !it.ribbonCollapsed) } }
     fun toggleInformation() { mutableState.update { it.copy(showInformation = !it.showInformation) } }
     fun toggleFocus() { mutableState.update { it.copy(focusMode = !it.focusMode) } }
+    fun showSettings(show: Boolean) { mutableState.update { it.copy(settingsOpen = show) } }
     fun back(): Boolean = when {
         state.value.dialog in setOf(PaintDialog.SaveFormat,PaintDialog.JpegWarning,PaintDialog.Conflict) -> { cancelSave(); true }
         state.value.dialog == PaintDialog.Unsaved -> { cancelReplace(); true }
         state.value.dialog != null -> { dialog(null); true }
+        state.value.settingsOpen -> { showSettings(false); true }
         state.value.focusMode -> { toggleFocus(); true }
         state.value.preview != null -> { cancelPreview(); true }
         state.value.selection != null -> { clearSelection(); true }
@@ -306,7 +316,10 @@ internal class PaintViewModel(
         if (state.value.busy || state.value.saving) return
         if (unsaved()) { nextAction = action; dialog(PaintDialog.Unsaved) } else action()
     }
-    fun newImage() = replace { install(Raster.blank(), "Untitled", null, "image/png", null) }
+    fun newImage() = replace {
+        val preferences = state.value.preferences
+        install(Raster.blank(preferences.defaultCanvasWidth,preferences.defaultCanvasHeight), "Untitled", null, "image/png", null)
+    }
     fun open() = replace { launchPicker(PickerKind.Open) }
     fun openRecent(uri: String) = replace { load(uri) }
     fun discard() { val action = nextAction; nextAction = null; dialog(null); action?.invoke() }

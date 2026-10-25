@@ -22,6 +22,9 @@ import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
+import com.kkps.kdesktopsuite.ui.AppDropdownMenu
+import com.kkps.kdesktopsuite.ui.AppMenuButton
+import com.kkps.kdesktopsuite.ui.AppMenuItem
 
 @Composable
 internal fun PaintButton(icon: PaintIcon, label: String, enabled: Boolean = true, selected: Boolean = false, action: () -> Unit) {
@@ -45,34 +48,33 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
     var canvasResize by remember { mutableStateOf<PixelRect?>(null) }
     LaunchedEffect(state.message) { state.message?.let { snackbar.showSnackbar(it); model.message(null) } }
     val imeVisible = WindowInsets.isImeVisible
-    BackHandler(!imeVisible && (state.dialog != null || state.preview != null || state.selection != null || state.focusMode)) { model.back() }
+    BackHandler(!imeVisible && (state.settingsOpen || state.dialog != null || state.preview != null || state.selection != null || state.focusMode)) { model.back() }
     Surface(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.union(WindowInsets.ime))) {
             val width = maxWidth
             val short = maxHeight < 480.dp
-            Column(Modifier.fillMaxSize().onKeyEvent { event -> handlePaintKey(event,state,model) }) {
-                if (!state.focusMode) {
-                    PaintHeader(state,model,width.value)
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    if (!state.ribbonCollapsed) PaintRibbon(state,model,width.value)
-                    else TextButton(onClick = model::toggleRibbon) { Text(stringResource(R.string.ui_show_drawing_tools)) }
-                    if (state.preview != null || state.selection != null) SelectionActions(state,model)
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                } else Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = model::toggleFocus) { Text(stringResource(R.string.ui_exit_focus_mode)) }
-                }
-                if (short && !state.ribbonCollapsed && !state.focusMode) {
-                    TextButton(onClick = model::toggleRibbon,modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.ui_collapse_ribbon)) }
-                }
-                Box(Modifier.weight(1f).fillMaxWidth()) {
-                    PaintCanvas(state,model,onCursorChange = { cursor = it },onSelectionChange = { selectionDrag = it },
-                        onCanvasResizeChange = { canvasResize = it })
-                    if (state.loading || state.busy || state.saving) Row(Modifier.align(Alignment.TopEnd).padding(8.dp),verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(Modifier.padding(12.dp).size(24.dp),strokeWidth = 2.dp)
-                        if (state.busy && !state.loading) PaintButton(PaintIcon.Cancel,"Cancel operation",action = model::cancelOperation)
+            Column(Modifier.fillMaxSize().onKeyEvent { event -> if (state.settingsOpen) false else handlePaintKey(event,state,model) }) {
+                if (state.settingsOpen) PaintSettingsScreen(state,model) else {
+                    if (!state.focusMode) {
+                        PaintHeader(state,model,width.value)
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        if (!state.ribbonCollapsed) PaintRibbon(state,model,width.value)
+                        else TextButton(onClick = model::toggleRibbon) { Text(stringResource(R.string.ui_show_drawing_tools)) }
+                        if (state.preview != null || state.selection != null) SelectionActions(state,model)
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    } else Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.End) {
+                        PaintOperationProgress(state,model)
+                        TextButton(onClick = model::toggleFocus) { Text(stringResource(R.string.ui_exit_focus_mode)) }
                     }
+                    if (short && !state.ribbonCollapsed && !state.focusMode) {
+                        TextButton(onClick = model::toggleRibbon,modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.ui_collapse_ribbon)) }
+                    }
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        PaintCanvas(state,model,onCursorChange = { cursor = it },onSelectionChange = { selectionDrag = it },
+                            onCanvasResizeChange = { canvasResize = it })
+                    }
+                    if (state.showInformation && !state.focusMode) PaintStatus(state,model,cursor,selectionDrag,canvasResize)
                 }
-                if (state.showInformation && !state.focusMode) PaintStatus(state,model,cursor,selectionDrag,canvasResize)
             }
             SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter))
             PaintDialogs(state,model)
@@ -82,23 +84,61 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
 
 @Composable
 private fun PaintHeader(s: PaintUiState, model: PaintViewModel, width: Float) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 8.dp).testTag("paint-header"),verticalAlignment = Alignment.CenterVertically) {
-        if (width >= 700) Icon(PaintIcon.Brush.vector,"KD Paint",Modifier.padding(8.dp),tint = MaterialTheme.colorScheme.primary)
-        FileMenu(s,model)
-        ViewMenu(s,model)
-        Text(s.title + if (s.dirty || s.preview?.hasContent == true) " •" else "",modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-            maxLines = 1,overflow = TextOverflow.Ellipsis,style = MaterialTheme.typography.titleSmall)
-        PaintButton(PaintIcon.Save,"Save (Ctrl+S)",!s.busy && !s.loading) { model.save() }
-        PaintButton(PaintIcon.Undo,"Undo (Ctrl+Z)",s.canUndo || s.preview != null,action = model::undo)
-        if (width >= 450) PaintButton(PaintIcon.Redo,"Redo (Ctrl+Shift+Z)",s.canRedo,action = model::redo)
-        var more by remember { mutableStateOf(false) }
-        Box {
-            PaintButton(PaintIcon.More,"More commands") { more = true }
-            DropdownMenu(more,{ more = false }) {
-                DropdownMenuItem({ Text(stringResource(R.string.ui_settings)) },{ more = false; model.dialog(PaintDialog.Settings) })
-                DropdownMenuItem({ Text(stringResource(R.string.ui_about_kd_paint)) },{ more = false; model.dialog(PaintDialog.About) })
-                if (width < 450) DropdownMenuItem({ Text(stringResource(R.string.ui_redo)) },{ more = false; model.redo() },enabled = s.canRedo)
+    val compact = width < 700 * LocalDensity.current.fontScale
+    Column(Modifier.fillMaxWidth().testTag("paint-header")) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically) {
+            FileMenu(s,model)
+            ViewMenu(s,model)
+            HelpMenu(model)
+            VerticalDivider(Modifier.padding(horizontal = 8.dp).height(20.dp))
+            Row(Modifier.weight(1f).padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (s.dirty || s.preview?.hasContent == true) Box(Modifier.size(6.dp)
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant,CircleShape).testTag("paint-unsaved-indicator")
+                    .semantics { contentDescription = "Unsaved changes" })
+                Text(s.title,modifier = Modifier.testTag("paint-document-title"),maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,style = MaterialTheme.typography.titleSmall)
             }
+            if (!compact) PaintHeaderActions(s,model)
+            TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+                tooltip = { PlainTooltip { Text(stringResource(R.string.ui_settings)) } },state = rememberTooltipState()) {
+                IconButton(onClick = { model.showSettings(true) }) {
+                    Icon(painterResource(R.drawable.ic_settings),stringResource(R.string.ui_settings))
+                }
+            }
+        }
+        if (compact) Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End) { PaintHeaderActions(s,model) }
+    }
+}
+
+@Composable
+private fun PaintHeaderActions(s: PaintUiState, model: PaintViewModel) {
+    Row(verticalAlignment = Alignment.CenterVertically,modifier = Modifier.testTag("paint-header-actions")) {
+        PaintOperationProgress(s,model)
+        PaintButton(PaintIcon.Save,"Save (Ctrl+S)",!s.busy && !s.loading && !s.saving) { model.save() }
+        PaintButton(PaintIcon.Undo,"Undo (Ctrl+Z)",!s.busy && (s.canUndo || s.preview != null),action = model::undo)
+        PaintButton(PaintIcon.Redo,"Redo (Ctrl+Shift+Z)",!s.busy && s.canRedo,action = model::redo)
+    }
+}
+
+@Composable
+private fun PaintOperationProgress(s: PaintUiState, model: PaintViewModel) {
+    if (s.loading || s.busy || s.saving) Row(Modifier.testTag("paint-operation-progress"),verticalAlignment = Alignment.CenterVertically) {
+        CircularProgressIndicator(Modifier.padding(horizontal = 12.dp).size(20.dp)
+            .semantics { contentDescription = if (s.loading) "Loading image" else if (s.saving) "Saving image" else "Editing image" },strokeWidth = 2.dp)
+        if (s.busy && !s.loading) PaintButton(PaintIcon.Cancel,"Cancel operation",action = model::cancelOperation)
+        VerticalDivider(Modifier.padding(horizontal = 8.dp).height(20.dp))
+    }
+}
+
+@Composable
+private fun HelpMenu(model: PaintViewModel) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        AppMenuButton(stringResource(R.string.ui_help)) { open = true }
+        AppDropdownMenu(open,{ open = false }) {
+            AppMenuItem({ Text(stringResource(R.string.ui_about_kd_paint)) },{ open = false; model.dialog(PaintDialog.About) })
         }
     }
 }
@@ -107,25 +147,25 @@ private fun PaintHeader(s: PaintUiState, model: PaintViewModel, width: Float) {
 private fun FileMenu(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     Box {
-        TextButton({ open = true }) { Text(stringResource(R.string.ui_file)) }
-        DropdownMenu(open,{ open = false }) {
+        AppMenuButton(stringResource(R.string.ui_file)) { open = true }
+        AppDropdownMenu(open,{ open = false }) {
             fun close(action: () -> Unit) { open = false; action() }
-            DropdownMenuItem({ Text(stringResource(R.string.ui_new_image_ctrl_n)) },{ close(model::newImage) },enabled = !s.busy)
-            DropdownMenuItem({ Text(stringResource(R.string.ui_open_image_ctrl_o)) },{ close(model::open) },enabled = !s.busy)
-            DropdownMenuItem({ Text(stringResource(R.string.ui_save_ctrl_s)) },{ close { model.save() } },enabled = !s.busy)
-            DropdownMenuItem({ Text(stringResource(R.string.ui_save_as_ctrl_shift_s)) },{ close { model.save(true) } },enabled = !s.busy)
+            AppMenuItem({ Text(stringResource(R.string.ui_new_image_ctrl_n)) },{ close(model::newImage) },enabled = !s.busy,shortcut = "Ctrl+N")
+            AppMenuItem({ Text(stringResource(R.string.ui_open_image_ctrl_o)) },{ close(model::open) },enabled = !s.busy,shortcut = "Ctrl+O")
+            AppMenuItem({ Text(stringResource(R.string.ui_save_ctrl_s)) },{ close { model.save() } },enabled = !s.busy,shortcut = "Ctrl+S")
+            AppMenuItem({ Text(stringResource(R.string.ui_save_as_ctrl_shift_s)) },{ close { model.save(true) } },enabled = !s.busy,shortcut = "Ctrl+Shift+S")
             if (s.preferences.recent.isNotEmpty()) {
                 HorizontalDivider()
                 s.preferences.recent.forEachIndexed { index, uri ->
-                    DropdownMenuItem({ Text("Recent ${index+1}: ${android.net.Uri.decode(uri.substringAfterLast('/')).takeLast(44)}",maxLines = 2) },
+                    AppMenuItem({ Text("Recent ${index+1}: ${android.net.Uri.decode(uri.substringAfterLast('/')).takeLast(44)}",maxLines = 2) },
                         { close { model.openRecent(uri) } })
                 }
                 HorizontalDivider()
             }
-            DropdownMenuItem({ Text(stringResource(R.string.ui_insert_image)) },{ close(model::insertPicker) },enabled = !s.busy)
-            DropdownMenuItem({ Text(stringResource(R.string.ui_share_png)) },{ close(model::share) },enabled = !s.busy)
-            DropdownMenuItem({ Text(stringResource(R.string.ui_image_properties)) },{ close { model.dialog(PaintDialog.Properties) } })
-            DropdownMenuItem({ Text(stringResource(R.string.ui_close_image_ctrl_w)) },{ close(model::newImage) },enabled = !s.busy)
+            AppMenuItem({ Text(stringResource(R.string.ui_insert_image)) },{ close(model::insertPicker) },enabled = !s.busy)
+            AppMenuItem({ Text(stringResource(R.string.ui_share_png)) },{ close(model::share) },enabled = !s.busy)
+            AppMenuItem({ Text(stringResource(R.string.ui_image_properties)) },{ close { model.dialog(PaintDialog.Properties) } })
+            AppMenuItem({ Text(stringResource(R.string.ui_close_image_ctrl_w)) },{ close(model::newImage) },enabled = !s.busy,shortcut = "Ctrl+W")
         }
     }
 }
@@ -134,19 +174,18 @@ private fun FileMenu(s: PaintUiState, model: PaintViewModel) {
 private fun ViewMenu(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     Box {
-        TextButton({ open = true }) { Text(stringResource(R.string.ui_view)) }
-        DropdownMenu(open,{ open = false }) {
-            DropdownMenuItem({ Text(stringResource(R.string.ui_zoom_in_ctrl)) },{ model.viewport(s.viewport.zoomed(s.viewport.scale + 0.1f)); open = false })
-            DropdownMenuItem({ Text(stringResource(R.string.ui_zoom_out_ctrl)) },{ model.viewport(s.viewport.zoomed(s.viewport.scale - 0.1f)); open = false })
-            DropdownMenuItem({ Text(stringResource(R.string.ui_actual_size_ctrl_0)) },{ model.viewport(s.viewport.actual()); open = false })
-            DropdownMenuItem({ Text(stringResource(R.string.ui_fit_image)) },{ model.viewport(s.viewport.fitted()); open = false })
-            DropdownMenuItem({ Text(stringResource(R.string.ui_pan_tool)) },{ model.tool(Tool.Pan); open = false })
-            DropdownMenuItem({ Text(if (s.ribbonCollapsed) "Show ribbon" else "Collapse ribbon") },{ model.toggleRibbon(); open = false })
-            DropdownMenuItem({ Text(stringResource(R.string.ui_status_bar)) },{ model.toggleInformation(); open = false },
+        AppMenuButton(stringResource(R.string.ui_view)) { open = true }
+        AppDropdownMenu(open,{ open = false }) {
+            AppMenuItem({ Text(stringResource(R.string.ui_zoom_in_ctrl)) },{ model.viewport(s.viewport.zoomed(s.viewport.scale + 0.1f)); open = false },shortcut = "Ctrl++")
+            AppMenuItem({ Text(stringResource(R.string.ui_zoom_out_ctrl)) },{ model.viewport(s.viewport.zoomed(s.viewport.scale - 0.1f)); open = false },shortcut = "Ctrl+−")
+            AppMenuItem({ Text(stringResource(R.string.ui_actual_size_ctrl_0)) },{ model.viewport(s.viewport.actual()); open = false },shortcut = "Ctrl+0")
+            AppMenuItem({ Text(stringResource(R.string.ui_fit_image)) },{ model.viewport(s.viewport.fitted()); open = false })
+            AppMenuItem({ Text(stringResource(R.string.ui_pan_tool)) },{ model.tool(Tool.Pan); open = false })
+            AppMenuItem({ Text(if (s.ribbonCollapsed) "Show ribbon" else "Collapse ribbon") },{ model.toggleRibbon(); open = false })
+            AppMenuItem({ Text(stringResource(R.string.ui_status_bar)) },{ model.toggleInformation(); open = false },
                 trailingIcon = { Text(if (s.showInformation) "✓" else "",Modifier.width(24.dp)) },
-                modifier = Modifier.semantics { role = Role.Checkbox; toggleableState = if (s.showInformation)
-                    androidx.compose.ui.state.ToggleableState.On else androidx.compose.ui.state.ToggleableState.Off })
-            DropdownMenuItem({ Text(stringResource(R.string.ui_focus_mode)) },{ model.toggleFocus(); open = false })
+                checked = s.showInformation)
+            AppMenuItem({ Text(stringResource(R.string.ui_focus_mode)) },{ model.toggleFocus(); open = false })
         }
     }
 }
@@ -214,11 +253,11 @@ private fun ClipboardMenu(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     Box {
         PaintButton(PaintIcon.Paste,"Clipboard commands") { open = true }
-        DropdownMenu(open,{ open = false }) {
-            DropdownMenuItem({ Text(stringResource(R.string.ui_paste)) },{ open = false; model.paste() })
-            DropdownMenuItem({ Text(stringResource(R.string.ui_copy)) },{ open = false; model.copy() },enabled = s.selection != null || s.preview?.payload != null)
-            DropdownMenuItem({ Text(stringResource(R.string.ui_cut)) },{ open = false; model.copy(true) },enabled = s.selection != null || s.preview?.payload != null)
-            DropdownMenuItem({ Text(stringResource(R.string.ui_insert_image)) },{ open = false; model.insertPicker() })
+        AppDropdownMenu(open,{ open = false }) {
+            AppMenuItem({ Text(stringResource(R.string.ui_paste)) },{ open = false; model.paste() })
+            AppMenuItem({ Text(stringResource(R.string.ui_copy)) },{ open = false; model.copy() },enabled = s.selection != null || s.preview?.payload != null)
+            AppMenuItem({ Text(stringResource(R.string.ui_cut)) },{ open = false; model.copy(true) },enabled = s.selection != null || s.preview?.payload != null)
+            AppMenuItem({ Text(stringResource(R.string.ui_insert_image)) },{ open = false; model.insertPicker() })
         }
     }
 }
@@ -228,12 +267,12 @@ private fun ImageMenu(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     Box {
         PaintButton(PaintIcon.Select,"Selection and image commands",selected = s.options.tool == Tool.Select) { open = true }
-        DropdownMenu(open,{ open = false }) {
-            DropdownMenuItem({ Text(stringResource(R.string.ui_rectangular_selection)) },{ open = false; model.tool(Tool.Select) })
-            DropdownMenuItem({ Text(stringResource(R.string.ui_select_all)) },{ open = false; model.selectAll() })
-            DropdownMenuItem({ Text(stringResource(R.string.ui_clear_selection)) },{ open = false; model.clearSelection() },enabled = s.selection != null)
-            DropdownMenuItem({ Text(stringResource(R.string.ui_crop_to_selection)) },{ open = false; model.crop() },enabled = s.selection != null || s.preview?.payload != null)
-            DropdownMenuItem({ Text(stringResource(R.string.ui_move_resize_selection)) },{ open = false; model.dialog(PaintDialog.Geometry) },enabled = s.selection != null || s.preview != null)
+        AppDropdownMenu(open,{ open = false }) {
+            AppMenuItem({ Text(stringResource(R.string.ui_rectangular_selection)) },{ open = false; model.tool(Tool.Select) })
+            AppMenuItem({ Text(stringResource(R.string.ui_select_all)) },{ open = false; model.selectAll() })
+            AppMenuItem({ Text(stringResource(R.string.ui_clear_selection)) },{ open = false; model.clearSelection() },enabled = s.selection != null)
+            AppMenuItem({ Text(stringResource(R.string.ui_crop_to_selection)) },{ open = false; model.crop() },enabled = s.selection != null || s.preview?.payload != null)
+            AppMenuItem({ Text(stringResource(R.string.ui_move_resize_selection)) },{ open = false; model.dialog(PaintDialog.Geometry) },enabled = s.selection != null || s.preview != null)
         }
     }
 }
@@ -243,8 +282,8 @@ private fun ToolMenu(s: PaintUiState, model: PaintViewModel, tools: List<Tool>) 
     var open by remember { mutableStateOf(false) }
     Box {
         PaintButton((if (s.options.tool in tools) s.options.tool else tools.first()).icon,"Choose drawing tool") { open = true }
-        DropdownMenu(open,{ open = false }) { tools.forEach { tool ->
-            DropdownMenuItem({ Text(tool.label) },{ open = false; model.tool(tool) },leadingIcon = { Icon(tool.icon.vector,null) })
+        AppDropdownMenu(open,{ open = false }) { tools.forEach { tool ->
+            AppMenuItem({ Text(tool.label) },{ open = false; model.tool(tool) },leadingIcon = { Icon(tool.icon.vector,null) })
         } }
     }
 }
@@ -256,9 +295,9 @@ private fun WidthPicker(s: PaintUiState, model: PaintViewModel) {
     val enabled = s.options.tool in listOf(Tool.Brush,Tool.Pencil,Tool.Eraser,Tool.Line,Tool.Rectangle,Tool.Ellipse)
     Box {
         TextButton({ open = true },enabled = enabled) { Text("${s.options.strokeWidth} px") }
-        DropdownMenu(open,{ open = false }) {
+        AppDropdownMenu(open,{ open = false }) {
             (if (s.options.tool == Tool.Eraser) listOf(4,8,16,24) else listOf(1,3,5,8)).forEach { value ->
-                DropdownMenuItem({ Text("$value px") },{ model.options { if (it.tool == Tool.Eraser) it.copy(eraserWidth = value) else it.copy(width = value) }; open = false })
+                AppMenuItem({ Text("$value px") },{ model.options { if (it.tool == Tool.Eraser) it.copy(eraserWidth = value) else it.copy(width = value) }; open = false })
             }
             OutlinedTextField(text,{ text = it.filter(Char::isDigit).take(3) },label = { Text(stringResource(R.string.ui_width_1_100_px)) },modifier = Modifier.width(180.dp).padding(8.dp),singleLine = true)
             TextButton({ text.toIntOrNull()?.takeIf { it in 1..100 }?.let { value ->
@@ -273,10 +312,10 @@ private fun ShapeStyles(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     Box {
         TextButton({ open = true }) { Text(stringResource(R.string.ui_style)) }
-        DropdownMenu(open,{ open = false }) {
-            DropdownMenuItem({ Text(if (s.options.outline) "✓ Outline" else "Outline") },{ model.options { it.copy(outline = !it.outline) } })
-            DropdownMenuItem({ Text(if (s.options.fill) "✓ Fill" else "Fill") },{ model.options { it.copy(fill = !it.fill) } })
-            DropdownMenuItem({ Text(if (s.options.constrain) "✓ Constrain proportions" else "Constrain proportions") },{ model.options { it.copy(constrain = !it.constrain) } })
+        AppDropdownMenu(open,{ open = false }) {
+            AppMenuItem({ Text(if (s.options.outline) "✓ Outline" else "Outline") },{ model.options { it.copy(outline = !it.outline) } })
+            AppMenuItem({ Text(if (s.options.fill) "✓ Fill" else "Fill") },{ model.options { it.copy(fill = !it.fill) } })
+            AppMenuItem({ Text(if (s.options.constrain) "✓ Constrain proportions" else "Constrain proportions") },{ model.options { it.copy(constrain = !it.constrain) } })
         }
     }
 }
@@ -349,53 +388,63 @@ private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, 
     val zoomInteraction = remember { MutableInteractionSource() }
     zoomSlider.value = s.viewport.scale.coerceIn(0.1f,5f)
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-    BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).testTag("paint-status-bar")) {
-        Row(Modifier.horizontalScroll(rememberScrollState()).widthIn(min = maxWidth).heightIn(min = 48.dp).padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically) {
-            Text(position,Modifier.width(fieldWidth).padding(horizontal = 12.dp).testTag("paint-cursor-position")
-                .semantics { contentDescription = "Cursor position: $position" },style = MaterialTheme.typography.labelMedium,maxLines = 1)
-            VerticalDivider(Modifier.height(20.dp))
-            Text(dimensions,Modifier.width(fieldWidth).padding(horizontal = 12.dp).testTag("paint-selection-dimensions")
-                .semantics { contentDescription = "Selection dimensions: $dimensions" },style = MaterialTheme.typography.labelMedium,maxLines = 1)
-            VerticalDivider(Modifier.height(20.dp))
-            TextButton(onClick = { model.dialog(PaintDialog.CanvasSize) },enabled = !s.busy && !s.loading,
-                modifier = Modifier.width(fieldWidth).testTag("paint-canvas-dimensions")
-                    .semantics { contentDescription = "Resize canvas" },contentPadding = PaddingValues(horizontal = 12.dp)) {
-                Text("${canvasResize?.width ?: s.raster.width} x ${canvasResize?.height ?: s.raster.height} px",
-                    Modifier.fillMaxWidth(),style = MaterialTheme.typography.labelMedium,maxLines = 1)
-            }
-            Spacer(Modifier.weight(1f))
-            TextButton({ model.viewport(s.viewport.fitted()) }) { Text(stringResource(R.string.ui_fit)) }
-            TextButton({ model.viewport(s.viewport.actual()) }) { Text(stringResource(R.string.ui_actual_size)) }
-            Box {
-                TextButton({ zoomMenu = true },Modifier.testTag("paint-zoom-menu").semantics { contentDescription = "Zoom level: $zoom%" }) {
-                    Text("$zoom%")
-                    Icon(PaintIcon.Chevron.vector,null,Modifier.size(18.dp))
-                }
-                DropdownMenu(zoomMenu,{ zoomMenu = false }) {
-                    listOf(10,25,50,100,200,300,400,500).forEach { percent ->
-                        DropdownMenuItem({ Text("$percent%") },{ model.viewport(s.viewport.zoomed(percent / 100f)); zoomMenu = false },
-                            trailingIcon = { if (zoom == percent) Icon(PaintIcon.Apply.vector,null) })
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+        BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).testTag("paint-status-bar")) {
+            Row(Modifier.horizontalScroll(rememberScrollState()).widthIn(min = maxWidth).heightIn(min = 32.dp).padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Text(position,Modifier.width(fieldWidth).padding(horizontal = 12.dp).testTag("paint-cursor-position")
+                    .semantics { contentDescription = "Cursor position: $position" },color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelMedium,maxLines = 1)
+                VerticalDivider(Modifier.height(20.dp))
+                Text(dimensions,Modifier.width(fieldWidth).padding(horizontal = 12.dp).testTag("paint-selection-dimensions")
+                    .semantics { contentDescription = "Selection dimensions: $dimensions" },color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelMedium,maxLines = 1)
+                VerticalDivider(Modifier.height(20.dp))
+                TextButton(onClick = { model.dialog(PaintDialog.CanvasSize) },enabled = !s.busy && !s.loading,
+                    modifier = Modifier.width(fieldWidth).heightIn(min = 28.dp).testTag("paint-canvas-dimensions")
+                        .semantics { contentDescription = "Resize canvas" },contentPadding = PaddingValues(horizontal = 12.dp,vertical = 2.dp)) {
+                    Row(Modifier.fillMaxWidth(),verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("${canvasResize?.width ?: s.raster.width} x ${canvasResize?.height ?: s.raster.height} px",
+                            Modifier.weight(1f,fill = false),style = MaterialTheme.typography.labelMedium,maxLines = 1)
+                        Icon(painterResource(R.drawable.ic_more_horiz),null,Modifier.size(16.dp))
                     }
                 }
-            }
-            IconButton(onClick = { model.viewport(s.viewport.zoomed(s.viewport.scale - 0.1f)) },enabled = s.viewport.scale > 0.1f) {
-                Icon(painterResource(R.drawable.ic_zoom_out),stringResource(R.string.ui_zoom_out))
-            }
-            Slider(state = zoomSlider,onValueChange = { model.viewport(s.viewport.zoomed(it)) },
-                interactionSource = zoomInteraction,
-                modifier = Modifier.width(160.dp).heightIn(min = 48.dp).testTag("paint-zoom-slider")
-                    .semantics { contentDescription = "Zoom"; stateDescription = "$zoom%" },
-                thumb = {
-                    Spacer(Modifier.size(16.dp).indication(zoomInteraction,ripple(bounded = false,radius = 20.dp))
-                        .background(MaterialTheme.colorScheme.primary,CircleShape))
-                },
-                track = { slider ->
-                    SliderDefaults.Track(sliderState = slider,modifier = Modifier.height(4.dp),
-                        drawStopIndicator = null,drawTick = { _, _ -> },thumbTrackGapSize = 0.dp)
-                })
-            IconButton(onClick = { model.viewport(s.viewport.zoomed(s.viewport.scale + 0.1f)) },enabled = s.viewport.scale < 5f) {
-                Icon(painterResource(R.drawable.ic_zoom_in),stringResource(R.string.ui_zoom_in))
+                Spacer(Modifier.weight(1f))
+                TextButton({ model.viewport(s.viewport.fitted()) },modifier = Modifier.heightIn(min = 28.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp)) { Text(stringResource(R.string.ui_fit),style = MaterialTheme.typography.labelMedium) }
+                TextButton({ model.viewport(s.viewport.actual()) },modifier = Modifier.heightIn(min = 28.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp)) { Text(stringResource(R.string.ui_actual_size),style = MaterialTheme.typography.labelMedium) }
+                Box {
+                    TextButton({ zoomMenu = true },Modifier.heightIn(min = 28.dp).testTag("paint-zoom-menu").semantics { contentDescription = "Zoom level: $zoom%" },
+                        contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp)) {
+                        Text("$zoom%",style = MaterialTheme.typography.labelMedium)
+                        Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
+                    }
+                    AppDropdownMenu(zoomMenu,{ zoomMenu = false }) {
+                        listOf(10,25,50,100,200,300,400,500).forEach { percent ->
+                            AppMenuItem({ Text("$percent%") },{ model.viewport(s.viewport.zoomed(percent / 100f)); zoomMenu = false },
+                                trailingIcon = { if (zoom == percent) Icon(PaintIcon.Apply.vector,null) })
+                        }
+                    }
+                }
+                IconButton(onClick = { model.viewport(s.viewport.zoomed(s.viewport.scale - 0.1f)) },enabled = s.viewport.scale > 0.1f,modifier = Modifier.size(28.dp)) {
+                    Icon(painterResource(R.drawable.ic_zoom_out),stringResource(R.string.ui_zoom_out),Modifier.size(18.dp))
+                }
+                Slider(state = zoomSlider,onValueChange = { model.viewport(s.viewport.zoomed(it)) },
+                    interactionSource = zoomInteraction,
+                    modifier = Modifier.width(160.dp).heightIn(min = 32.dp).testTag("paint-zoom-slider")
+                        .semantics { contentDescription = "Zoom"; stateDescription = "$zoom%" },
+                    thumb = {
+                        Spacer(Modifier.size(16.dp).indication(zoomInteraction,ripple(bounded = false,radius = 20.dp))
+                            .background(MaterialTheme.colorScheme.primary,CircleShape))
+                    },
+                    track = { slider ->
+                        SliderDefaults.Track(sliderState = slider,modifier = Modifier.height(4.dp),
+                            drawStopIndicator = null,drawTick = { _, _ -> },thumbTrackGapSize = 0.dp)
+                    })
+                IconButton(onClick = { model.viewport(s.viewport.zoomed(s.viewport.scale + 0.1f)) },enabled = s.viewport.scale < 5f,modifier = Modifier.size(28.dp)) {
+                    Icon(painterResource(R.drawable.ic_zoom_in),stringResource(R.string.ui_zoom_in),Modifier.size(18.dp))
+                }
             }
         }
     }

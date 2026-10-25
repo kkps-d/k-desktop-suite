@@ -91,6 +91,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
+import com.kkps.kdesktopsuite.ui.AppDropdownMenu
+import com.kkps.kdesktopsuite.ui.AppMenuButton
+import com.kkps.kdesktopsuite.ui.AppMenuDimensions
+import com.kkps.kdesktopsuite.ui.AppMenuItem
 
 internal object TabBarDimensions {
     val topPadding = 8.dp
@@ -357,6 +361,10 @@ internal fun NotepadScreen(
                                 notepad.showSettings(true)
                             },
                             openAbout = {
+                                val selection = active?.editor?.selection
+                                focusManager.clearFocus(force = true)
+                                // Return from the dialog without refocusing the editor or collapsing its selection.
+                                if (selection != null) active.editor.edit { this.selection = selection }
                                 aboutOpen = true
                             },
                         )
@@ -598,13 +606,13 @@ private fun DocumentSwitcher(
                 Text(title, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = NotepadTabTypography.title)
                 Icon(painterResource(R.drawable.ic_tab_expand), null, Modifier.size(16.dp))
             }
-            NotepadDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            AppDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 documents.forEach { doc ->
                     val docTitle = documentTitle(doc)
                     val label = if (doc.dirty) stringResource(R.string.unsaved_tab, docTitle) else docTitle
                     val docState = documentState(doc, doc.id == errorDocumentId)
                     Row(Modifier.widthIn(min = 240.dp).testTag("document-entry-${doc.id}"), verticalAlignment = Alignment.CenterVertically) {
-                        NotepadMenuItem(
+                        AppMenuItem(
                             text = {
                                 Column {
                                     Text(docTitle, style = NotepadTabTypography.title)
@@ -626,14 +634,14 @@ private fun DocumentSwitcher(
                             TextButton(onClick = { actionId = doc.id }) {
                                 Text("⋮", Modifier.semantics { contentDescription = moveWindowLabel })
                             }
-                            NotepadDropdownMenu(expanded = actionId == doc.id, onDismissRequest = { actionId = null }) {
+                            AppDropdownMenu(expanded = actionId == doc.id, onDismissRequest = { actionId = null }) {
                                 TabMoveMenu(notepad, doc.id, moveToWindow = {
                                     actionId = null; expanded = false; moveToWindow(it)
                                 }, dismiss = { actionId = null })
                             }
                         }
                         TooltipAction(stringResource(R.string.close_tab, docTitle), R.drawable.ic_tab_close,
-                            enabled = !doc.saving && !pickerPending, targetHeight = DropdownMenuDimensions.itemHeight) {
+                            enabled = !doc.saving && !pickerPending, targetHeight = AppMenuDimensions.itemHeight) {
                             expanded = false
                             close(doc.id)
                         }
@@ -848,9 +856,9 @@ private fun DocumentTabs(
                                     enabled = !doc.saving && !pickerPending, targetHeight = minTabHeight.coerceAtMost(TabBarDimensions.buttonSize)) { close(doc.id) }
                             }
                         }
-                        NotepadDropdownMenu(expanded = contextId == doc.id, onDismissRequest = { contextId = null }) {
+                        AppDropdownMenu(expanded = contextId == doc.id, onDismissRequest = { contextId = null }) {
                             TabMoveMenu(notepad, doc.id, moveToWindow, dismiss = { contextId = null })
-                            NotepadMenuItem(
+                            AppMenuItem(
                                 text = { Text(stringResource(R.string.close_document)) },
                                 trailingIcon = { Text("Ctrl+W", style = MaterialTheme.typography.labelMedium) },
                                 enabled = !doc.saving && !pickerPending,
@@ -885,12 +893,8 @@ private fun CommandBar(
                 else listOf("file" to R.string.file, "edit" to R.string.edit, "view" to R.string.view, "help" to R.string.help)
             groups.forEach { (id, title) ->
                 Box {
-                    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-                        TextButton(onClick = { menu = id }, modifier = Modifier.heightIn(min = 32.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                        ) { Text(stringResource(title)) }
-                    }
-                    NotepadDropdownMenu(expanded = menu == id, onDismissRequest = { menu = null }) {
+                    AppMenuButton(stringResource(title)) { menu = id }
+                    AppDropdownMenu(expanded = menu == id, onDismissRequest = { menu = null }) {
                         val commands = when (id) {
                             "file" -> files; "edit" -> edits; "view" -> views; "help" -> emptyList(); else -> NotepadCommand.entries
                         }
@@ -900,7 +904,7 @@ private fun CommandBar(
                                 NotepadCommand.StatusBar -> showStatusBar
                                 else -> null
                             }
-                            NotepadMenuItem(
+                            AppMenuItem(
                                 text = { Text(stringResource(command.label)) },
                                 trailingIcon = if (checked != null) ({ Text(if (checked) "✓" else "", Modifier.width(24.dp)) })
                                     else ({ Text(command.shortcut, style = MaterialTheme.typography.labelMedium) }),
@@ -911,7 +915,7 @@ private fun CommandBar(
                         }
                         if (id == "all" || id == "help") {
                             if (id == "all") HorizontalDivider()
-                            NotepadMenuItem(
+                            AppMenuItem(
                                 text = { Text(stringResource(R.string.about_notepad)) },
                                 onClick = { menu = null; openAbout() },
                             )

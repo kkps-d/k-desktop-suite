@@ -302,7 +302,9 @@ class NotepadUiTest {
         val activeId = notepad.activeId
         compose.runOnIdle { notepad.active!!.editor.edit { selection = androidx.compose.ui.text.TextRange(2, 7) } }
         compose.onNodeWithText("Help").performClick()
+        compose.runOnIdle { org.junit.Assert.assertEquals("Selection after opening Help",androidx.compose.ui.text.TextRange(2,7),notepad.active!!.editor.selection) }
         compose.onNodeWithText("About KD Notepad").performClick()
+        compose.runOnIdle { org.junit.Assert.assertEquals("Selection while About is open",androidx.compose.ui.text.TextRange(2,7),notepad.active!!.editor.selection) }
         compose.onNodeWithTag("about-dialog").assertIsDisplayed()
         compose.onNodeWithText("Version ${BuildConfig.VERSION_NAME}").assertIsDisplayed()
         compose.onNodeWithText("Developed by kkps-d").assertIsDisplayed()
@@ -766,7 +768,7 @@ class NotepadUiTest {
         org.junit.Assert.assertEquals(44f, (first.bottom - first.top).value, 2f)
         org.junit.Assert.assertEquals(popup.top.value, first.top.value, 2f)
         org.junit.Assert.assertEquals(popup.bottom.value, last.bottom.value, 2f)
-        org.junit.Assert.assertEquals(220f, (popup.bottom - popup.top).value, 3f)
+        org.junit.Assert.assertEquals(6 * 44f, (popup.bottom - popup.top).value, 3f)
     }
 
     @Test

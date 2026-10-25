@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,8 +14,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.input.KeyboardType
 import kotlin.math.roundToInt
+import com.kkps.kdesktopsuite.ui.AppAboutDialog
+import com.kkps.kdesktopsuite.ui.AppDropdownMenu
+import com.kkps.kdesktopsuite.ui.AppMenuItem
 
 @Composable
 internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel) {
@@ -45,14 +47,13 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel) {
         PaintDialog.Colors -> ColorsDialog(s,model)
         PaintDialog.Geometry -> GeometryDialog(s,model)
         PaintDialog.CanvasSize -> CanvasSizeDialog(s,model)
-        PaintDialog.Settings -> SettingsDialog(s,model)
-        PaintDialog.About -> AlertDialog(onDismissRequest = { model.dialog(null) },
-            icon = { Icon(PaintIcon.Brush.vector,null,tint = MaterialTheme.colorScheme.primary) },
-            title = { Text(stringResource(R.string.ui_kd_paint)) },text = { Column {
-                Text("Version ${BuildConfig.VERSION_NAME}\nDeveloped by kkps-d\nA focused raster editor for Android.")
-                TextButton(onClick = { runCatching { uriHandler.openUri("https://github.com/kkps-d/k-desktop-suite") }.onFailure { model.message("No browser is available to open the source repository.") } }) { Text("Source code") }
-            } },
-            confirmButton = { TextButton(onClick = { model.dialog(null) }) { Text(stringResource(R.string.ui_close)) } })
+        PaintDialog.About -> AppAboutDialog(title = stringResource(R.string.ui_about_kd_paint),
+            version = stringResource(R.string.ui_about_version,BuildConfig.VERSION_NAME),developer = stringResource(R.string.ui_about_developer),
+            sourceLabel = stringResource(R.string.ui_source_code),dismissLabel = stringResource(R.string.ui_dismiss),
+            icon = { Image(painterResource(R.drawable.ic_paint),null,Modifier.size(48.dp)) },
+            onSourceClick = { runCatching { uriHandler.openUri("https://github.com/kkps-d/k-desktop-suite") }
+                .onFailure { model.message("No browser is available to open the source repository.") } },
+            onDismiss = { model.dialog(null) })
         PaintDialog.Properties -> AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text(stringResource(R.string.ui_image_properties)) },
             text = { Text("${s.title}\n\n${s.raster.width} × ${s.raster.height} pixels\nOpaque sRGB, 32-bit working raster\n${if (s.mime == "image/jpeg") "JPEG" else "PNG"}\n\n${if (s.uri == null) "Not saved to a file" else s.uri}\n\n${if (s.dirty) "Unsaved changes" else "Saved revision"}") },
             confirmButton = { TextButton(onClick = { model.dialog(null) }) { Text(stringResource(R.string.ui_close)) } })
@@ -66,15 +67,7 @@ private fun CanvasSizeDialog(s: PaintUiState, model: PaintViewModel) {
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text(stringResource(R.string.ui_canvas_size)) },text = {
         Column(Modifier.verticalScroll(rememberScrollState())) {
-            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp),verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(width,{ width = it; error = null },label = { Text(stringResource(R.string.ui_canvas_width)) },
-                    suffix = { Text("px") },singleLine = true,keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f))
-                Text("×",Modifier.padding(horizontal = 8.dp),style = MaterialTheme.typography.titleMedium)
-                OutlinedTextField(height,{ height = it; error = null },label = { Text(stringResource(R.string.ui_canvas_height)) },
-                    suffix = { Text("px") },singleLine = true,keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f))
-            }
+            CanvasSizeFields(width,height,{ width = it; error = null },{ height = it; error = null })
             error?.let { Text(it,color = MaterialTheme.colorScheme.error) }
         }
     },confirmButton = { TextButton(onClick = {
@@ -132,8 +125,8 @@ private fun ColorsDialog(s: PaintUiState, model: PaintViewModel) {
             } } }
             Box {
                 TextButton(onClick = { customMenu = true },enabled = parsed != null) { Text(stringResource(R.string.ui_save_current_color_to_custom_slot)) }
-                DropdownMenu(customMenu,{ customMenu = false }) { (0..9).forEach { index ->
-                    DropdownMenuItem({ Text("Slot ${index+1}") },{ parsed?.let { color ->
+                AppDropdownMenu(customMenu,{ customMenu = false }) { (0..9).forEach { index ->
+                    AppMenuItem({ Text("Slot ${index+1}") },{ parsed?.let { color ->
                         model.preferences { it.copy(customColors = it.customColors.toMutableList().also { colors -> colors[index] = color }) }
                     }; customMenu = false })
                 } }
@@ -191,20 +184,4 @@ private fun TextOptions(s: PaintUiState, model: PaintViewModel) {
             } } }); Text(label)
         }
     }
-}
-
-@Composable
-private fun SettingsDialog(s: PaintUiState, model: PaintViewModel) {
-    AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text(stringResource(R.string.ui_settings)) },text = {
-        Column(Modifier.verticalScroll(rememberScrollState())) {
-            Text(stringResource(R.string.ui_appearance),style = MaterialTheme.typography.titleSmall)
-            listOf("System","Light","Dark").forEach { appearance -> Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(s.preferences.appearance == appearance,{ model.preferences { it.copy(appearance = appearance) } }); Text(appearance)
-            } }
-            Text("JPEG quality: ${s.preferences.jpegQuality}%")
-            Slider(s.preferences.jpegQuality.toFloat(),{ quality -> model.preferences { it.copy(jpegQuality = quality.roundToInt()) } },valueRange = 1f..100f,
-                modifier = Modifier.semantics { contentDescription = "JPEG quality" })
-            Text(stringResource(R.string.ui_custom_colors_are_managed_through_colors_edit_colors),style = MaterialTheme.typography.bodySmall)
-        }
-    },confirmButton = { TextButton(onClick = { model.dialog(null) }) { Text(stringResource(R.string.ui_done)) } })
 }

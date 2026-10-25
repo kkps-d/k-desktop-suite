@@ -36,6 +36,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.graphics.createBitmap
 import kotlin.math.*
+import com.kkps.kdesktopsuite.ui.AppDropdownMenu
+import com.kkps.kdesktopsuite.ui.AppMenuItem
 
 @Composable
 internal fun PaintCanvas(
@@ -271,13 +273,13 @@ internal fun PaintCanvas(
         state.preview?.takeIf { it.tool == Tool.Text }?.let { preview -> key(preview.id) { TextOverlay(state,preview,model) } }
         CanvasResizeHandles(state,model,canvasResize,active,onBoundsChange = { canvasResize = it })
         contextMenu?.let { position ->
-            DropdownMenu(true,{ contextMenu = null },offset = with(density) { DpOffset(position.x.toDp(),position.y.toDp()) }) {
-                DropdownMenuItem({ Text(stringResource(R.string.ui_paste)) },{ contextMenu = null; model.paste() })
-                DropdownMenuItem({ Text(stringResource(R.string.ui_select_all)) },{ contextMenu = null; model.selectAll() })
-                DropdownMenuItem({ Text(stringResource(R.string.ui_copy_selection)) },{ contextMenu = null; model.copy() },enabled = state.selection != null || state.preview?.payload != null)
-                DropdownMenuItem({ Text(stringResource(R.string.ui_cut_selection)) },{ contextMenu = null; model.copy(true) },enabled = state.selection != null || state.preview?.payload != null)
-                DropdownMenuItem({ Text(stringResource(R.string.ui_delete_selected_pixels)) },{ contextMenu = null; model.deleteSelection() },enabled = state.selection != null)
-                DropdownMenuItem({ Text(stringResource(R.string.ui_pan)) },{ contextMenu = null; model.tool(Tool.Pan) })
+            AppDropdownMenu(true,{ contextMenu = null },offset = with(density) { DpOffset(position.x.toDp(),position.y.toDp()) }) {
+                AppMenuItem({ Text(stringResource(R.string.ui_paste)) },{ contextMenu = null; model.paste() })
+                AppMenuItem({ Text(stringResource(R.string.ui_select_all)) },{ contextMenu = null; model.selectAll() })
+                AppMenuItem({ Text(stringResource(R.string.ui_copy_selection)) },{ contextMenu = null; model.copy() },enabled = state.selection != null || state.preview?.payload != null)
+                AppMenuItem({ Text(stringResource(R.string.ui_cut_selection)) },{ contextMenu = null; model.copy(true) },enabled = state.selection != null || state.preview?.payload != null)
+                AppMenuItem({ Text(stringResource(R.string.ui_delete_selected_pixels)) },{ contextMenu = null; model.deleteSelection() },enabled = state.selection != null)
+                AppMenuItem({ Text(stringResource(R.string.ui_pan)) },{ contextMenu = null; model.tool(Tool.Pan) })
             }
         }
     }
