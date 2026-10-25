@@ -1,0 +1,154 @@
+package com.kkps.kdesktopsuite.paint
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.unit.*
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
+import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.*
+import org.junit.After
+import org.junit.Assert.*
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import java.io.File
+import java.util.UUID
+
+class PaintStatusTest {
+    @get:Rule val compose = createComposeRule()
+    private lateinit var model: PaintViewModel
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var size by mutableStateOf(DpSize(1200.dp,800.dp))
+    private var fontScale by mutableFloatStateOf(1f)
+
+    @Before fun setup() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        compose.runOnUiThread {
+            model = PaintViewModel(ImageRepository(context),PaintRecovery(File(context.cacheDir,"status-${UUID.randomUUID()}")),
+                (context.applicationContext as PaintApplication).settings,SavedStateHandle(),scope)
+        }
+        compose.setContent {
+            val state by model.state.collectAsStateWithLifecycle()
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density,fontScale)) {
+                PaintTheme { Box(Modifier.requiredSize(size)) { PaintScreen(state,model) } }
+            }
+        }
+        compose.waitUntil(15000) { !model.state.value.loading }
+        compose.waitUntil(15000) { runCatching { compose.onNodeWithTag("paint-status-bar").assertIsDisplayed() }.isSuccess }
+    }
+
+    @After fun cleanup() {
+        if (::model.isInitialized) compose.runOnIdle { model.viewModelScope.cancel() }
+        scope.cancel()
+    }
+
+    @Test fun cursorAndSelectionUseImagePixelsAndKeepFixedWidths() {
+        val cursorWidth = compose.onNodeWithTag("paint-cursor-position").fetchSemanticsNode().boundsInRoot.width
+        val selectionWidth = compose.onNodeWithTag("paint-selection-dimensions").fetchSemanticsNode().boundsInRoot.width
+        lateinit var origin: Point
+        compose.runOnIdle {
+            model.viewport(model.state.value.viewport.zoomed(0.5f))
+            origin = model.state.value.viewport.screenPoint(Point(0.5f,0.5f))
+        }
+        compose.onNodeWithTag("paint-canvas").performMouseInput { enter(Offset(origin.x,origin.y)) }
+        compose.onNodeWithTag("paint-cursor-position").assertTextEquals("0, 0 px")
+        compose.runOnIdle { model.tool(Tool.Select); model.createPreview(Point(10f,20f),Point(40f,60f)) }
+        compose.onNodeWithTag("paint-selection-dimensions").assertTextEquals("30 x 40 px")
+        compose.runOnIdle { model.movePreview(PixelRect(10,20,1000,700)) }
+        compose.onNodeWithTag("paint-selection-dimensions").assertTextEquals("1000 x 700 px")
+        assertEquals(cursorWidth,compose.onNodeWithTag("paint-cursor-position").fetchSemanticsNode().boundsInRoot.width,0f)
+        assertEquals(selectionWidth,compose.onNodeWithTag("paint-selection-dimensions").fetchSemanticsNode().boundsInRoot.width,0f)
+    }
+
+    @Test fun zoomPresetsButtonsAndSliderShareActualZoom() {
+        compose.onNodeWithTag("paint-zoom-menu").performScrollTo().performClick()
+        for (percent in listOf(10,25,50,100,200,300,400,500)) compose.onNodeWithText("$percent%",useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("25%",useUnmergedTree = true).performClick()
+        compose.onNodeWithContentDescription("Zoom in").performScrollTo().performClick()
+        compose.onNodeWithTag("paint-zoom-menu").assertTextContains("35%")
+        compose.onNodeWithContentDescription("Zoom out").performClick()
+        compose.onNodeWithTag("paint-zoom-menu").assertTextContains("25%")
+        compose.onNodeWithTag("paint-zoom-slider").performSemanticsAction(SemanticsActions.SetProgress) { it(5f) }
+        compose.onNodeWithContentDescription("Zoom in").assertIsNotEnabled()
+        compose.onNodeWithTag("paint-zoom-menu").assertTextContains("500%")
+        compose.onNodeWithTag("paint-zoom-slider").performSemanticsAction(SemanticsActions.SetProgress) { it(0.1f) }
+        compose.onNodeWithContentDescription("Zoom out").assertIsNotEnabled()
+        compose.onNodeWithText("Actual",useUnmergedTree = true).performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(1f,model.state.value.viewport.scale,0f) }
+    }
+
+    @Test fun selectionDimensionsUpdateBeforePointerRelease() {
+        lateinit var start: Point
+        lateinit var end: Point
+        compose.runOnIdle {
+            model.tool(Tool.Select)
+            model.viewport(model.state.value.viewport.zoomed(1f))
+            start = model.state.value.viewport.screenPoint(Point(100f,100f))
+            end = model.state.value.viewport.screenPoint(Point(200f,180f))
+        }
+        compose.onNodeWithTag("paint-canvas").performTouchInput {
+            down(Offset(start.x,start.y))
+            moveTo(Offset(end.x,end.y))
+        }
+        compose.onNodeWithTag("paint-selection-dimensions").assertTextEquals("100 x 80 px")
+        compose.onNodeWithTag("paint-cursor-position").assertTextEquals("200, 180 px")
+        compose.onNodeWithTag("paint-canvas").performTouchInput { up() }
+        compose.onNodeWithTag("paint-selection-dimensions").assertTextEquals("100 x 80 px")
+    }
+
+    @Test fun statusBarMenuHasCheckedToggle() {
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Status bar").assertIsOn().performClick()
+        compose.onNodeWithTag("paint-status-bar").assertDoesNotExist()
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Status bar").assertIsOff().performClick()
+        compose.onNodeWithTag("paint-status-bar").assertIsDisplayed()
+    }
+
+    @Test fun canvasDialogValidatesSizeAndResizeSupportsUndoRedo() {
+        compose.runOnIdle {
+            model.options { it.copy(background = 0xFF00FF00.toInt()) }
+            model.tool(Tool.Rectangle)
+            model.createPreview(Point(10f,10f),Point(40f,40f))
+        }
+        compose.onNodeWithTag("paint-canvas-dimensions").performClick()
+        compose.onNodeWithText("Width").performTextReplacement("0")
+        compose.onNodeWithText("Resize",useUnmergedTree = true).performClick()
+        compose.onNodeWithText("Images must be",substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Width").performTextReplacement("1000")
+        compose.onNodeWithText("Height").performTextReplacement("700")
+        compose.onNodeWithText("Resize",useUnmergedTree = true).performClick()
+        compose.waitUntil(15000) { !model.state.value.busy && model.state.value.raster.width == 1000 }
+        compose.onNodeWithTag("paint-canvas-dimensions").assertTextContains("1000 x 700 px")
+        compose.runOnIdle {
+            assertEquals(0xFF00FF00.toInt(),model.state.value.raster.pixel(999,699))
+            assertEquals(BLACK,model.state.value.raster.pixel(10,10))
+            model.undo()
+            assertEquals(800,model.state.value.raster.width)
+            assertEquals(BLACK,model.state.value.raster.pixel(10,10))
+            model.redo()
+            assertEquals(1000,model.state.value.raster.width)
+            assertEquals(700,model.state.value.raster.height)
+        }
+    }
+
+    @Test fun narrowWindowKeepsCanvasSizeAndZoomReachableWithLargeText() {
+        compose.runOnIdle { size = DpSize(360.dp,640.dp); fontScale = 2f }
+        compose.onNodeWithTag("paint-canvas-dimensions").performScrollTo().performClick()
+        compose.onNodeWithText("Canvas size").assertIsDisplayed()
+        compose.onNodeWithText("Cancel",useUnmergedTree = true).performClick()
+        compose.onNodeWithTag("paint-zoom-menu").performScrollTo().performClick()
+        compose.onNodeWithText("25%",useUnmergedTree = true).performClick()
+        compose.runOnIdle { assertEquals(0.25f,model.state.value.viewport.scale,0f) }
+    }
+}
