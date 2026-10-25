@@ -39,7 +39,6 @@
     <string name="ui_pan_tool">Hand tool</string>
     <string name="ui_focus_mode">Focus mode</string>
     <string name="ui_all">All</string>
-    <string name="ui_solid">Solid</string>
     <string name="ui_paste">Paste</string>
     <string name="ui_copy">Copy</string>
     <string name="ui_cut">Cut</string>

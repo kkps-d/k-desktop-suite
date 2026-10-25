@@ -5,12 +5,15 @@ image open at a time. There are no document or ribbon tabs. File/View are menus;
 the permanent top ribbon collapses commands in narrow windows. The canvas centers
 each axis on which the image fits; larger images pan within the viewport.
 
-The core supports Pencil, Solid brush, Fill, Eraser, Eyedropper, rectangular
+The core supports Pencil, nine brush styles, Fill, Eraser, Eyedropper, rectangular
 selection and clipboard operations, Line/Rectangle/Ellipse, native multiline text,
 undo/redo, PNG/JPEG files, PNG sharing, settings, and durable private recovery.
 The Hand tool pans with one finger; pinch zoom and two-finger pan remain available
 with editing tools as well. Switching tools clears the selection and commits any
 pending move or paste.
+The Brushes dropdown shows actual stroke previews for Solid, Calligraphy left/right,
+Airbrush, Oil, Crayon, Marker, Graphite, and Watercolor. Each style remembers its width;
+seeded textures match the live preview and remain unchanged through undo/redo.
 Modern desktop and the common mobile view remain deferred, as do the extended
 tools listed in the [Android specification](../docs/KD_PAINT_ANDROID_SPEC.md).
 

@@ -6,6 +6,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -58,6 +60,97 @@ class CanvasToolsTest {
         for ((point,color) in samples) {
             val screen = screenPoint(point)
             assertEquals("Canvas color at $point",color,pixels[screen.x.roundToInt(),screen.y.roundToInt()].toArgb())
+        }
+    }
+
+    @Test fun brushGalleryOffersPreviewsAndRemembersEachWidthAtWideAndCompactWidths() {
+        for (width in listOf(1200.dp,360.dp)) {
+            compose.runOnIdle { size = DpSize(width,800.dp) }
+            compose.onNodeWithTag("paint-brush-picker").performScrollTo().performClick()
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            File(context.getExternalFilesDir(null),"brush-picker-${width.value.toInt()}.png").outputStream().use {
+                compose.onNodeWithTag("dropdown-menu").captureToImage().asAndroidBitmap()
+                    .compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
+            }
+            for (style in BrushStyle.entries) {
+                compose.onNodeWithTag("paint-brush-${style.name}").assertExists()
+                    .performScrollTo().performClick()
+                compose.runOnIdle {
+                    assertEquals(Tool.Brush,model.state.value.options.tool)
+                    assertEquals(style,model.state.value.options.brushStyle)
+                    model.options { it.copy(width = style.ordinal+10) }
+                }
+                compose.onNodeWithTag("paint-brush-picker")
+                    .assertContentDescriptionEquals("Choose brush: ${style.label}").performClick()
+            }
+            compose.onNodeWithTag("paint-brush-Watercolor").assertIsSelected().assertIsFocused()
+            compose.onNodeWithTag("dropdown-menu").performKeyInput { pressKey(Key.Escape) }
+            compose.onNodeWithTag("dropdown-menu").assertDoesNotExist()
+            compose.runOnIdle {
+                for (style in BrushStyle.entries) {
+                    model.brush(style)
+                    assertEquals(style.ordinal+10,model.state.value.options.width)
+                }
+                model.tool(Tool.Pencil)
+                model.options { it.copy(width = 2) }
+                model.tool(Tool.Brush)
+                assertEquals(18,model.state.value.options.width)
+            }
+            compose.onNodeWithTag("paint-brush-picker").performClick()
+            compose.onNodeWithTag("paint-brush-Watercolor").assertIsFocused()
+            compose.onNodeWithTag("dropdown-menu").performKeyInput { pressKey(Key.DirectionUp); pressKey(Key.Enter) }
+            compose.runOnIdle { assertEquals(BrushStyle.Graphite,model.state.value.options.brushStyle) }
+        }
+    }
+
+    @Test fun texturedLivePreviewMatchesCommittedPixelsAndUndo() {
+        val start = Point(100f,100f)
+        val end = Point(200f,140f)
+        for (style in BrushStyle.entries) {
+            compose.runOnIdle {
+                model.brush(style)
+                model.options { it.copy(width = 24) }
+                model.viewport(model.state.value.viewport.actual())
+            }
+            compose.onNodeWithTag("paint-canvas").performTouchInput {
+                down(screenPoint(start)); moveTo(screenPoint(end))
+            }
+            // Wait for the worker-rendered preview before comparing it with the commit.
+            try { compose.waitUntil(15000) {
+                val image = compose.onNodeWithTag("paint-canvas").captureToImage().toPixelMap()
+                // Grain and spray can leave the exact center pixel untouched.
+                (145..155).any { x -> (115..125).any { y ->
+                    val p = screenPoint(Point(x.toFloat(),y.toFloat()))
+                    image[p.x.roundToInt(),p.y.roundToInt()].toArgb() != WHITE
+                } }
+            } } catch (error: ComposeTimeoutException) {
+                val context = InstrumentationRegistry.getInstrumentation().targetContext
+                File(context.getExternalFilesDir(null),"brush-preview-failure.png").outputStream().use {
+                    compose.onNodeWithTag("paint-canvas").captureToImage().asAndroidBitmap()
+                        .compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
+                }
+                throw AssertionError("No live preview for $style at ${screenPoint(start)}",error)
+            }
+            val before = compose.onNodeWithTag("paint-canvas").captureToImage().toPixelMap()
+            compose.runOnIdle {
+                assertFalse(model.state.value.dirty)
+                assertTrue(model.state.value.raster.pixels.all { it == WHITE })
+            }
+            compose.onNodeWithTag("paint-canvas").performTouchInput { up() }
+            compose.waitUntil(15000) { !model.state.value.busy }
+            val after = compose.onNodeWithTag("paint-canvas").captureToImage().toPixelMap()
+            for (y in 88..152) for (x in 88..212) {
+                val p = screenPoint(Point(x.toFloat(),y.toFloat()))
+                assertEquals("$style at $x,$y",before[p.x.roundToInt(),p.y.roundToInt()],after[p.x.roundToInt(),p.y.roundToInt()])
+            }
+            compose.runOnIdle {
+                val result = model.state.value.raster.pixels.copyOf()
+                model.undo()
+                assertTrue(model.state.value.raster.pixels.all { it == WHITE })
+                model.redo()
+                assertArrayEquals(result,model.state.value.raster.pixels)
+                model.undo()
+            }
         }
     }
 

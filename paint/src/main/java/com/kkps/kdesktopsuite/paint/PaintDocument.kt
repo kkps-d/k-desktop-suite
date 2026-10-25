@@ -27,6 +27,8 @@ internal data class ToolOptions(
     val font: String = "Sans-serif", val fontSize: Int = 24, val bold: Boolean = false,
     val italic: Boolean = false, val underline: Boolean = false, val strike: Boolean = false,
     val opaqueText: Boolean = false,
+    val brushStyle: BrushStyle = BrushStyle.Solid,
+    val brushWidths: Map<BrushStyle,Int> = emptyMap(),
 ) {
     val strokeWidth get() = if (tool == Tool.Eraser) eraserWidth else width
 }

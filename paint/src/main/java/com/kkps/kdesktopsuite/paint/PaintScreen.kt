@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
@@ -15,6 +16,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
@@ -209,6 +214,7 @@ internal fun PaintRibbon(s: PaintUiState, model: PaintViewModel, width: Float) {
             RibbonGroup("Clipboard") { ClipboardMenu(s,model) }
             RibbonGroup("Image") { ImageMenu(s,model) }
             RibbonGroup("Tools") { ToolMenu(s,model,Tool.entries) }
+            RibbonGroup("Brushes") { BrushPicker(s,model) }
             RibbonGroup("Size") { WidthPicker(s,model) }
             RibbonGroup("Colors") { ColorControls(s,model,false) }
         } else {
@@ -232,8 +238,7 @@ internal fun PaintRibbon(s: PaintUiState, model: PaintViewModel, width: Float) {
                 } } } }
             }
             RibbonGroup("Brushes") {
-                PaintButton(PaintIcon.Brush,"Solid brush",selected = s.options.tool == Tool.Brush,enabled = !s.busy) { model.tool(Tool.Brush) }
-                Text(stringResource(R.string.ui_solid),style = MaterialTheme.typography.labelSmall)
+                BrushPicker(s,model)
             }
             RibbonGroup("Shapes") {
                 val shapes = listOf(Tool.Line,Tool.Rectangle,Tool.Ellipse)
@@ -289,6 +294,58 @@ private fun ToolMenu(s: PaintUiState, model: PaintViewModel, tools: List<Tool>) 
 }
 
 @Composable
+private fun BrushPicker(s: PaintUiState, model: PaintViewModel) {
+    var open by remember { mutableStateOf(false) }
+    val focus = remember { FocusRequester() }
+    val style = s.options.brushStyle
+    Box {
+        FilledTonalButton(onClick = { open = true },enabled = !s.busy && !s.loading,
+            colors = ButtonDefaults.filledTonalButtonColors(containerColor =
+                if (s.options.tool == Tool.Brush) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent),
+            contentPadding = PaddingValues(8.dp),
+            modifier = Modifier.heightIn(min = 48.dp).testTag("paint-brush-picker")
+                .semantics { contentDescription = "Choose brush: ${style.label}"; selected = s.options.tool == Tool.Brush }) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                BrushPreview(style,Modifier.size(72.dp,28.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(style.label,style = MaterialTheme.typography.labelSmall)
+                    Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
+                }
+            }
+        }
+        AppDropdownMenu(open,{ open = false }) {
+            Column(Modifier.width(280.dp).selectableGroup().onPreviewKeyEvent {
+                if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) { open = false; true } else false
+            }) {
+                BrushStyle.entries.forEach { brush ->
+                    AppMenuItem(text = { Text(brush.label) },onClick = { open = false; model.brush(brush) },
+                        leadingIcon = { BrushPreview(brush,Modifier.size(88.dp,36.dp)) },
+                        trailingIcon = { if (brush == style) Icon(PaintIcon.Apply.vector,null,Modifier.size(20.dp)) },
+                        modifier = (if (brush == style) Modifier.focusRequester(focus) else Modifier)
+                            .focusProperties { canFocus = true }
+                            .heightIn(min = 48.dp).testTag("paint-brush-${brush.name}")
+                            .semantics { selected = brush == style })
+                }
+            }
+            LaunchedEffect(open) { if (open) { withFrameNanos { }; focus.requestFocus() } }
+        }
+    }
+}
+
+@Composable
+private fun BrushPreview(style: BrushStyle, modifier: Modifier) {
+    val image = remember(style) {
+        val points = List(97) { index ->
+            val t = index / 96f
+            Point(12f+t*152f,36f-kotlin.math.sin(t*kotlin.math.PI*2).toFloat()*15f)
+        }
+        val bitmap = Raster.blank(176,72).brushStroke(points,BLACK,18f,style,42).bitmap()
+        bitmap.asImageBitmap()
+    }
+    Image(image,null,modifier.background(Color.White,RoundedCornerShape(4.dp)).padding(2.dp))
+}
+
+@Composable
 private fun WidthPicker(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     var text by remember(s.options.strokeWidth) { mutableStateOf(s.options.strokeWidth.toString()) }
@@ -296,7 +353,11 @@ private fun WidthPicker(s: PaintUiState, model: PaintViewModel) {
     Box {
         TextButton({ open = true },enabled = enabled) { Text("${s.options.strokeWidth} px") }
         AppDropdownMenu(open,{ open = false }) {
-            (if (s.options.tool == Tool.Eraser) listOf(4,8,16,24) else listOf(1,3,5,8)).forEach { value ->
+            (when (s.options.tool) {
+                Tool.Eraser -> listOf(4,8,16,24)
+                Tool.Brush -> s.options.brushStyle.widthPresets
+                else -> listOf(1,3,5,8)
+            }).forEach { value ->
                 AppMenuItem({ Text("$value px") },{ model.options { if (it.tool == Tool.Eraser) it.copy(eraserWidth = value) else it.copy(width = value) }; open = false })
             }
             OutlinedTextField(text,{ text = it.filter(Char::isDigit).take(3) },label = { Text(stringResource(R.string.ui_width_1_100_px)) },modifier = Modifier.width(180.dp).padding(8.dp),singleLine = true)

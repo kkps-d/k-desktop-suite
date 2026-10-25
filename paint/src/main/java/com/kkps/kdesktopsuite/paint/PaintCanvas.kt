@@ -33,6 +33,8 @@ import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -67,10 +69,21 @@ internal fun PaintCanvas(
     var hovering by remember { mutableStateOf<Offset?>(null) }
     var keyboardInput by remember { mutableStateOf(false) }
     var erasing by remember { mutableStateOf(false) }
+    var strokeSeed by remember { mutableIntStateOf(0) }
     var contextMenu by remember { mutableStateOf<Offset?>(null) }
     var canvasResize by remember { mutableStateOf<PixelRect?>(null) }
     val raster = state.raster
     val image = remember(raster) { raster.bitmap().asImageBitmap() }
+    val strokePoints = stroke.toList()
+    val brushImage by produceState<Pair<Raster,ImageBitmap>?>(null,raster,strokePoints,state.options,strokeSeed,erasing,state.busy) {
+        if (state.options.tool == Tool.Brush && !erasing && strokePoints.isNotEmpty()) {
+            val rendered = withContext(Dispatchers.Default) {
+                raster.brushStroke(strokePoints,state.options.foreground,state.options.width.toFloat(),
+                    state.options.brushStyle,strokeSeed,state.selection).bitmap().asImageBitmap()
+            }
+            value = raster to rendered
+        } else if (!state.busy) value = null
+    }
     val payload = state.preview?.payload
     val selectionImage = remember(payload) { payload?.bitmap()?.asImageBitmap() }
     val dragPreview = remember(dragStart,dragEnd,dragConstrained,state.options) {
@@ -93,7 +106,8 @@ internal fun PaintCanvas(
             if (event.type == KeyEventType.KeyDown && !event.isCtrlPressed && !event.isShiftPressed) {
                 if (state.options.tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) {
                     keyboardDrawing = !keyboardDrawing
-                    if (keyboardDrawing) stroke.add(keyboardCursor) else { model.stroke(stroke.toList()); stroke.clear() }
+                    if (keyboardDrawing) { strokeSeed = kotlin.random.Random.nextInt(); stroke.add(keyboardCursor) }
+                    else { model.stroke(stroke.toList(),seed = strokeSeed); stroke.clear() }
                 } else model.tap(keyboardCursor)
             }
             return true
@@ -172,7 +186,7 @@ internal fun PaintCanvas(
                     if (startEvent.buttons.isSecondaryPressed) {
                         contextMenu = down.position; down.consume(); return@awaitEachGesture
                     }
-                    stroke.clear(); keyboardDrawing = false
+                    stroke.clear(); keyboardDrawing = false; strokeSeed = kotlin.random.Random.nextInt()
                     val imageStart = initial.viewport.imagePoint(Point(down.position.x,down.position.y))
                     erasing = down.type == PointerType.Eraser
                     val tool = if (erasing) Tool.Eraser else initial.options.tool
@@ -226,7 +240,7 @@ internal fun PaintCanvas(
                         } while (if (navigation) event.changes.any { it.pressed } else event.changes.any { it.id == down.id && it.pressed })
                         if (!navigation) {
                             when {
-                                stroke.isNotEmpty() -> model.stroke(stroke.toList(),erasing)
+                                stroke.isNotEmpty() -> model.stroke(stroke.toList(),erasing,strokeSeed)
                                 !hitExisting && !resize && dragStart != null && moved -> model.createPreview(dragStart!!,dragEnd ?: dragStart!!,event.keyboardModifiers.isShiftPressed)
                                 !moved -> model.tap(imageStart)
                             }
@@ -246,7 +260,7 @@ internal fun PaintCanvas(
                     translate(origin.x,origin.y)
                     scale(view.scale,view.scale,pivot = Offset.Zero)
                 }) {
-                    drawImage(image,dstSize = IntSize(raster.width,raster.height),
+                    drawImage(brushImage?.takeIf { it.first === raster }?.second ?: image,dstSize = IntSize(raster.width,raster.height),
                         filterQuality = if (view.scale >= 1) FilterQuality.None else FilterQuality.Low)
                     state.preview?.takeIf { it.tool == Tool.Select }?.let { preview ->
                         preview.source?.let { source ->
@@ -268,7 +282,7 @@ internal fun PaintCanvas(
                 }
             }
             drawRect(Color.Gray,Offset(canvasOrigin.x,canvasOrigin.y),canvasSize,style = Stroke(1f))
-            if (stroke.isNotEmpty()) {
+            if (stroke.isNotEmpty() && (state.options.tool != Tool.Brush || erasing)) {
                 val path = Path()
                 stroke.forEachIndexed { index, point ->
                     val p = view.screenPoint(point)

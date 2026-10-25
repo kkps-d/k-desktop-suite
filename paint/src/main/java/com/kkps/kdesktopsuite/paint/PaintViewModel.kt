@@ -180,21 +180,46 @@ internal class PaintViewModel(
         mutableState.update { it.copy(busy = false) }
     }
     fun options(change: (ToolOptions) -> ToolOptions) {
-        mutableState.update { it.copy(options = change(it.options)) }; checkpoint()
+        mutableState.update {
+            val options = change(it.options)
+            it.copy(options = if (options.tool == Tool.Brush) options.copy(
+                brushWidths = options.brushWidths + (options.brushStyle to options.width)) else options)
+        }; checkpoint()
+    }
+    fun brush(style: BrushStyle) {
+        if (state.value.busy || state.value.loading) return
+        applyPreview {
+            options {
+                val widths = if (it.tool == Tool.Brush) it.brushWidths + (it.brushStyle to it.width) else it.brushWidths
+                it.copy(tool = Tool.Brush,brushStyle = style,brushWidths = widths,
+                    width = widths[style] ?: style.defaultWidth)
+            }
+            mutableState.update { it.copy(selection = null) }
+        }
     }
     fun tool(tool: Tool) {
         if (state.value.busy) return
         applyPreview {
             if (tool == Tool.Eyedropper && state.value.options.tool != Tool.Eyedropper) previousDrawingTool = state.value.options.tool
-            mutableState.update { it.copy(options = it.options.copy(tool = tool),
-                selection = if (tool != it.options.tool) null else it.selection) }; checkpoint()
+            mutableState.update {
+                val o = it.options
+                val widths = if (o.tool == Tool.Brush) o.brushWidths + (o.brushStyle to o.width) else o.brushWidths
+                it.copy(options = o.copy(tool = tool,brushWidths = widths,
+                    width = if (tool == Tool.Brush && o.tool != Tool.Brush)
+                        widths[o.brushStyle] ?: o.brushStyle.defaultWidth else o.width),
+                    selection = if (tool != o.tool) null else it.selection)
+            }; checkpoint()
         }
     }
-    fun stroke(points: List<Point>, erasing: Boolean = false) {
+    fun stroke(points: List<Point>, erasing: Boolean = false, seed: Int = kotlin.random.Random.nextInt()) {
         val s = state.value; val o = s.options
-        if (s.preview != null) { applyPreview { stroke(points,erasing) }; return }
-        operation({ it.stroke(points, if (o.tool == Tool.Eraser || erasing) o.background else o.foreground,
-            (if (erasing) o.eraserWidth else o.strokeWidth).toFloat(), o.tool != Tool.Brush || erasing, s.selection) })
+        if (s.preview != null) { applyPreview { stroke(points,erasing,seed) }; return }
+        operation({
+            if (o.tool == Tool.Brush && !erasing)
+                it.brushStroke(points,o.foreground,o.width.toFloat(),o.brushStyle,seed,s.selection)
+            else it.stroke(points,o.background.takeIf { o.tool == Tool.Eraser || erasing } ?: o.foreground,
+                (if (erasing) o.eraserWidth else o.strokeWidth).toFloat(),true,s.selection)
+        })
     }
     fun tap(point: Point) {
         val s = state.value; val x = floor(point.x).toInt(); val y = floor(point.y).toInt()

@@ -231,6 +231,8 @@ private fun RecoverySnapshot.json(): JSONObject {
         .put("width", options.width).put("eraserWidth", options.eraserWidth).put("outline", options.outline).put("fill", options.fill)
         .put("constrain", options.constrain).put("font", options.font).put("fontSize", options.fontSize).put("bold", options.bold)
         .put("italic", options.italic).put("underline", options.underline).put("strike", options.strike).put("opaqueText", options.opaqueText)
+        .put("brushStyle", options.brushStyle.name)
+        .put("brushWidths", JSONObject(options.brushWidths.mapKeys { it.key.name }))
     val json = JSONObject().put("options", opts).put("uri", uri).put("name", name).put("mime", mime)
         .put("fingerprint", fingerprint).put("dirty", dirty).put("selection", selection?.json())
         .put("scale", viewport.scale).put("cx", viewport.center.x).put("cy", viewport.center.y).put("fit", viewport.fit)
@@ -247,7 +249,11 @@ private fun snapshotFromJson(json: JSONObject, raster: Raster, payload: Raster?,
     val options = ToolOptions(Tool.valueOf(o.getString("tool")), o.getInt("foreground"), o.getInt("background"),
         o.getInt("width").coerceIn(1,100), o.getInt("eraserWidth").coerceIn(1,100), o.getBoolean("outline"),
         o.getBoolean("fill"), o.getBoolean("constrain"), o.getString("font"), o.getInt("fontSize").coerceIn(1,512),
-        o.getBoolean("bold"), o.getBoolean("italic"), o.getBoolean("underline"), o.getBoolean("strike"), o.getBoolean("opaqueText"))
+        o.getBoolean("bold"), o.getBoolean("italic"), o.getBoolean("underline"), o.getBoolean("strike"), o.getBoolean("opaqueText"),
+        brushStyle = BrushStyle.entries.firstOrNull { it.name == o.optString("brushStyle") } ?: BrushStyle.Solid,
+        brushWidths = BrushStyle.entries.mapNotNull { style ->
+            o.optJSONObject("brushWidths")?.optInt(style.name,0)?.takeIf { it in 1..100 }?.let { style to it }
+        }.toMap())
     val preview = json.optJSONObject("preview")?.let { p -> EditPreview(Tool.valueOf(p.getString("tool")), p.getJSONArray("bounds").rect(),
         Point(p.getDouble("startX").toFloat(), p.getDouble("startY").toFloat()), Point(p.getDouble("endX").toFloat(), p.getDouble("endY").toFloat()),
         p.optJSONArray("source")?.rect(), payload, p.optString("text"),

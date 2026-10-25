@@ -13,6 +13,25 @@ class PaintStorageTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private fun uri(file: File) = FileProvider.getUriForFile(context,"${context.packageName}.images",file).toString()
 
+    @Test fun recoveryPreservesBrushStyleAndWidthsAndReadsOlderDrafts() = runBlocking {
+        val root = File(context.cacheDir,"brush-recovery-${UUID.randomUUID()}")
+        try {
+            val options = ToolOptions(width = 21,brushStyle = BrushStyle.Watercolor,
+                brushWidths = BrushStyle.entries.associateWith { it.ordinal+12 })
+            val store = PaintRecovery(root)
+            store.write(RecoverySnapshot(Raster.blank(20,20),options,null,null,Viewport(),null,"Brushes","image/png",null,false))
+            assertEquals(options,store.read()!!.options)
+            val manifest = File(root,"current.json")
+            val json = org.json.JSONObject(manifest.readText())
+            json.getJSONObject("options").apply { remove("brushStyle"); remove("brushWidths") }
+            manifest.writeText(json.toString())
+            val restored = PaintRecovery(root).read()!!.options
+            assertEquals(BrushStyle.Solid,restored.brushStyle)
+            assertTrue(restored.brushWidths.isEmpty())
+            assertEquals(21,restored.width)
+        } finally { root.deleteRecursively() }
+    }
+
     @Test fun pngRoundTripAndExternalConflictPreservePrivatePixels() = runBlocking {
         val repository = ImageRepository(context)
         val source = Raster(2,2,intArrayOf(BLACK,WHITE,0xFF123456.toInt(),0xFF789ABC.toInt()))
