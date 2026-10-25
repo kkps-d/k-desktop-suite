@@ -26,9 +26,10 @@
     <string name="theme_dark">Dark</string>
     <string name="theme_auto">Auto</string>
     <string name="font_style">Font style</string>
+    <string name="font_system">System</string>
     <string name="font_monospace">Monospace</string>
     <string name="font_serif">Serif</string>
-    <string name="font_sans_serif">Sans-serif</string>
+    <string name="font_sans_serif">Sans-Serif</string>
     <string name="font_sample">Aa</string>
     <string name="font_preview">Preview</string>
     <string name="font_preview_text">The quick brown fox jumps over the lazy dog.\n0123456789</string>

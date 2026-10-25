@@ -361,6 +361,15 @@ class NotepadStateTest {
             assertEquals(AppTheme.Auto, legacy.appTheme)
             assertEquals(NoteFontStyle.Monospace, legacy.fontStyle)
         }
+        withContext(Dispatchers.Main) { recovered.changeFontStyle(NoteFontStyle.System) }
+        withTimeout(5_000) {
+            while (sessions.read()?.fontStyle != NoteFontStyle.System) delay(10)
+        }
+        val system = create(store = store(file))
+        withContext(Dispatchers.Main) {
+            assertEquals(NoteFontStyle.System, system.fontStyle)
+            assertEquals("A draft to recover", system.active!!.editor.text.toString())
+        }
     }
 
     @Test

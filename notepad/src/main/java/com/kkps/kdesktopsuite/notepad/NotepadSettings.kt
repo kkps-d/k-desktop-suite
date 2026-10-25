@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,9 +35,10 @@ internal enum class AppTheme(@StringRes val label: Int) {
 }
 
 internal enum class NoteFontStyle(@StringRes val label: Int, val fontFamily: FontFamily) {
-    Monospace(R.string.font_monospace, FontFamily.Monospace),
-    Serif(R.string.font_serif, FontFamily.Serif),
-    SansSerif(R.string.font_sans_serif, FontFamily.SansSerif),
+    System(R.string.font_system, FontFamily.Default),
+    Monospace(R.string.font_monospace, FontFamily(Font(R.font.noto_sans_mono))),
+    Serif(R.string.font_serif, FontFamily(Font(R.font.noto_serif))),
+    SansSerif(R.string.font_sans_serif, FontFamily(Font(R.font.noto_sans))),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +68,11 @@ internal fun NotepadSettingsScreen(
             val fontScale = LocalDensity.current.fontScale
             // Stack choices when three readable, accessible controls won't fit comfortably.
             val stackChoices = maxWidth < 360.dp || fontScale > 1.3f
+            val fontColumns = when {
+                stackChoices -> 1
+                maxWidth < 640.dp -> 2
+                else -> 4
+            }
             Column(
                 Modifier.widthIn(max = 660.dp).fillMaxWidth().verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp, vertical = 16.dp),
@@ -102,7 +109,7 @@ internal fun NotepadSettingsScreen(
                         Modifier.fillMaxWidth().selectableGroup(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        maxItemsInEachRow = if (stackChoices) 1 else 3,
+                        maxItemsInEachRow = fontColumns,
                     ) {
                         NoteFontStyle.entries.forEach { option ->
                             val selected = fontStyle == option

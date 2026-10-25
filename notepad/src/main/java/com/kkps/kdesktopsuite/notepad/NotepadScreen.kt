@@ -911,7 +911,7 @@ private fun CommandBar(
 private fun DocumentEditor(
     doc: DocumentSession, zoom: Int, changeZoom: (Int) -> Unit, focus: FocusRequester, modifier: Modifier,
     wordWrap: Boolean = true,
-    fontFamily: FontFamily = FontFamily.Monospace,
+    fontFamily: FontFamily = NoteFontStyle.Monospace.fontFamily,
 ) {
     val editorLabel = stringResource(R.string.document_editor)
     val latestZoom by rememberUpdatedState(zoom)

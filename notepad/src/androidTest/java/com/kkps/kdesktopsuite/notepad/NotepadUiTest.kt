@@ -359,6 +359,15 @@ class NotepadUiTest {
         val activeId = notepad.activeId
         compose.onNodeWithContentDescription("Settings").performClick()
         compose.onNodeWithTag("settings-page").assertIsDisplayed()
+        compose.onNodeWithTag("font-Monospace").assertIsSelected()
+        listOf(NoteFontStyle.System, NoteFontStyle.SansSerif, NoteFontStyle.Monospace, NoteFontStyle.Serif).forEach { option ->
+            compose.onNodeWithTag("font-${option.name}").performClick().assertIsSelected()
+            val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            compose.onNodeWithTag("font-preview").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) {
+                it(layouts)
+            }
+            org.junit.Assert.assertEquals(option.fontFamily, layouts.single().layoutInput.style.fontFamily)
+        }
         compose.onNodeWithTag("theme-Auto").assertIsOn()
         compose.onNodeWithTag("theme-Light").performClick().assertIsOn()
         val light = compose.onNodeWithTag("settings-page").captureToImage().toPixelMap()[0, 0]
@@ -387,6 +396,34 @@ class NotepadUiTest {
         compose.onNodeWithContentDescription("Back").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus)
         compose.onNodeWithContentDescription("Back").performKeyInput { pressKey(Key.Escape) }
         compose.onNodeWithTag("document-editor").assertIsDisplayed()
+    }
+
+    @Test
+    fun phoneFontChoicesWrapIntoTwoColumnsAndBundledFontsHaveDistinctMetrics() {
+        windowSize = DpSize(400.dp, 800.dp)
+        showEditor()
+        compose.onNodeWithContentDescription("Settings").performClick()
+        val system = compose.onNodeWithTag("font-System").getUnclippedBoundsInRoot()
+        val mono = compose.onNodeWithTag("font-Monospace").getUnclippedBoundsInRoot()
+        val serif = compose.onNodeWithTag("font-Serif").getUnclippedBoundsInRoot()
+        org.junit.Assert.assertEquals(system.top.value, mono.top.value, 1f)
+        org.junit.Assert.assertTrue(mono.left >= system.right)
+        org.junit.Assert.assertTrue(serif.top >= system.bottom)
+        compose.onNodeWithTag("font-System").performClick().assertIsSelected()
+        compose.onNodeWithTag("font-SansSerif").performClick().assertIsSelected()
+
+        val resources = compose.activity.resources
+        val paint = android.graphics.Paint().apply {
+            textSize = 32f
+            typeface = resources.getFont(R.font.noto_sans_mono)
+        }
+        org.junit.Assert.assertEquals(paint.measureText("iiii"), paint.measureText("mmmm"), 0.01f)
+        paint.typeface = resources.getFont(R.font.noto_serif)
+        org.junit.Assert.assertTrue(paint.measureText("mmmm") > paint.measureText("iiii"))
+        val serifWidth = paint.measureText("The quick brown fox 0123456789")
+        paint.typeface = resources.getFont(R.font.noto_sans)
+        org.junit.Assert.assertTrue(paint.measureText("mmmm") > paint.measureText("iiii"))
+        org.junit.Assert.assertTrue(kotlin.math.abs(serifWidth - paint.measureText("The quick brown fox 0123456789")) > 1f)
     }
 
     @Test
