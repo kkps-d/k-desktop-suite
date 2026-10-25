@@ -16,7 +16,7 @@ internal enum class PickerKind { Open, Insert, Save }
 internal data class PickerRequest(val id: String = UUID.randomUUID().toString(), val kind: PickerKind, val mime: String = "image/png", val launched: Boolean = false)
 internal data class PlatformRequest(val id: String = UUID.randomUUID().toString(), val action: String, val file: File? = null)
 internal data class PaintUiState(
-    val raster: Raster = Raster.blank(), val rendered: Raster? = null, val options: ToolOptions = ToolOptions(),
+    val raster: Raster = Raster.blank(), val options: ToolOptions = ToolOptions(),
     val selection: PixelRect? = null, val preview: EditPreview? = null, val viewport: Viewport = Viewport(),
     val title: String = "Untitled", val uri: String? = null, val mime: String = "image/png",
     val dirty: Boolean = false, val canUndo: Boolean = false, val canRedo: Boolean = false,
@@ -39,7 +39,6 @@ internal class PaintViewModel(
     private var recoveryWritable = true
     private var pendingRecovery: RecoverySnapshot? = null
     private var checkpointJob: Job? = null
-    private var previewJob: Job? = null
     private var editJob: Job? = null
     private var nextAction: (() -> Unit)? = null
     private var saveContinuation: (() -> Unit)? = null
@@ -109,7 +108,6 @@ internal class PaintViewModel(
             preview = snapshot.preview, selection = snapshot.selection,
             viewport = snapshot.viewport.resized(it.viewport.width,it.viewport.height,snapshot.raster.width,snapshot.raster.height,it.viewport.margin),
             uri = snapshot.uri, title = snapshot.name, mime = snapshot.mime, dirty = snapshot.dirty) }
-        refreshPreview()
         if (snapshot.dirty) message("Recovered draft. Undo history starts again after relaunch.")
     }
     private fun startBlankImage() {
@@ -139,7 +137,7 @@ internal class PaintViewModel(
     fun dialog(value: PaintDialog?) { mutableState.update { it.copy(dialog = value) } }
     fun colors(background: Boolean = false) { mutableState.update { it.copy(dialog = PaintDialog.Colors,colorBackground = background) } }
     private fun sync() {
-        mutableState.update { it.copy(raster = history.raster, rendered = null, dirty = history.dirty,
+        mutableState.update { it.copy(raster = history.raster, dirty = history.dirty,
             viewport = it.viewport.resized(it.viewport.width,it.viewport.height,history.raster.width,history.raster.height),
             canUndo = history.canUndo, canRedo = history.canRedo) }
         checkpoint()
@@ -182,7 +180,7 @@ internal class PaintViewModel(
         mutableState.update { it.copy(busy = false) }
     }
     fun options(change: (ToolOptions) -> ToolOptions) {
-        mutableState.update { it.copy(options = change(it.options)) }; refreshPreview(); checkpoint()
+        mutableState.update { it.copy(options = change(it.options)) }; checkpoint()
     }
     fun tool(tool: Tool) {
         if (state.value.busy) return
@@ -214,47 +212,21 @@ internal class PaintViewModel(
         if (s.busy) return
         if (s.preview?.hasContent == true) { applyPreview { createPreview(start,end,constrain) }; return }
         val tool = s.options.tool
-        var target = end
-        if (s.options.constrain || constrain) {
-            if (tool == Tool.Line) {
-                val angle = (atan2(end.y - start.y, end.x - start.x) / (PI / 4)).roundToInt() * PI / 4
-                val length = hypot(end.x - start.x, end.y - start.y)
-                target = Point(start.x + (cos(angle) * length).toFloat(), start.y + (sin(angle) * length).toFloat())
-            } else {
-                val size = max(abs(end.x - start.x), abs(end.y - start.y))
-                target = Point(start.x + size * if (end.x < start.x) -1 else 1, start.y + size * if (end.y < start.y) -1 else 1)
-            }
-        }
-        val area = PixelRect.between(start, target)
+        val preview = EditPreview.between(tool, start, end, s.options.constrain || constrain)
         if (tool == Tool.Select) {
-            val clipped = area.clipped(s.raster.width, s.raster.height)
+            val clipped = preview.bounds.clipped(s.raster.width, s.raster.height)
             if (clipped.width > 0 && clipped.height > 0) {
-                mutableState.update { it.copy(selection = clipped, preview = null, rendered = null) }; checkpoint()
+                mutableState.update { it.copy(selection = clipped, preview = null) }; checkpoint()
             }
-        } else setPreview(EditPreview(tool, area, start, target))
+        } else setPreview(preview)
     }
     fun setPreview(preview: EditPreview?) {
-        mutableState.update { it.copy(preview = preview) }; refreshPreview(); checkpoint()
-    }
-    private fun refreshPreview() {
-        previewJob?.cancel()
-        val s = state.value; val preview = s.preview
-        // Native text draws its own live overlay; rendering a full raster per keystroke is unnecessary.
-        if (preview == null || !preview.hasContent || preview.tool == Tool.Text) { mutableState.update { it.copy(rendered = null) }; return }
-        previewJob = viewModelScope.launch {
-            try {
-                val rendered = withContext(compute) { s.raster.render(preview, s.options, if (preview.tool == Tool.Select) null else s.selection) }
-                if (state.value.preview == preview && state.value.options == s.options && state.value.raster === s.raster) {
-                    mutableState.update { it.copy(rendered = rendered) }
-                }
-            } catch (_: OutOfMemoryError) { message("The preview needs more memory. Reduce its dimensions.") }
-            catch (error: Exception) { if (error !is CancellationException) message(error.message ?: "Preview failed.") }
-        }
+        mutableState.update { it.copy(preview = preview) }; checkpoint()
     }
     fun applyPreview(after: () -> Unit = {}) {
         val s = state.value; val preview = currentPreview()
         if (preview == null || !preview.hasContent) {
-            mutableState.update { it.copy(preview = null, rendered = null) }; after(); return
+            mutableState.update { it.copy(preview = null) }; after(); return
         }
         if (preview.tool in setOf(Tool.Rectangle, Tool.Ellipse) && !s.options.outline && !s.options.fill) {
             message("Choose an outline or fill before applying this shape."); return
@@ -262,13 +234,13 @@ internal class PaintViewModel(
         operation({ it.render(preview, s.options, if (preview.tool == Tool.Select) null else s.selection) },
             valid = { state.value.preview?.id == preview.id && state.value.options == s.options }) {
             textEditor = null
-            mutableState.update { it.copy(preview = null, selection = null, rendered = null) }
+            mutableState.update { it.copy(preview = null, selection = null) }
             checkpoint()
             // The following action may itself start work, so release the operation gate first.
             mutableState.update { it.copy(busy = false) }; after()
         }
     }
-    fun cancelPreview() { previewJob?.cancel(); textEditor = null; mutableState.update { it.copy(preview = null, rendered = null) }; checkpoint() }
+    fun cancelPreview() { textEditor = null; mutableState.update { it.copy(preview = null) }; checkpoint() }
     fun selectAll() { applyPreview { mutableState.update { it.copy(selection = PixelRect(0,0,it.raster.width,it.raster.height), options = it.options.copy(tool = Tool.Select)) }; checkpoint() } }
     fun clearSelection() { cancelPreview(); mutableState.update { it.copy(selection = null) }; checkpoint() }
     fun movePreview(bounds: PixelRect) {
@@ -356,8 +328,8 @@ internal class PaintViewModel(
     private fun install(raster: Raster, title: String, uri: String?, mime: String, fingerprint: String?) {
         documentId = UUID.randomUUID().toString()
         textEditor = null
-        previewJob?.cancel(); history = RasterHistory(raster); this.fingerprint = fingerprint
-        mutableState.update { it.copy(raster = raster, rendered = null, selection = null, preview = null,
+        history = RasterHistory(raster); this.fingerprint = fingerprint
+        mutableState.update { it.copy(raster = raster, selection = null, preview = null,
             title = title, uri = uri, mime = mime, dirty = false, canUndo = false, canRedo = false,
             viewport = it.viewport.copy(fit = raster.width > it.viewport.width-it.viewport.margin*2 || raster.height > it.viewport.height-it.viewport.margin*2,
                 scale = 1f,center = Point(raster.width/2f,raster.height/2f)).resized(it.viewport.width,it.viewport.height,raster.width,raster.height)) }

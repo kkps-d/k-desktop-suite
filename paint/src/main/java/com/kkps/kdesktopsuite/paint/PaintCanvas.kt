@@ -21,6 +21,8 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onSizeChanged
@@ -61,23 +63,27 @@ internal fun PaintCanvas(
     val stroke = remember { mutableStateListOf<Point>() }
     var dragStart by remember { mutableStateOf<Point?>(null) }
     var dragEnd by remember { mutableStateOf<Point?>(null) }
+    var dragConstrained by remember { mutableStateOf(false) }
     var hovering by remember { mutableStateOf<Offset?>(null) }
     var keyboardInput by remember { mutableStateOf(false) }
     var erasing by remember { mutableStateOf(false) }
     var contextMenu by remember { mutableStateOf<Offset?>(null) }
     var canvasResize by remember { mutableStateOf<PixelRect?>(null) }
-    val raster = if (state.preview?.tool == Tool.Text) state.raster else state.rendered ?: state.raster
+    val raster = state.raster
     val image = remember(raster) { raster.bitmap().asImageBitmap() }
+    val payload = state.preview?.payload
+    val selectionImage = remember(payload) { payload?.bitmap()?.asImageBitmap() }
+    val dragPreview = remember(dragStart,dragEnd,dragConstrained,state.options) {
+        dragStart?.let { EditPreview.between(state.options.tool,it,dragEnd ?: it,state.options.constrain || dragConstrained) }
+    }
 
     LaunchedEffect(hovering,keyboardCursor,keyboardInput,state.viewport,active) {
         val point = if (keyboardInput) keyboardCursor else hovering?.let { state.viewport.imagePoint(Point(it.x,it.y)) }
         onCursorChange(point?.takeIf { active && it.x >= 0 && it.x < raster.width && it.y >= 0 && it.y < raster.height }
             ?.let { Point(floor(it.x),floor(it.y)) })
     }
-    LaunchedEffect(dragStart,dragEnd,state.options.tool) {
-        onSelectionChange(if (state.options.tool == Tool.Select) dragStart?.let {
-            PixelRect.between(it,dragEnd ?: it).clipped(state.raster.width,state.raster.height)
-        } else null)
+    LaunchedEffect(dragPreview) {
+        onSelectionChange(dragPreview?.takeIf { it.tool == Tool.Select }?.bounds?.clipped(state.raster.width,state.raster.height))
     }
     LaunchedEffect(canvasResize) { onCanvasResizeChange(canvasResize) }
 
@@ -184,13 +190,14 @@ internal fun PaintCanvas(
                     var moved = false
                     if (!navigation && tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) stroke.add(imageStart)
                     else if (!navigation && !hitExisting && !resize && tool in listOf(Tool.Select,Tool.Line,Tool.Rectangle,Tool.Ellipse,Tool.Text)) {
-                        dragStart = imageStart; dragEnd = imageStart
+                        dragStart = imageStart; dragEnd = imageStart; dragConstrained = startEvent.keyboardModifiers.isShiftPressed
                     }
                     down.consume()
                     try {
                         var event: PointerEvent
                         do {
                             event = awaitPointerEvent()
+                            dragConstrained = event.keyboardModifiers.isShiftPressed
                             val pointer = event.changes.firstOrNull { it.id == down.id } ?: event.changes.first()
                             val pressed = event.changes.count { it.pressed && (!stylus || it.type == down.type) }
                             val touchNavigation = stylus && event.changes.count { it.pressed && it.type == PointerType.Touch } >= 2
@@ -225,19 +232,40 @@ internal fun PaintCanvas(
                             }
                         }
                     } catch (cancelled: CancellationException) { throw cancelled }
-                    finally { stroke.clear(); dragStart = null; dragEnd = null; erasing = false }
+                    finally { stroke.clear(); dragStart = null; dragEnd = null; dragConstrained = false; erasing = false }
                 }
             }) {
             val view = state.viewport
             val origin = view.origin
-            val canvasBounds = canvasResize ?: PixelRect(0,0,raster.width,raster.height)
+            val canvasBounds = canvasResize ?: PixelRect(0,0,state.preview?.outputWidth ?: raster.width,state.preview?.outputHeight ?: raster.height)
             val canvasOrigin = view.screenPoint(Point(canvasBounds.x.toFloat(),canvasBounds.y.toFloat()))
             val canvasSize = Size(canvasBounds.width * view.scale,canvasBounds.height * view.scale)
             drawRect(Color(state.options.background),Offset(canvasOrigin.x,canvasOrigin.y),canvasSize)
             clipRect(canvasOrigin.x,canvasOrigin.y,canvasOrigin.x + canvasSize.width,canvasOrigin.y + canvasSize.height) {
-                drawImage(image,dstOffset = IntOffset(origin.x.roundToInt(),origin.y.roundToInt()),
-                    dstSize = IntSize((raster.width*view.scale).roundToInt().coerceAtLeast(1),(raster.height*view.scale).roundToInt().coerceAtLeast(1)),
-                    filterQuality = if (view.scale >= 1) FilterQuality.None else FilterQuality.Low)
+                withTransform({
+                    translate(origin.x,origin.y)
+                    scale(view.scale,view.scale,pivot = Offset.Zero)
+                }) {
+                    drawImage(image,dstSize = IntSize(raster.width,raster.height),
+                        filterQuality = if (view.scale >= 1) FilterQuality.None else FilterQuality.Low)
+                    state.preview?.takeIf { it.tool == Tool.Select }?.let { preview ->
+                        preview.source?.let { source ->
+                            drawRect(Color(state.options.background or BLACK),Offset(source.x.toFloat(),source.y.toFloat()),Size(source.width.toFloat(),source.height.toFloat()))
+                        }
+                        selectionImage?.let { selected ->
+                            drawImage(selected,dstOffset = IntOffset(preview.bounds.x,preview.bounds.y),
+                                dstSize = IntSize(preview.bounds.width,preview.bounds.height),filterQuality = FilterQuality.Low)
+                        }
+                    }
+                    // Draw geometry directly so dragging never waits for a full-image raster render.
+                    drawIntoCanvas { canvas ->
+                        canvas.save()
+                        state.selection?.let { canvas.clipRect(it.x.toFloat(),it.y.toFloat(),it.right.toFloat(),it.bottom.toFloat()) }
+                        state.preview?.let { canvas.nativeCanvas.drawShapePreview(it,state.options) }
+                        dragPreview?.let { canvas.nativeCanvas.drawShapePreview(it,state.options) }
+                        canvas.restore()
+                    }
+                }
             }
             drawRect(Color.Gray,Offset(canvasOrigin.x,canvasOrigin.y),canvasSize,style = Stroke(1f))
             if (stroke.isNotEmpty()) {
@@ -252,8 +280,7 @@ internal fun PaintCanvas(
                 if (stroke.size == 1) drawCircle(color,strokeWidth*view.scale/2,Offset(first.x,first.y))
                 else drawPath(path,color,style = Stroke(strokeWidth*view.scale,cap = StrokeCap.Round))
             }
-            val transientRect = dragStart?.let { start -> PixelRect.between(start,dragEnd ?: start) }
-            val bounds = transientRect ?: state.preview?.bounds ?: state.selection
+            val bounds = dragPreview?.bounds ?: state.preview?.bounds ?: state.selection
             bounds?.let { rect ->
                 val p = view.screenPoint(Point(rect.x.toFloat(),rect.y.toFloat()))
                 val size = Size(rect.width*view.scale,rect.height*view.scale)

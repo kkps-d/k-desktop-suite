@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.*
@@ -20,6 +22,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.io.File
 import java.util.UUID
+import kotlin.math.roundToInt
 
 class CanvasToolsTest {
     @get:Rule val compose = createComposeRule()
@@ -43,6 +46,120 @@ class CanvasToolsTest {
     @After fun cleanup() {
         if (::model.isInitialized) compose.runOnIdle { model.viewModelScope.cancel() }
         scope.cancel()
+    }
+
+    private fun screenPoint(point: Point): Offset {
+        val screen = model.state.value.viewport.screenPoint(point)
+        return Offset(screen.x,screen.y)
+    }
+
+    private fun assertCanvasColors(vararg samples: Pair<Point,Int>) {
+        val pixels = compose.onNodeWithTag("paint-canvas").captureToImage().toPixelMap()
+        for ((point,color) in samples) {
+            val screen = screenPoint(point)
+            assertEquals("Canvas color at $point",color,pixels[screen.x.roundToInt(),screen.y.roundToInt()].toArgb())
+        }
+    }
+
+    @Test fun shapesShowTheirOutlineAndFillBeforePointerRelease() {
+        val red = 0xFFFF0000.toInt()
+        val blue = 0xFF0000FF.toInt()
+        val start = Point(100f,100f)
+        val end = Point(200f,160f)
+        for (tool in listOf(Tool.Line,Tool.Rectangle,Tool.Ellipse)) {
+            compose.runOnIdle {
+                model.cancelPreview()
+                model.tool(tool)
+                model.options { it.copy(foreground = red,background = blue,width = 8,outline = true,fill = true,constrain = false) }
+                model.viewport(model.state.value.viewport.actual())
+            }
+            val original = model.state.value.raster
+            compose.onNodeWithTag("paint-canvas").performTouchInput { down(screenPoint(start)); moveTo(screenPoint(end)) }
+            compose.runOnIdle {
+                assertNull(model.state.value.preview)
+                assertSame(original,model.state.value.raster)
+                assertFalse(model.state.value.dirty)
+            }
+            val samples = if (tool == Tool.Line) arrayOf(Point(150f,130f) to red,Point(150f,115f) to WHITE)
+                else arrayOf(Point(150f,102f) to red,Point(150f,130f) to blue)
+            assertCanvasColors(*samples)
+            compose.onNodeWithTag("paint-canvas").performTouchInput { up() }
+            compose.runOnIdle { assertEquals(PixelRect(100,100,100,60),model.state.value.preview?.bounds) }
+            assertCanvasColors(*samples)
+        }
+    }
+
+    @Test fun constrainedReverseDragMatchesTheReleasedShape() {
+        compose.runOnIdle {
+            model.tool(Tool.Rectangle)
+            model.options { it.copy(width = 8,fill = true,foreground = BLACK,background = 0xFFFF0000.toInt(),constrain = true) }
+            model.viewport(model.state.value.viewport.actual())
+        }
+        compose.onNodeWithTag("paint-canvas").performTouchInput {
+            down(screenPoint(Point(220f,220f))); moveTo(screenPoint(Point(120f,180f)))
+        }
+        assertCanvasColors(Point(170f,122f) to BLACK,Point(170f,150f) to 0xFFFF0000.toInt())
+        compose.onNodeWithTag("paint-canvas").performTouchInput { up() }
+        compose.runOnIdle { assertEquals(PixelRect(120,120,100,100),model.state.value.preview?.bounds) }
+        assertCanvasColors(Point(170f,122f) to BLACK,Point(170f,150f) to 0xFFFF0000.toInt())
+    }
+
+    @Test fun movingSelectionShowsPixelsAndClearsSourceBeforePointerRelease() {
+        compose.runOnIdle {
+            model.tool(Tool.Pencil)
+            model.options { it.copy(width = 20,foreground = BLACK,background = WHITE) }
+            model.viewport(model.state.value.viewport.actual())
+            model.stroke(listOf(Point(130f,130f)))
+        }
+        compose.waitUntil(15000) { !model.state.value.busy }
+        compose.runOnIdle {
+            model.tool(Tool.Select)
+            model.createPreview(Point(100f,100f),Point(160f,160f))
+        }
+        val original = model.state.value.raster
+        compose.onNodeWithTag("paint-canvas").performTouchInput {
+            down(screenPoint(Point(120f,120f))); moveTo(screenPoint(Point(240f,220f)))
+        }
+        compose.runOnIdle {
+            assertSame(original,model.state.value.raster)
+            assertEquals(PixelRect(220,200,60,60),model.state.value.preview?.bounds)
+        }
+        assertCanvasColors(Point(130f,130f) to WHITE,Point(250f,230f) to BLACK)
+        compose.onNodeWithTag("paint-canvas").performTouchInput { up() }
+        assertCanvasColors(Point(130f,130f) to WHITE,Point(250f,230f) to BLACK)
+        compose.runOnIdle { model.cancelPreview() }
+        assertCanvasColors(Point(130f,130f) to BLACK,Point(250f,230f) to WHITE)
+    }
+
+    @Test fun secondFingerCancelsShapePreviewWithoutChangingPixels() {
+        compose.runOnIdle { model.tool(Tool.Line); model.options { it.copy(width = 8,constrain = false) } }
+        compose.onNodeWithTag("paint-canvas").performTouchInput {
+            down(0,screenPoint(Point(100f,100f))); moveTo(0,screenPoint(Point(200f,160f)))
+        }
+        assertCanvasColors(Point(150f,130f) to BLACK)
+        compose.onNodeWithTag("paint-canvas").performTouchInput {
+            down(1,screenPoint(Point(300f,200f))); up(0); up(1)
+        }
+        compose.runOnIdle {
+            assertNull(model.state.value.preview)
+            assertFalse(model.state.value.dirty)
+        }
+        assertCanvasColors(Point(150f,130f) to WHITE)
+    }
+
+    @Test fun resizedTransparentSelectionMatchesCommittedPixelsAtZoom() {
+        compose.runOnIdle {
+            model.insert(Raster(40,40,IntArray(1600) { 0x80FF0000.toInt() }))
+            model.movePreview(PixelRect(220,180,80,80))
+            model.viewport(model.state.value.viewport.zoomed(1.25f))
+        }
+        val sample = Point(260f,220f) to 0xFFFF7F7F.toInt()
+        assertCanvasColors(sample)
+        compose.runOnIdle { assertFalse(model.state.value.dirty); model.applyPreview() }
+        compose.waitUntil(15000) { !model.state.value.busy }
+        assertCanvasColors(sample)
+        compose.runOnIdle { model.undo() }
+        assertCanvasColors(Point(260f,220f) to WHITE)
     }
 
     @Test fun handIsAvailableInExpandedRibbonAndCompactToolMenu() {

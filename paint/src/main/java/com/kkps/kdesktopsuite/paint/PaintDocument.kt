@@ -13,6 +13,7 @@ import android.text.TextPaint
 import androidx.core.graphics.withTranslation
 import androidx.core.graphics.createBitmap
 import java.util.UUID
+import kotlin.math.*
 
 internal enum class Tool(val label: String) {
     Pencil("Pencil"), Brush("Brush"), Fill("Fill"), Eraser("Eraser"), Text("Text"),
@@ -40,6 +41,23 @@ internal data class EditPreview(
     val textRaster: Raster? = null, val textLayoutKey: TextLayoutKey? = null,
 ) {
     val hasContent get() = payload != null || tool in setOf(Tool.Line, Tool.Rectangle, Tool.Ellipse) || text.isNotEmpty()
+
+    companion object {
+        fun between(tool: Tool, start: Point, end: Point, constrain: Boolean = false): EditPreview {
+            var target = end
+            if (constrain) {
+                if (tool == Tool.Line) {
+                    val angle = (atan2(end.y - start.y, end.x - start.x) / (PI / 4)).roundToInt() * PI / 4
+                    val length = hypot(end.x - start.x, end.y - start.y)
+                    target = Point(start.x + (cos(angle) * length).toFloat(), start.y + (sin(angle) * length).toFloat())
+                } else {
+                    val size = max(abs(end.x - start.x), abs(end.y - start.y))
+                    target = Point(start.x + size * if (end.x < start.x) -1 else 1, start.y + size * if (end.y < start.y) -1 else 1)
+                }
+            }
+            return EditPreview(tool, PixelRect.between(start, target), start, target)
+        }
+    }
 }
 
 internal data class TextLayoutKey(val text: String, val width: Int, val font: String, val size: Int,
@@ -69,7 +87,6 @@ internal fun Raster.render(preview: EditPreview, options: ToolOptions, mask: Pix
         strokeJoin = Paint.Join.ROUND
     }
     val rect = preview.bounds
-    val shape = RectF(rect.x.toFloat(), rect.y.toFloat(), rect.right.toFloat(), rect.bottom.toFloat())
     if (preview.tool == Tool.Text) {
         if (preview.textRaster != null && preview.textLayoutKey == textLayoutKey(preview.text,rect.width,options)) {
             if (options.opaqueText) {
@@ -102,23 +119,33 @@ internal fun Raster.render(preview: EditPreview, options: ToolOptions, mask: Pix
             canvas.drawRect(rect.x.toFloat(), rect.y.toFloat(), rect.right.toFloat(), rect.y + maxOf(rect.height, layout.height).toFloat(), paint)
         }
         canvas.withTranslation(rect.x.toFloat(), rect.y.toFloat()) { layout.draw(this) }
-    } else {
-        fun drawShape() {
-            when (preview.tool) {
-                Tool.Line -> canvas.drawLine(preview.start.x, preview.start.y, preview.end.x, preview.end.y, paint)
-                Tool.Rectangle -> canvas.drawRect(shape, paint)
-                Tool.Ellipse -> canvas.drawOval(shape, paint)
-                else -> Unit
-            }
-        }
-        if (options.fill && preview.tool != Tool.Line) {
-            paint.style = Paint.Style.FILL; paint.color = options.background; drawShape()
-        }
-        if (options.outline || preview.tool == Tool.Line) {
-            paint.style = Paint.Style.STROKE; paint.color = options.foreground; drawShape()
+    } else canvas.drawShapePreview(preview, options)
+    return bitmap.raster().also { bitmap.recycle() }
+}
+
+/** Used by both the live canvas overlay and committed raster output. */
+internal fun Canvas.drawShapePreview(preview: EditPreview, options: ToolOptions) {
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        strokeWidth = options.width.toFloat()
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
+    val rect = preview.bounds
+    val shape = RectF(rect.x.toFloat(), rect.y.toFloat(), rect.right.toFloat(), rect.bottom.toFloat())
+    fun drawShape() {
+        when (preview.tool) {
+            Tool.Line -> drawLine(preview.start.x, preview.start.y, preview.end.x, preview.end.y, paint)
+            Tool.Rectangle -> drawRect(shape, paint)
+            Tool.Ellipse -> drawOval(shape, paint)
+            else -> Unit
         }
     }
-    return bitmap.raster().also { bitmap.recycle() }
+    if (options.fill && preview.tool != Tool.Line) {
+        paint.style = Paint.Style.FILL; paint.color = options.background; drawShape()
+    }
+    if (options.outline || preview.tool == Tool.Line) {
+        paint.style = Paint.Style.STROKE; paint.color = options.foreground; drawShape()
+    }
 }
 
 internal val presetColors = listOf(
