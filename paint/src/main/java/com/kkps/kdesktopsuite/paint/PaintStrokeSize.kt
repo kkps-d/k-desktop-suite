@@ -36,7 +36,7 @@ import kotlin.math.roundToInt
 internal fun WidthPicker(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
-    val enabled = !s.busy && !s.loading &&
+    val available = !s.loading &&
         (s.options.tool.isShape || s.options.tool in listOf(Tool.Brush,Tool.Pencil,Tool.Eraser))
     val presets = when (s.options.tool) {
         Tool.Eraser -> listOf(4,8,16,24)
@@ -47,7 +47,8 @@ internal fun WidthPicker(s: PaintUiState, model: PaintViewModel) {
     Box {
         TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
             tooltip = { PlainTooltip { Text(label) } },state = rememberTooltipState()) {
-            FilledTonalIconButton(onClick = { open = true },enabled = enabled,
+            FilledTonalIconButton(onClick = { open = true },enabled = available && !s.busy,
+                colors = paintTonalIconColors(available && s.busy && !LocalPaintBusyVisible.current),
                 modifier = Modifier.size(64.dp,48.dp).testTag("paint-size-picker").semantics { contentDescription = label }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val color = LocalContentColor.current

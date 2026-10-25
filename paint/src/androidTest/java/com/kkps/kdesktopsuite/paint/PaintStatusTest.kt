@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
@@ -268,6 +269,43 @@ class PaintStatusTest {
         compose.onNodeWithContentDescription("Settings").assertIsDisplayed()
         compose.onNodeWithContentDescription("Cancel operation").assertIsDisplayed()
         compose.onNodeWithContentDescription("Redo (Ctrl+Shift+Z)").assertIsDisplayed()
+    }
+
+    @Test fun briefCommitsBlockToolbarInputWithoutFlashingItsColors() {
+        val controls = listOf(compose.onNodeWithContentDescription("Save (Ctrl+S)"),
+            compose.onNodeWithContentDescription("Pencil"),compose.onNodeWithTag("paint-brush-picker"),
+            compose.onNodeWithTag("paint-shape-picker"),compose.onNodeWithTag("paint-size-picker"))
+        fun pixels(node: SemanticsNodeInteraction): IntArray {
+            val image = node.captureToImage().asAndroidBitmap()
+            return IntArray(image.width * image.height).also {
+                image.getPixels(it,0,image.width,0,0,image.width,image.height)
+            }
+        }
+        controls.forEach { it.assertIsEnabled() }
+        val before = controls.map(::pixels)
+        compose.mainClock.autoAdvance = false
+        repeat(3) {
+            compose.runOnIdle { operationVisible = true }
+            compose.mainClock.advanceTimeBy(100)
+            controls.forEachIndexed { index,node ->
+                node.assertIsNotEnabled()
+                assertArrayEquals("Control $index during brief commit",before[index],pixels(node))
+            }
+            compose.onNodeWithTag("paint-operation-progress").assertDoesNotExist()
+            compose.runOnIdle { operationVisible = false }
+            compose.mainClock.advanceTimeBy(32)
+            controls.forEachIndexed { index,node ->
+                node.assertIsEnabled()
+                assertArrayEquals("Control $index after commit",before[index],pixels(node))
+            }
+        }
+        compose.runOnIdle { operationVisible = true }
+        compose.mainClock.advanceTimeBy(600)
+        controls.forEachIndexed { index,node ->
+            node.assertIsNotEnabled()
+            assertFalse("Control $index shows sustained busy state",before[index].contentEquals(pixels(node)))
+        }
+        compose.mainClock.autoAdvance = true
     }
 
     @Test fun defaultCanvasSizePersistsAndOnlyChangesNewImages() {

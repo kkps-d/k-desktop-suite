@@ -34,20 +34,30 @@ import com.kkps.kdesktopsuite.ui.AppDropdownMenu
 import com.kkps.kdesktopsuite.ui.AppMenuButton
 import com.kkps.kdesktopsuite.ui.AppMenuItem
 
+// Input is blocked immediately; brief operations need not flash disabled colors.
+internal val LocalPaintBusyVisible = compositionLocalOf { true }
+
 @Composable
-internal fun PaintButton(icon: PaintIcon, label: String, enabled: Boolean = true, selected: Boolean = false, action: () -> Unit) {
-    PaintButton(icon.vector,label,enabled = enabled,selected = selected,action = action)
+internal fun paintTonalIconColors(preserveEnabled: Boolean, container: Color = Color.Unspecified): IconButtonColors {
+    val colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = container)
+    return if (preserveEnabled) colors.copy(disabledContainerColor = colors.containerColor,
+        disabledContentColor = colors.contentColor) else colors
+}
+
+@Composable
+internal fun PaintButton(icon: PaintIcon, label: String, enabled: Boolean = true, selected: Boolean = false, busy: Boolean = false, action: () -> Unit) {
+    PaintButton(icon.vector,label,enabled = enabled,selected = selected,busy = busy,action = action)
 }
 
 @Composable
 private fun PaintButton(icon: ImageVector, label: String, modifier: Modifier = Modifier,
-    enabled: Boolean = true, selected: Boolean = false, action: () -> Unit) {
+    enabled: Boolean = true, selected: Boolean = false, busy: Boolean = false, action: () -> Unit) {
     TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
         tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState()) {
-        IconButton(onClick = action, enabled = enabled, modifier = modifier.size(48.dp)
+        IconButton(onClick = action, enabled = enabled && !busy, modifier = modifier.size(48.dp)
             .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent, RoundedCornerShape(12.dp))
             .semantics { this.selected = selected; if (selected) stateDescription = "Selected" }) {
-            Icon(icon, label, tint = if (!enabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            Icon(icon, label, tint = if (!enabled || (busy && LocalPaintBusyVisible.current)) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                 else if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface)
         }
     }
@@ -68,35 +78,37 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
     LaunchedEffect(state.message) { state.message?.let { snackbar.showSnackbar(it); model.message(null) } }
     val imeVisible = WindowInsets.isImeVisible
     BackHandler(!imeVisible && (state.settingsOpen || state.dialog != null || state.preview != null || state.selection != null || state.focusMode)) { model.back() }
-    Surface(Modifier.fillMaxSize()) {
-        BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.union(WindowInsets.ime))) {
-            val width = maxWidth
-            val short = maxHeight < 480.dp
-            Column(Modifier.fillMaxSize().onKeyEvent { event -> if (state.settingsOpen) false else handlePaintKey(event,state,model) }) {
-                if (state.settingsOpen) PaintSettingsScreen(state,model) else {
-                    if (!state.focusMode) {
-                        PaintHeader(state,model,width.value,showBusy)
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        if (!state.ribbonCollapsed) PaintRibbon(state,model,width.value)
-                        else TextButton(onClick = model::toggleRibbon) { Text(stringResource(R.string.ui_show_drawing_tools)) }
-                        if (state.preview != null || state.selection != null) SelectionActions(state,model)
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    } else Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.End) {
-                        PaintOperationProgress(state,model,showBusy)
-                        TextButton(onClick = model::toggleFocus) { Text(stringResource(R.string.ui_exit_focus_mode)) }
+    CompositionLocalProvider(LocalPaintBusyVisible provides showBusy) {
+        Surface(Modifier.fillMaxSize()) {
+            BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.union(WindowInsets.ime))) {
+                val width = maxWidth
+                val short = maxHeight < 480.dp
+                Column(Modifier.fillMaxSize().onKeyEvent { event -> if (state.settingsOpen) false else handlePaintKey(event,state,model) }) {
+                    if (state.settingsOpen) PaintSettingsScreen(state,model) else {
+                        if (!state.focusMode) {
+                            PaintHeader(state,model,width.value,showBusy)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            if (!state.ribbonCollapsed) PaintRibbon(state,model,width.value)
+                            else TextButton(onClick = model::toggleRibbon) { Text(stringResource(R.string.ui_show_drawing_tools)) }
+                            if (state.preview != null || state.selection != null) SelectionActions(state,model)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        } else Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.End) {
+                            PaintOperationProgress(state,model,showBusy)
+                            TextButton(onClick = model::toggleFocus) { Text(stringResource(R.string.ui_exit_focus_mode)) }
+                        }
+                        if (short && !state.ribbonCollapsed && !state.focusMode) {
+                            TextButton(onClick = model::toggleRibbon,modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.ui_collapse_ribbon)) }
+                        }
+                        Box(Modifier.weight(1f).fillMaxWidth()) {
+                            PaintCanvas(state,model,onCursorChange = { cursor = it },onSelectionChange = { selectionDrag = it },
+                                onCanvasResizeChange = { canvasResize = it })
+                        }
+                        if (state.showInformation && !state.focusMode) PaintStatus(state,model,cursor,selectionDrag,canvasResize)
                     }
-                    if (short && !state.ribbonCollapsed && !state.focusMode) {
-                        TextButton(onClick = model::toggleRibbon,modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.ui_collapse_ribbon)) }
-                    }
-                    Box(Modifier.weight(1f).fillMaxWidth()) {
-                        PaintCanvas(state,model,onCursorChange = { cursor = it },onSelectionChange = { selectionDrag = it },
-                            onCanvasResizeChange = { canvasResize = it })
-                    }
-                    if (state.showInformation && !state.focusMode) PaintStatus(state,model,cursor,selectionDrag,canvasResize)
                 }
+                SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter))
+                PaintDialogs(state,model)
             }
-            SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter))
-            PaintDialogs(state,model)
         }
     }
 }
@@ -135,9 +147,9 @@ private fun PaintHeader(s: PaintUiState, model: PaintViewModel, width: Float, sh
 private fun PaintHeaderActions(s: PaintUiState, model: PaintViewModel, showBusy: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically,modifier = Modifier.testTag("paint-header-actions")) {
         PaintOperationProgress(s,model,showBusy)
-        PaintButton(PaintIcon.Save,"Save (Ctrl+S)",!s.busy && !s.loading && !s.saving) { model.save() }
-        PaintButton(PaintIcon.Undo,"Undo (Ctrl+Z)",!s.busy && (s.canUndo || s.preview != null),action = model::undo)
-        PaintButton(PaintIcon.Redo,"Redo (Ctrl+Shift+Z)",!s.busy && s.canRedo,action = model::redo)
+        PaintButton(PaintIcon.Save,"Save (Ctrl+S)",!s.loading && !s.saving,busy = s.busy) { model.save() }
+        PaintButton(PaintIcon.Undo,"Undo (Ctrl+Z)",s.canUndo || s.preview != null,busy = s.busy,action = model::undo)
+        PaintButton(PaintIcon.Redo,"Redo (Ctrl+Shift+Z)",s.canRedo,busy = s.busy,action = model::redo)
     }
 }
 
@@ -252,7 +264,7 @@ internal fun PaintRibbon(s: PaintUiState, model: PaintViewModel, width: Float) {
             }
             RibbonGroup("Tools") {
                 Column { tools.chunked(4).forEach { row -> Row { row.forEach { tool ->
-                    PaintButton(tool.icon,tool.label,selected = s.options.tool == tool,enabled = !s.busy) { model.tool(tool) }
+                    PaintButton(tool.icon,tool.label,selected = s.options.tool == tool,busy = s.busy) { model.tool(tool) }
                 } } } }
             }
             RibbonGroup("Brushes") {
@@ -313,10 +325,13 @@ private fun BrushPicker(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     val style = s.options.brushStyle
+    val colors = ButtonDefaults.filledTonalButtonColors(containerColor =
+        if (s.options.tool == Tool.Brush) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+    val preserveEnabled = s.busy && !s.loading && !LocalPaintBusyVisible.current
     Box {
         FilledTonalButton(onClick = { open = true },enabled = !s.busy && !s.loading,
-            colors = ButtonDefaults.filledTonalButtonColors(containerColor =
-                if (s.options.tool == Tool.Brush) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent),
+            colors = if (preserveEnabled) colors.copy(disabledContainerColor = colors.containerColor,
+                disabledContentColor = colors.contentColor) else colors,
             contentPadding = PaddingValues(8.dp),
             modifier = Modifier.heightIn(min = 48.dp).testTag("paint-brush-picker")
                 .semantics { contentDescription = "Choose brush: ${style.label}"; selected = s.options.tool == Tool.Brush }) {
@@ -368,7 +383,7 @@ private fun ShapePicker(s: PaintUiState, model: PaintViewModel, shape: Tool, onS
         TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
             tooltip = { PlainTooltip { Text("Choose shape: ${shape.label}") } },state = rememberTooltipState()) {
             FilledTonalIconButton(onClick = { open = true },enabled = !s.busy && !s.loading,
-                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor =
+                colors = paintTonalIconColors(s.busy && !s.loading && !LocalPaintBusyVisible.current,container =
                     if (s.options.tool.isShape) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent),
                 modifier = Modifier.size(width = 64.dp,height = 48.dp).testTag("paint-shape-picker")
                     .semantics { contentDescription = "Choose shape: ${shape.label}"; selected = s.options.tool.isShape }) {
@@ -450,8 +465,8 @@ private fun ColorControls(s: PaintUiState, model: PaintViewModel, palette: Boole
 private fun SelectionActions(s: PaintUiState, model: PaintViewModel) {
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).background(MaterialTheme.colorScheme.surfaceContainer),verticalAlignment = Alignment.CenterVertically) {
         if (s.preview != null) {
-            PaintButton(PaintIcon.Apply,"Apply preview",!s.busy) { model.applyPreview() }
-            PaintButton(PaintIcon.Cancel,"Cancel preview",!s.busy,action = model::cancelPreview)
+            PaintButton(PaintIcon.Apply,"Apply preview",busy = s.busy) { model.applyPreview() }
+            PaintButton(PaintIcon.Cancel,"Cancel preview",busy = s.busy,action = model::cancelPreview)
         } else TextButton(onClick = model::clearSelection) { Text(stringResource(R.string.ui_clear_selection)) }
         TextButton(onClick = { model.dialog(PaintDialog.Geometry) }) { Text(stringResource(R.string.ui_move_resize)) }
         if (s.selection != null || s.preview?.payload != null) {
