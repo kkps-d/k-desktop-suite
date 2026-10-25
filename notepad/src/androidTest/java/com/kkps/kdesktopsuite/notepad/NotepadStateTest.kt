@@ -250,12 +250,12 @@ class NotepadStateTest {
     fun recoverySkipsEmptyTabsAndSelectsTheFirstSurvivingDocument() = runBlocking {
         val sessions = store()
         val first = DocumentSnapshot(text = "First content")
-        val empty = DocumentSnapshot(untitledNumber = 2)
-        val savedEmpty = DocumentSnapshot(untitledNumber = 3, uri = "file:empty", name = "empty.txt")
-        val whitespace = DocumentSnapshot(untitledNumber = 4, text = " \n")
-        val last = DocumentSnapshot(untitledNumber = 5, text = "Last content")
+        val empty = DocumentSnapshot()
+        val savedEmpty = DocumentSnapshot(uri = "file:empty", name = "empty.txt")
+        val whitespace = DocumentSnapshot(text = " \n")
+        val last = DocumentSnapshot(text = "Last content")
         val written = CompletableDeferred<Boolean>()
-        sessions.checkpoint(SessionSnapshot(listOf(first, empty, savedEmpty, whitespace, last), empty.id, nextUntitled = 6)) { written.complete(it) }
+        sessions.checkpoint(SessionSnapshot(listOf(first, empty, savedEmpty, whitespace, last), empty.id)) { written.complete(it) }
         assertTrue(written.await())
         val recovered = create(store = sessions)
         withContext(Dispatchers.Main) {
@@ -273,9 +273,9 @@ class NotepadStateTest {
     fun restoringOnlyEmptyTabsCreatesOneFreshDocument() = runBlocking {
         val sessions = store()
         val empty = DocumentSnapshot()
-        val second = DocumentSnapshot(untitledNumber = 2)
+        val second = DocumentSnapshot()
         val written = CompletableDeferred<Boolean>()
-        sessions.checkpoint(SessionSnapshot(listOf(empty, second), second.id, nextUntitled = 3)) { written.complete(it) }
+        sessions.checkpoint(SessionSnapshot(listOf(empty, second), second.id)) { written.complete(it) }
         assertTrue(written.await())
         val recovered = create(store = sessions)
         withContext(Dispatchers.Main) {
@@ -295,6 +295,8 @@ class NotepadStateTest {
         sessions.checkpoint(snapshot) { written.complete(it) }
         assertTrue(written.await())
         val oldJson = org.json.JSONObject(file.readText()).apply {
+            put("nextUntitled", 1000)
+            getJSONArray("documents").getJSONObject(0).put("untitledNumber", 999)
             remove("wordWrap")
             remove("showStatusBar")
             getJSONArray("documents").getJSONObject(0).remove("horizontalScroll")
@@ -314,6 +316,8 @@ class NotepadStateTest {
             assertTrue(legacy.wordWrap)
             assertTrue(legacy.showStatusBar)
             assertEquals(0, legacy.active!!.horizontalScroll.value)
+            assertEquals(document.id, legacy.activeId)
+            assertEquals(document.text, legacy.active!!.editor.text.toString())
         }
     }
 
@@ -409,9 +413,9 @@ class NotepadStateTest {
     fun pendingPickerResultAfterRestartStillTargetsItsOriginalDocument() = runBlocking {
         val sessions = store()
         val original = DocumentSnapshot(text = "Original picker target")
-        val selected = DocumentSnapshot(untitledNumber = 2, text = "Selected tab")
+        val selected = DocumentSnapshot(text = "Selected tab")
         val written = CompletableDeferred<Boolean>()
-        sessions.checkpoint(SessionSnapshot(listOf(original, selected), selected.id, nextUntitled = 3)) { written.complete(it) }
+        sessions.checkpoint(SessionSnapshot(listOf(original, selected), selected.id)) { written.complete(it) }
         assertTrue(written.await())
         val savedState = SavedStateHandle(mapOf(
             "pickerKind" to PickerKind.SaveAs.name,

@@ -42,7 +42,6 @@ internal object TextCodec {
 
 internal data class DocumentSnapshot(
     val id: String = UUID.randomUUID().toString(),
-    val untitledNumber: Int = 1,
     val name: String? = null,
     val uri: String? = null,
     val text: String = "",
@@ -59,7 +58,6 @@ internal data class SessionSnapshot(
     val documents: List<DocumentSnapshot>,
     val activeId: String,
     val zoom: Int = 100,
-    val nextUntitled: Int = 2,
     val wordWrap: Boolean = true,
     val showStatusBar: Boolean = true,
     val appTheme: AppTheme = AppTheme.Auto,
@@ -68,7 +66,6 @@ internal data class SessionSnapshot(
 
 internal class DocumentSession(snapshot: DocumentSnapshot) {
     val id = snapshot.id
-    val untitledNumber = snapshot.untitledNumber
     val editor = TextFieldState(
         snapshot.text,
         TextRange(snapshot.selectionStart.coerceIn(0, snapshot.text.length), snapshot.selectionEnd.coerceIn(0, snapshot.text.length)),
@@ -84,7 +81,7 @@ internal class DocumentSession(snapshot: DocumentSnapshot) {
     val dirty: Boolean get() = editor.text.toString() != savedText
 
     fun snapshot() = DocumentSnapshot(
-        id, untitledNumber, name, uri, editor.text.toString(), savedText, diskFingerprint, format,
+        id, name, uri, editor.text.toString(), savedText, diskFingerprint, format,
         editor.selection.start, editor.selection.end, scroll.value, horizontalScroll.value,
     )
 }

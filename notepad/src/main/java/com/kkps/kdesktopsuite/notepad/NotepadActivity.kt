@@ -116,7 +116,7 @@ class NotepadActivity : ComponentActivity() {
                         PickerKind.SaveAs -> Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                             type = "text/plain"
                             val doc = notepad.documents.find { it.id == picker.documentId }
-                            val name = doc?.name ?: getString(R.string.untitled, doc?.untitledNumber ?: 1) + ".txt"
+                            val name = doc?.name ?: getString(R.string.untitled) + ".txt"
                             putExtra(Intent.EXTRA_TITLE, name)
                         }
                     }.apply {

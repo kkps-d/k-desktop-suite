@@ -62,7 +62,6 @@ internal class SessionStore(file: File) {
         put("version", 1)
         put("activeId", session.activeId)
         put("zoom", session.zoom)
-        put("nextUntitled", session.nextUntitled)
         put("wordWrap", session.wordWrap)
         put("showStatusBar", session.showStatusBar)
         put("appTheme", session.appTheme.name)
@@ -71,7 +70,6 @@ internal class SessionStore(file: File) {
             session.documents.forEach { doc ->
                 put(JSONObject().apply {
                     put("id", doc.id)
-                    put("untitledNumber", doc.untitledNumber)
                     put("name", doc.name)
                     put("uri", doc.uri)
                     put("text", doc.text)
@@ -95,7 +93,6 @@ internal class SessionStore(file: File) {
             val doc = array.getJSONObject(index)
             DocumentSnapshot(
                 id = doc.getString("id"),
-                untitledNumber = doc.getInt("untitledNumber"),
                 name = if (doc.isNull("name")) null else doc.getString("name"),
                 uri = if (doc.isNull("uri")) null else doc.getString("uri"),
                 text = doc.getString("text"),
@@ -113,7 +110,6 @@ internal class SessionStore(file: File) {
         require(documents.any { it.id == activeId })
         return SessionSnapshot(
             documents, activeId, json.getInt("zoom").coerceIn(50, 300),
-            maxOf(json.getInt("nextUntitled"), documents.maxOf { it.untitledNumber } + 1),
             json.optBoolean("wordWrap", true), json.optBoolean("showStatusBar", true),
             AppTheme.entries.firstOrNull { it.name == json.optString("appTheme") } ?: AppTheme.Auto,
             NoteFontStyle.entries.firstOrNull { it.name == json.optString("fontStyle") } ?: NoteFontStyle.Monospace,

@@ -111,7 +111,7 @@ internal enum class NotepadCommand(@StringRes val label: Int, val shortcut: Stri
 }
 
 @Composable
-internal fun documentTitle(doc: DocumentSession): String = doc.name ?: stringResource(R.string.untitled, doc.untitledNumber)
+internal fun documentTitle(doc: DocumentSession): String = doc.name ?: stringResource(R.string.untitled)
 
 @Composable
 internal fun NotepadScreen(
@@ -554,7 +554,7 @@ private fun DocumentSwitcher(
                     val docTitle = documentTitle(doc)
                     val label = if (doc.dirty) stringResource(R.string.unsaved_tab, docTitle) else docTitle
                     val docState = documentState(doc, doc.id == errorDocumentId)
-                    Row(Modifier.widthIn(min = 240.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.widthIn(min = 240.dp).testTag("document-entry-${doc.id}"), verticalAlignment = Alignment.CenterVertically) {
                         NotepadMenuItem(
                             text = {
                                 Column {
@@ -562,7 +562,7 @@ private fun DocumentSwitcher(
                                     Text(docState, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             },
-                            modifier = Modifier.weight(1f).semantics {
+                            modifier = Modifier.weight(1f).testTag("document-tab-${doc.id}").semantics {
                                 selected = doc.id == activeId
                                 contentDescription = label
                                 stateDescription = docState
@@ -730,7 +730,7 @@ private fun DocumentTabs(
                         }
                     }) {
                         Surface(
-                            modifier = Modifier.width(tabWidth).heightIn(min = minTabHeight)
+                            modifier = Modifier.width(tabWidth).heightIn(min = minTabHeight).testTag("document-tab-${doc.id}")
                                 .captionControl(input, doc.id).clip(shape)
                                 .tabDragSource(notepad, activity, doc.id)
                                 .alpha(if (placeholder) 0.35f else 1f)

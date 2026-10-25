@@ -63,7 +63,6 @@ internal class NotepadWorkspace(private val store: SessionStore) {
     var showStatusBar by mutableStateOf(true)
     var appTheme by mutableStateOf(AppTheme.Auto)
     var fontStyle by mutableStateOf(NoteFontStyle.Monospace)
-    private var nextUntitled = 1
 
     init {
         scope.launch {
@@ -73,7 +72,6 @@ internal class NotepadWorkspace(private val store: SessionStore) {
                     main.activeId = snapshot.activeId.takeIf { id -> main.documents.any { it.id == id } }
                         ?: main.documents.firstOrNull()?.id.orEmpty()
                     zoom = snapshot.zoom
-                    nextUntitled = snapshot.nextUntitled
                     wordWrap = snapshot.wordWrap
                     showStatusBar = snapshot.showStatusBar
                     appTheme = snapshot.appTheme
@@ -107,7 +105,7 @@ internal class NotepadWorkspace(private val store: SessionStore) {
     fun focus(window: NotepadWindow) { if (!window.closed) focusedId = window.id }
 
     fun addBlank(window: NotepadWindow) {
-        val doc = DocumentSession(DocumentSnapshot(untitledNumber = nextUntitled++))
+        val doc = DocumentSession(DocumentSnapshot())
         window.documents.add(doc)
         window.select(doc.id)
     }
@@ -225,7 +223,7 @@ internal class NotepadWorkspace(private val store: SessionStore) {
         val documents = windows.filter { !it.closed }.flatMap { it.documents }
         val active = windows.find { it.id == focusedId && !it.closed }?.activeId
             ?.takeIf { id -> documents.any { it.id == id } } ?: documents.first().id
-        return SessionSnapshot(documents.map { it.snapshot() }, active, zoom, nextUntitled,
+        return SessionSnapshot(documents.map { it.snapshot() }, active, zoom,
             wordWrap, showStatusBar, appTheme, fontStyle)
     }
 
