@@ -14,21 +14,34 @@ internal enum class BrushStyle(val label: String, val defaultWidth: Int = 8) {
 internal fun Raster.brushStroke(
     points: List<Point>, color: Int, size: Float, style: BrushStyle, seed: Int, clip: PixelRect? = null,
 ): Raster {
-    if (style == BrushStyle.Solid) return stroke(points,color,size,false,clip)
     if (points.isEmpty()) return this
-    val output = pixels.copyOf()
-    val radius = max(0.5f,size / 2)
-    val spacing = max(0.5f,size * 0.16f)
-    val area = clip?.clipped(width,height) ?: PixelRect(0,0,width,height)
-    var dabIndex = 0
+    val renderer = BrushStrokeRenderer(this,color,size,style,seed,clip)
+    points.forEach(renderer::append)
+    return renderer.snapshot()
+}
 
-    fun grain(x: Int, y: Int, layer: Int = 0): Float {
+/** Owned by one worker; appending never redraws an earlier segment. */
+internal class BrushStrokeRenderer(
+    source: Raster, private val color: Int, size: Float, private val style: BrushStyle,
+    private val seed: Int, clip: PixelRect?,
+) {
+    private val width = source.width
+    private val height = source.height
+    private val output = source.pixels.copyOf()
+    private val round = if (style == BrushStyle.Solid) RoundStrokeDabs(width,height,output,color,size,false,clip) else null
+    private var previous: Point? = null
+    private val radius = max(0.5f,size / 2)
+    private val spacing = max(0.5f,size * 0.16f)
+    private val area = clip?.clipped(width,height) ?: PixelRect(0,0,width,height)
+    private var dabIndex = 0
+
+    private fun grain(x: Int, y: Int, layer: Int = 0): Float {
         var hash = seed xor (x * 374761393) xor (y * 668265263) xor (layer * 1274126177)
         hash = (hash xor (hash ushr 13)) * 1274126177
         return ((hash xor (hash ushr 16)) ushr 8) / 16777216f
     }
 
-    fun dab(point: Point) {
+    private fun dab(point: Point) {
         val cx = point.x + 0.5f
         val cy = point.y + 0.5f
         val left = max(area.x,floor(cx-radius-1).toInt())
@@ -77,20 +90,32 @@ internal fun Raster.brushStroke(
         dabIndex++
     }
 
-    dab(points.first())
-    var untilNextDab = spacing
-    for (index in 1 until points.size) {
-        val start = points[index-1]
-        val end = points[index]
-        val length = hypot(end.x-start.x,end.y-start.y)
-        if (length == 0f) continue
-        var distance = untilNextDab
-        while (distance <= length) {
-            val t = distance / length
-            dab(Point(start.x+(end.x-start.x)*t,start.y+(end.y-start.y)*t))
-            distance += spacing
+    private var untilNextDab = spacing
+
+    fun append(end: Point) {
+        val start = previous
+        previous = end
+        if (start == null) {
+            if (round != null) round.dab(end) else dab(end)
+            return
         }
-        untilNextDab = distance-length
+        val length = hypot(end.x-start.x,end.y-start.y)
+        if (round != null) {
+            val steps = ceil(length * 2).toInt().coerceIn(1,32768)
+            for (step in 1..steps) {
+                val t = step.toFloat() / steps
+                round.dab(Point(start.x+(end.x-start.x)*t,start.y+(end.y-start.y)*t))
+            }
+        } else if (length > 0f) {
+            var distance = untilNextDab
+            while (distance <= length) {
+                val t = distance / length
+                dab(Point(start.x+(end.x-start.x)*t,start.y+(end.y-start.y)*t))
+                distance += spacing
+            }
+            untilNextDab = distance-length
+        }
     }
-    return Raster(width,height,output)
+
+    fun snapshot() = Raster(width,height,output.copyOf())
 }

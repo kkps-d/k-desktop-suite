@@ -158,13 +158,13 @@ internal class PaintViewModel(
             try { recovery.write(snapshot) } catch (error: Exception) { message("Draft recovery failed: ${error.message}") }
         }
     }
-    private fun operation(work: suspend (Raster) -> Raster, valid: () -> Boolean = { true }, after: () -> Unit = {}) {
+    private fun operation(work: suspend (Raster) -> Raster, valid: () -> Boolean = { true }, affectedArea: PixelRect? = null, after: () -> Unit = {}) {
         if (state.value.busy || state.value.loading) return
         val source = history.raster; val revision = history.revision; val id = ++operationId
         mutableState.update { it.copy(busy = true) }
         editJob = viewModelScope.launch {
             try {
-                val result = withContext(compute) { history.prepare(work(source)) }
+                val result = withContext(compute) { history.prepare(work(source),affectedArea) }
                 if (history.revision == revision && history.raster === source && valid()) {
                     result?.let { history.commit(it) }; sync(); after()
                 }
@@ -215,15 +215,18 @@ internal class PaintViewModel(
             }; checkpoint()
         }
     }
-    fun stroke(points: List<Point>, erasing: Boolean = false, seed: Int = kotlin.random.Random.nextInt()) {
+    fun stroke(points: List<Point>, erasing: Boolean = false, seed: Int = kotlin.random.Random.nextInt(), session: BrushStrokeSession? = null) {
         val s = state.value; val o = s.options
         if (s.preview != null) { applyPreview { stroke(points,erasing,seed) }; return }
+        val size = (if (erasing) o.eraserWidth else o.strokeWidth).toFloat()
         operation({
-            if (o.tool == Tool.Brush && !erasing)
-                it.brushStroke(points,o.foreground,o.width.toFloat(),o.brushStyle,seed,s.selection)
+            if (o.tool == Tool.Brush && !erasing) {
+                if (session?.matches(it,o,seed,s.selection) == true) session.render(points)
+                else it.brushStroke(points,o.foreground,o.width.toFloat(),o.brushStyle,seed,s.selection)
+            }
             else it.stroke(points,o.background.takeIf { o.tool == Tool.Eraser || erasing } ?: o.foreground,
-                (if (erasing) o.eraserWidth else o.strokeWidth).toFloat(),true,s.selection)
-        })
+                size,true,s.selection)
+        },affectedArea = s.raster.strokeBounds(points,size))
     }
     fun tap(point: Point) {
         val s = state.value; val x = floor(point.x).toInt(); val y = floor(point.y).toInt()

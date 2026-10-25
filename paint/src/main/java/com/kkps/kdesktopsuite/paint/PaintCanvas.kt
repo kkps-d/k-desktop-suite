@@ -71,19 +71,32 @@ internal fun PaintCanvas(
     var keyboardInput by remember { mutableStateOf(false) }
     var erasing by remember { mutableStateOf(false) }
     var strokeSeed by remember { mutableIntStateOf(0) }
+    var strokePending by remember { mutableStateOf(false) }
+    var brushSession by remember { mutableStateOf<BrushStrokeSession?>(null) }
     var contextMenu by remember { mutableStateOf<Offset?>(null) }
     var canvasResize by remember { mutableStateOf<PixelRect?>(null) }
     val raster = state.raster
     val image = remember(raster) { raster.bitmap().asImageBitmap() }
-    val strokePoints = stroke.toList()
-    val brushImage by produceState<Pair<Raster,ImageBitmap>?>(null,raster,strokePoints,state.options,strokeSeed,erasing,state.busy) {
-        if (state.options.tool == Tool.Brush && !erasing && strokePoints.isNotEmpty()) {
-            val rendered = withContext(Dispatchers.Default) {
-                raster.brushStroke(strokePoints,state.options.foreground,state.options.width.toFloat(),
-                    state.options.brushStyle,strokeSeed,state.selection).bitmap().asImageBitmap()
+    var brushImage by remember(brushSession) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(brushSession) {
+        val session = brushSession ?: return@LaunchedEffect
+        // Collect sequentially: newer samples are conflated while the worker finishes a batch.
+        snapshotFlow { stroke.toList() }.collect { points ->
+            if (state.options.tool == Tool.Brush && !erasing && points.isNotEmpty()) {
+                brushImage = withContext(Dispatchers.Default) {
+                    session.render(points).bitmap().asImageBitmap()
+                }
+            } else {
+                brushImage = null
             }
-            value = raster to rendered
-        } else if (!state.busy) value = null
+        }
+    }
+    LaunchedEffect(state.raster,state.busy,strokePending) {
+        val latest = model.state.value
+        // Keep released points until composition has the committed image (or cancellation).
+        if (strokePending && !latest.busy && state.raster === latest.raster) {
+            stroke.clear(); strokePending = false; brushSession = null; erasing = false
+        }
     }
     val payload = state.preview?.payload
     val selectionImage = remember(payload) { payload?.bitmap()?.asImageBitmap() }
@@ -107,9 +120,17 @@ internal fun PaintCanvas(
             spacePressed = event.type == KeyEventType.KeyDown
             if (event.type == KeyEventType.KeyDown && !event.isCtrlPressed && !event.isShiftPressed) {
                 if (state.options.tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) {
+                    if (model.state.value.busy || model.state.value.loading) return true
                     keyboardDrawing = !keyboardDrawing
-                    if (keyboardDrawing) { strokeSeed = kotlin.random.Random.nextInt(); stroke.add(keyboardCursor) }
-                    else { model.stroke(stroke.toList(),seed = strokeSeed); stroke.clear() }
+                    if (keyboardDrawing) {
+                        stroke.clear(); strokePending = false; erasing = false
+                        strokeSeed = kotlin.random.Random.nextInt()
+                        brushSession = BrushStrokeSession(state.raster,state.options,strokeSeed,state.selection)
+                        stroke.add(keyboardCursor)
+                    } else {
+                        strokePending = true
+                        model.stroke(stroke.toList(),seed = strokeSeed,session = brushSession)
+                    }
                 } else if (state.options.tool.isShape && state.preview == null) {
                     keyboardDrawing = !keyboardDrawing
                     if (keyboardDrawing) { dragStart = keyboardCursor; dragEnd = keyboardCursor }
@@ -176,7 +197,8 @@ internal fun PaintCanvas(
         }) {
         Canvas(Modifier.fillMaxSize().testTag("paint-canvas").focusRequester(focus)
             .onFocusChanged { if (!it.hasFocus) {
-                stroke.clear(); spacePressed = false
+                if (!strokePending) stroke.clear()
+                spacePressed = false
                 if (keyboardDrawing) { keyboardDrawing = false; dragStart = null; dragEnd = null }
             } }
             .focusable().onKeyEvent(::commandKey)
@@ -198,14 +220,15 @@ internal fun PaintCanvas(
             .pointerInput(density.density,active) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
-                    val initial = current
+                    val initial = model.state.value
                     if (!active || initial.busy || initial.loading) return@awaitEachGesture
                     focus.requestFocus()
                     val startEvent = currentEvent
                     if (startEvent.buttons.isSecondaryPressed) {
                         contextMenu = down.position; down.consume(); return@awaitEachGesture
                     }
-                    stroke.clear(); keyboardDrawing = false; strokeSeed = kotlin.random.Random.nextInt()
+                    stroke.clear(); strokePending = false; keyboardDrawing = false; strokeSeed = kotlin.random.Random.nextInt()
+                    brushSession = BrushStrokeSession(initial.raster,initial.options,strokeSeed,initial.selection)
                     val imageStart = initial.viewport.imagePoint(Point(down.position.x,down.position.y))
                     erasing = down.type == PointerType.Eraser
                     val tool = if (erasing) Tool.Eraser else initial.options.tool
@@ -264,13 +287,19 @@ internal fun PaintCanvas(
                         if (!navigation) {
                             when {
                                 constructing -> model.tap(constructionPoint ?: imageStart)
-                                stroke.isNotEmpty() -> model.stroke(stroke.toList(),erasing,strokeSeed)
+                                stroke.isNotEmpty() -> {
+                                    strokePending = true
+                                    model.stroke(stroke.toList(),erasing,strokeSeed,brushSession)
+                                }
                                 !hitExisting && !resize && dragStart != null && moved -> model.createPreview(dragStart!!,dragEnd ?: dragStart!!,event.keyboardModifiers.isShiftPressed)
                                 !moved -> model.tap(imageStart)
                             }
                         }
                     } catch (cancelled: CancellationException) { throw cancelled }
-                    finally { stroke.clear(); dragStart = null; dragEnd = null; constructionPoint = null; dragConstrained = false; erasing = false }
+                    finally {
+                        if (!strokePending) { stroke.clear(); brushSession = null; erasing = false }
+                        dragStart = null; dragEnd = null; constructionPoint = null; dragConstrained = false
+                    }
                 }
             }) {
             val view = state.viewport
@@ -284,7 +313,7 @@ internal fun PaintCanvas(
                     translate(origin.x,origin.y)
                     scale(view.scale,view.scale,pivot = Offset.Zero)
                 }) {
-                    drawImage(brushImage?.takeIf { it.first === raster }?.second ?: image,dstSize = IntSize(raster.width,raster.height),
+                    drawImage(brushImage?.takeIf { brushSession?.source === raster } ?: image,dstSize = IntSize(raster.width,raster.height),
                         filterQuality = if (view.scale >= 1) FilterQuality.None else FilterQuality.Low)
                     state.preview?.takeIf { it.tool == Tool.Select }?.let { preview ->
                         preview.source?.let { source ->
@@ -306,7 +335,7 @@ internal fun PaintCanvas(
                 }
             }
             drawRect(Color.Gray,Offset(canvasOrigin.x,canvasOrigin.y),canvasSize,style = Stroke(1f))
-            if (stroke.isNotEmpty() && (state.options.tool != Tool.Brush || erasing)) {
+            if (stroke.isNotEmpty() && brushSession?.source === raster && (state.options.tool != Tool.Brush || erasing)) {
                 val path = Path()
                 stroke.forEachIndexed { index, point ->
                     val p = view.screenPoint(point)

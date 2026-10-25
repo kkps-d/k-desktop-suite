@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 import com.kkps.kdesktopsuite.ui.AppDropdownMenu
 import com.kkps.kdesktopsuite.ui.AppMenuButton
 import com.kkps.kdesktopsuite.ui.AppMenuItem
@@ -56,6 +57,11 @@ private fun PaintButton(icon: ImageVector, label: String, modifier: Modifier = M
 @OptIn(ExperimentalLayoutApi::class)
 internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
     val snackbar = remember { SnackbarHostState() }
+    var showBusy by remember { mutableStateOf(false) }
+    LaunchedEffect(state.busy) {
+        if (state.busy) delay(250)
+        showBusy = state.busy
+    }
     var cursor by remember { mutableStateOf<Point?>(Point(0f,0f)) }
     var selectionDrag by remember { mutableStateOf<PixelRect?>(null) }
     var canvasResize by remember { mutableStateOf<PixelRect?>(null) }
@@ -69,14 +75,14 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
             Column(Modifier.fillMaxSize().onKeyEvent { event -> if (state.settingsOpen) false else handlePaintKey(event,state,model) }) {
                 if (state.settingsOpen) PaintSettingsScreen(state,model) else {
                     if (!state.focusMode) {
-                        PaintHeader(state,model,width.value)
+                        PaintHeader(state,model,width.value,showBusy)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         if (!state.ribbonCollapsed) PaintRibbon(state,model,width.value)
                         else TextButton(onClick = model::toggleRibbon) { Text(stringResource(R.string.ui_show_drawing_tools)) }
                         if (state.preview != null || state.selection != null) SelectionActions(state,model)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     } else Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.End) {
-                        PaintOperationProgress(state,model)
+                        PaintOperationProgress(state,model,showBusy)
                         TextButton(onClick = model::toggleFocus) { Text(stringResource(R.string.ui_exit_focus_mode)) }
                     }
                     if (short && !state.ribbonCollapsed && !state.focusMode) {
@@ -96,7 +102,7 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
 }
 
 @Composable
-private fun PaintHeader(s: PaintUiState, model: PaintViewModel, width: Float) {
+private fun PaintHeader(s: PaintUiState, model: PaintViewModel, width: Float, showBusy: Boolean) {
     val compact = width < 700 * LocalDensity.current.fontScale
     Column(Modifier.fillMaxWidth().testTag("paint-header")) {
         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically) {
@@ -112,7 +118,7 @@ private fun PaintHeader(s: PaintUiState, model: PaintViewModel, width: Float) {
                 Text(s.title,modifier = Modifier.testTag("paint-document-title"),maxLines = 1,
                     overflow = TextOverflow.Ellipsis,style = MaterialTheme.typography.titleSmall)
             }
-            if (!compact) PaintHeaderActions(s,model)
+            if (!compact) PaintHeaderActions(s,model,showBusy)
             TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
                 tooltip = { PlainTooltip { Text(stringResource(R.string.ui_settings)) } },state = rememberTooltipState()) {
                 IconButton(onClick = { model.showSettings(true) }) {
@@ -121,14 +127,14 @@ private fun PaintHeader(s: PaintUiState, model: PaintViewModel, width: Float) {
             }
         }
         if (compact) Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End) { PaintHeaderActions(s,model) }
+            horizontalArrangement = Arrangement.End) { PaintHeaderActions(s,model,showBusy) }
     }
 }
 
 @Composable
-private fun PaintHeaderActions(s: PaintUiState, model: PaintViewModel) {
+private fun PaintHeaderActions(s: PaintUiState, model: PaintViewModel, showBusy: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically,modifier = Modifier.testTag("paint-header-actions")) {
-        PaintOperationProgress(s,model)
+        PaintOperationProgress(s,model,showBusy)
         PaintButton(PaintIcon.Save,"Save (Ctrl+S)",!s.busy && !s.loading && !s.saving) { model.save() }
         PaintButton(PaintIcon.Undo,"Undo (Ctrl+Z)",!s.busy && (s.canUndo || s.preview != null),action = model::undo)
         PaintButton(PaintIcon.Redo,"Redo (Ctrl+Shift+Z)",!s.busy && s.canRedo,action = model::redo)
@@ -136,8 +142,8 @@ private fun PaintHeaderActions(s: PaintUiState, model: PaintViewModel) {
 }
 
 @Composable
-private fun PaintOperationProgress(s: PaintUiState, model: PaintViewModel) {
-    if (s.loading || s.busy || s.saving) Row(Modifier.testTag("paint-operation-progress"),verticalAlignment = Alignment.CenterVertically) {
+private fun PaintOperationProgress(s: PaintUiState, model: PaintViewModel, showBusy: Boolean) {
+    if (s.loading || (s.busy && showBusy) || s.saving) Row(Modifier.testTag("paint-operation-progress"),verticalAlignment = Alignment.CenterVertically) {
         CircularProgressIndicator(Modifier.padding(horizontal = 12.dp).size(20.dp)
             .semantics { contentDescription = if (s.loading) "Loading image" else if (s.saving) "Saving image" else "Editing image" },strokeWidth = 2.dp)
         if (s.busy && !s.loading) PaintButton(PaintIcon.Cancel,"Cancel operation",action = model::cancelOperation)

@@ -252,7 +252,12 @@ class PaintStatusTest {
 
     @Test fun operationControlsStayInTheHeaderAndStatusBarIsCompact() {
         compose.onNodeWithTag("paint-status-bar").assertHeightIsEqualTo(32.dp)
+        compose.mainClock.autoAdvance = false
         compose.runOnIdle { operationVisible = true }
+        compose.mainClock.advanceTimeBy(100)
+        compose.onNodeWithTag("paint-operation-progress").assertDoesNotExist()
+        compose.mainClock.advanceTimeBy(250)
+        compose.mainClock.autoAdvance = true
         compose.onNode(hasTestTag("paint-operation-progress") and hasAnyAncestor(hasTestTag("paint-header"))).assertIsDisplayed()
         compose.onNode(hasContentDescription("Cancel operation") and hasAnyAncestor(hasTestTag("paint-header"))).assertIsDisplayed()
         val progress = compose.onNodeWithTag("paint-operation-progress").fetchSemanticsNode().boundsInRoot

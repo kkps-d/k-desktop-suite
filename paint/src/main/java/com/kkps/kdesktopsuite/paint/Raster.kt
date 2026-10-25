@@ -37,6 +37,16 @@ internal data class PixelRect(val x: Int, val y: Int, val width: Int, val height
 internal class Raster(val width: Int, val height: Int, internal val pixels: IntArray) {
     init { require(width > 0 && height > 0 && pixels.size == width * height) }
     fun pixel(x: Int, y: Int) = pixels[y * width + x]
+    fun strokeBounds(points: List<Point>, size: Float): PixelRect {
+        if (points.isEmpty()) return PixelRect(0,0,0,0)
+        // Include pixel alignment and antialiasing outside the nominal brush radius.
+        val margin = max(0.5f,size / 2) + 2
+        val left = floor(points.minOf { it.x }-margin).toInt().coerceIn(0,width)
+        val top = floor(points.minOf { it.y }-margin).toInt().coerceIn(0,height)
+        val right = ceil(points.maxOf { it.x }+margin).toInt().coerceIn(left,width)
+        val bottom = ceil(points.maxOf { it.y }+margin).toInt().coerceIn(top,height)
+        return PixelRect(left,top,right-left,bottom-top)
+    }
     fun resizeCanvas(width: Int, height: Int, background: Int) = resizeCanvas(PixelRect(0,0,width,height),background)
     fun resizeCanvas(bounds: PixelRect, background: Int): Raster {
         checkImageSize(bounds.width,bounds.height)
@@ -65,54 +75,13 @@ internal class Raster(val width: Int, val height: Int, internal val pixels: IntA
     fun stroke(points: List<Point>, color: Int, size: Float, hard: Boolean, clip: PixelRect?): Raster {
         if (points.isEmpty()) return this
         val output = pixels.copyOf()
-        val radius = max(0.5f, size / 2)
-        val area = clip?.clipped(width,height) ?: PixelRect(0,0,width,height)
-        val opaque = color ushr 24 == 255
-        val extent = ceil(radius + 0.5f).toInt()
-        data class DabRow(val y: Int, val left: Int, val coverage: FloatArray, val solid: IntRange)
-        // Every dab is pixel-aligned. Calculate its mask once, and fill opaque interiors by row.
-        val rows = (-extent..extent).mapNotNull { y ->
-            val coverage = FloatArray(extent * 2 + 1) { index ->
-                val distance = hypot((index-extent).toFloat(),y.toFloat())
-                if (hard) { if (distance <= radius) 1f else 0f }
-                else (radius + 0.5f - distance).coerceIn(0f,1f)
-            }
-            val left = coverage.indexOfFirst { it > 0f }
-            if (left < 0) return@mapNotNull null
-            val right = coverage.indexOfLast { it > 0f }
-            val solidLeft = coverage.indexOfFirst { it == 1f }
-            val solid = if (opaque && solidLeft >= 0)
-                (solidLeft-extent)..(coverage.indexOfLast { it == 1f }-extent) else IntRange.EMPTY
-            DabRow(y,left-extent,coverage.copyOfRange(left,right+1),solid)
-        }
-        fun dab(point: Point) {
-            val cx = floor(point.x).toInt()
-            val cy = floor(point.y).toInt()
-            for (row in rows) {
-                val y = cy + row.y
-                if (y !in area.y until area.bottom) continue
-                val maskLeft = cx + row.left
-                val left = max(area.x,maskLeft)
-                val right = min(area.right,maskLeft + row.coverage.size)
-                if (left >= right) continue
-                val solidLeft = if (row.solid.isEmpty()) right else (cx+row.solid.first).coerceIn(left,right)
-                val solidRight = if (row.solid.isEmpty()) right else (cx+row.solid.last+1).coerceIn(left,right)
-                val offset = y * width
-                output.fill(color,offset+solidLeft,offset+solidRight)
-                for (x in left until solidLeft) {
-                    output[offset+x] = composite(color,output[offset+x],row.coverage[x-maskLeft])
-                }
-                for (x in solidRight until right) {
-                    output[offset+x] = composite(color,output[offset+x],row.coverage[x-maskLeft])
-                }
-            }
-        }
-        dab(points.first())
+        val dabs = RoundStrokeDabs(width,height,output,color,size,hard,clip)
+        dabs.dab(points.first())
         points.zipWithNext { start, end ->
             val steps = ceil(hypot(end.x - start.x, end.y - start.y) * 2).toInt().coerceIn(1, 32768)
             for (step in 1..steps) {
                 val t = step.toFloat() / steps
-                dab(Point(start.x + (end.x - start.x) * t, start.y + (end.y - start.y) * t))
+                dabs.dab(Point(start.x + (end.x - start.x) * t, start.y + (end.y - start.y) * t))
             }
         }
         return Raster(width, height, output)
@@ -210,16 +179,19 @@ internal class RasterHistory(initial: Raster, private val budget: Long = 64L * 1
     internal data class PreparedChange(val source: Raster, val result: Raster, val area: PixelRect?, val before: Raster, val after: Raster)
 
     /** Pixel comparison and patch allocation can run on a worker before the single-writer commit. */
-    fun prepare(candidate: Raster): PreparedChange? {
+    fun prepare(candidate: Raster, affectedArea: PixelRect? = null): PreparedChange? {
         val source = raster
         if (candidate === source) return null
         val sameSize = source.width == candidate.width && source.height == candidate.height
         var area: PixelRect? = null
         if (sameSize) {
             var left = source.width; var top = source.height; var right = -1; var bottom = -1
-            for (i in source.pixels.indices) if (source.pixels[i] != candidate.pixels[i]) {
-                val x = i % source.width; val y = i / source.width
-                left = min(left, x); right = max(right, x); top = min(top, y); bottom = max(bottom, y)
+            val scan = affectedArea?.clipped(source.width,source.height) ?: PixelRect(0,0,source.width,source.height)
+            for (y in scan.y until scan.bottom) for (x in scan.x until scan.right) {
+                val i = y * source.width + x
+                if (source.pixels[i] != candidate.pixels[i]) {
+                    left = min(left, x); right = max(right, x); top = min(top, y); bottom = max(bottom, y)
+                }
             }
             if (right < 0) return null
             area = PixelRect(left, top, right - left + 1, bottom - top + 1)
@@ -247,4 +219,53 @@ internal class RasterHistory(initial: Raster, private val budget: Long = 64L * 1
     }
     fun undo() { if (undo.isNotEmpty()) undo.removeLast().also { restore(it, true); redo.add(it) } }
     fun redo() { if (redo.isNotEmpty()) redo.removeLast().also { restore(it, false); undo.add(it) } }
+}
+
+/** Reuses the pixel-aligned mask for all segments of a round stroke. */
+internal class RoundStrokeDabs(
+    private val width: Int, height: Int, private val output: IntArray, private val color: Int,
+    size: Float, hard: Boolean, clip: PixelRect?,
+) {
+    private val radius = max(0.5f, size / 2)
+    private val area = clip?.clipped(width,height) ?: PixelRect(0,0,width,height)
+    private val opaque = color ushr 24 == 255
+    private val extent = ceil(radius + 0.5f).toInt()
+    private data class DabRow(val y: Int, val left: Int, val coverage: FloatArray, val solid: IntRange)
+    // Every dab is pixel-aligned. Calculate its mask once, and fill opaque interiors by row.
+    private val rows = (-extent..extent).mapNotNull { y ->
+        val coverage = FloatArray(extent * 2 + 1) { index ->
+            val distance = hypot((index-extent).toFloat(),y.toFloat())
+            if (hard) { if (distance <= radius) 1f else 0f }
+            else (radius + 0.5f - distance).coerceIn(0f,1f)
+        }
+        val left = coverage.indexOfFirst { it > 0f }
+        if (left < 0) return@mapNotNull null
+        val right = coverage.indexOfLast { it > 0f }
+        val solidLeft = coverage.indexOfFirst { it == 1f }
+        val solid = if (opaque && solidLeft >= 0)
+            (solidLeft-extent)..(coverage.indexOfLast { it == 1f }-extent) else IntRange.EMPTY
+        DabRow(y,left-extent,coverage.copyOfRange(left,right+1),solid)
+    }
+    fun dab(point: Point) {
+        val cx = floor(point.x).toInt()
+        val cy = floor(point.y).toInt()
+        for (row in rows) {
+            val y = cy + row.y
+            if (y !in area.y until area.bottom) continue
+            val maskLeft = cx + row.left
+            val left = max(area.x,maskLeft)
+            val right = min(area.right,maskLeft + row.coverage.size)
+            if (left >= right) continue
+            val solidLeft = if (row.solid.isEmpty()) right else (cx+row.solid.first).coerceIn(left,right)
+            val solidRight = if (row.solid.isEmpty()) right else (cx+row.solid.last+1).coerceIn(left,right)
+            val offset = y * width
+            output.fill(color,offset+solidLeft,offset+solidRight)
+            for (x in left until solidLeft) {
+                output[offset+x] = composite(color,output[offset+x],row.coverage[x-maskLeft])
+            }
+            for (x in solidRight until right) {
+                output[offset+x] = composite(color,output[offset+x],row.coverage[x-maskLeft])
+            }
+        }
+    }
 }
