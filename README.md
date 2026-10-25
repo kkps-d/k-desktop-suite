@@ -247,6 +247,47 @@ dragging between two windows, drag-out creation, final-tab transfers, and recove
 after editing both windows. Find/Replace, rich text, legacy
 encodings, and large-file optimizations are deferred.
 
+## KD Paint
+
+KD Paint launches separately from the `:paint` module as
+`com.kkps.kdesktopsuite.paint`. Its Classic editor has a permanent grouped ribbon,
+File/View menus, one image at a time, and a canvas centered within the available
+workspace. There are no tabs. Narrow windows retain Classic with collapsed menus;
+Modern desktop and the shared mobile presentation are deferred.
+
+The core includes Pencil, nine brush styles with a stroke preview dropdown, Fill, Eraser, Eyedropper, pan/zoom, rectangular
+selection and clipboard operations, Line/Rectangle/Ellipse, multiline text, PNG/JPEG
+Open/Save/Save as, PNG sharing, undo/redo, and private draft recovery. Controls follow
+system appearance and dynamic color with the suite's green fallback. Image colors
+remain independent of the app theme. Opening transparent images flattens them on
+white; inserted image selections retain their alpha until composited.
+
+Open and Save as use Android's document picker without broad storage permissions.
+Unsaved replacement offers Save / Discard / Cancel. Provider conflicts require an
+explicit overwrite or Save as; writes are not universally atomic. Recovery uses
+private PNG generations, a 500ms debounce, a five-second maximum checkpoint interval
+during editing, and best-effort background flushing. Process termination can lose
+changes after the last successful checkpoint. Undo survives activity recreation
+but resets after process restart; recovery never overwrites original files.
+
+See the [Android implementation specification](docs/KD_PAINT_ANDROID_SPEC.md) and
+[layout references](docs/references/kd-paint/README.md). Additional
+shapes, image resize/rotate/skew, printing, and extra codecs remain deferred.
+
+With Android Studio's JDK and the Android SDK configured, build and verify with:
+
+```sh
+./gradlew :paint:testDebugUnitTest :paint:assembleDebug :paint:lintDebug :paint:assembleDebugAndroidTest
+ANDROID_SERIAL=emulator-5554 ./gradlew :paint:connectedDebugAndroidTest
+```
+
+The APK is `paint/build/outputs/apk/debug/paint-debug.apk`. The shared Android
+Studio launch configuration is [paint](.run/paint.run.xml). After adding the module,
+use **File > Sync Project with Gradle Files**, select `paint` in the run configuration
+dropdown, choose a device, and run. Manually verify physical stylus/palm
+handling, TalkBack/Switch Access, caption dragging, IME, external displays, provider
+failures, and performance on the release devices.
+
 ## References
 
 - [Adaptive app development](https://developer.android.com/develop/adaptive-apps/guides/get-started-with-adaptive-apps)

@@ -8,3 +8,4 @@
 6. Verify meaningful changes. Run relevant builds or tests and state what couldn't be verified.
 7. Follow [Design guidelines](DESIGN_GUIDELINES.md) for UI layout, platform styling, typography, and note-taking interactions.
 8. Follow Conventional Commits, add the related feature in brackets if needed
+9. Never run tests on connected ADB remote devices, only test on local emulators. Start the local emulator if it isn't running, use "Small Desktop" to run your tests
