@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.input.InputMode
@@ -349,6 +350,33 @@ class NotepadUiTest {
             compose.onNodeWithTag("about-dialog").assertDoesNotExist()
             compose.onNodeWithTag("document-editor").assertIsDisplayed()
         }
+    }
+
+    @Test
+    fun editorCaretContrastsWithLightAndDarkSurfaces() {
+        showEditor()
+        compose.runOnIdle { inputModeManager.requestInputMode(InputMode.Keyboard) }
+        compose.mainClock.autoAdvance = false
+        listOf(AppTheme.Dark, AppTheme.Light).forEach { theme ->
+            compose.runOnIdle { notepad.changeAppTheme(theme) }
+            val editor = compose.onNodeWithTag("document-editor")
+            editor.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus)
+            compose.mainClock.advanceTimeBy(100)
+            val pixels = editor.captureToImage().toPixelMap()
+            val bounds = editor.getUnclippedBoundsInRoot()
+            val scale = pixels.width / (bounds.right - bounds.left).value
+            val background = pixels[0, 0].luminance()
+            var contrast = 1f
+            // The empty editor's caret sits just inside its 16dp content padding.
+            for (y in (14 * scale).toInt() until (48 * scale).toInt()) {
+                for (x in (14 * scale).toInt() until (24 * scale).toInt()) {
+                    val foreground = pixels[x, y].luminance()
+                    contrast = maxOf(contrast, (maxOf(foreground, background) + 0.05f) / (minOf(foreground, background) + 0.05f))
+                }
+            }
+            org.junit.Assert.assertTrue("The $theme caret should contrast with the editor surface", contrast >= 4.5f)
+        }
+        compose.mainClock.autoAdvance = true
     }
 
     @Test

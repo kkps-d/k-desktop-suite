@@ -55,6 +55,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
@@ -918,6 +919,7 @@ private fun DocumentEditor(
     BasicTextField(
         state = doc.editor,
         scrollState = doc.scroll,
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
         textStyle = MaterialTheme.typography.bodyLarge.copy(
             fontFamily = fontFamily,
             fontSize = (16f * zoom / 100f).sp,
