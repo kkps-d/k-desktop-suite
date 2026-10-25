@@ -24,6 +24,11 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel) {
     val uriHandler = LocalUriHandler.current
     when (s.dialog) {
         null -> Unit
+        PaintDialog.ReopenLastEdit -> AlertDialog(onDismissRequest = { model.resolveStartup(false) },
+            title = { Text(stringResource(R.string.ui_reopen_last_edit_question)) },
+            text = { Text(stringResource(R.string.ui_reopen_last_edit_description)) },
+            confirmButton = { TextButton(onClick = { model.resolveStartup(true) }) { Text(stringResource(R.string.ui_reopen)) } },
+            dismissButton = { TextButton(onClick = { model.resolveStartup(false) }) { Text(stringResource(R.string.ui_start_new_image)) } })
         PaintDialog.Unsaved -> AlertDialog(onDismissRequest = model::cancelReplace,
             title = { Text("Save changes to ${s.title}?") },text = { Text(stringResource(R.string.ui_your_image_has_unsaved_changes_including_any_current_preview)) },
             confirmButton = { TextButton(onClick = model::saveThenContinue) { Text(stringResource(R.string.ui_save)) } },

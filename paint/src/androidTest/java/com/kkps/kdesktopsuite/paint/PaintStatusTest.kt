@@ -272,14 +272,17 @@ class PaintStatusTest {
         var reopened: PaintViewModel? = null
         try {
             compose.onNodeWithContentDescription("Settings").performClick()
-            compose.onNodeWithTag("canvas-width-input").performTextReplacement("0")
-            compose.onNodeWithText("Apply").performClick()
+            compose.onNodeWithText("Apply").assertDoesNotExist()
+            compose.onNodeWithTag("canvas-width-input").performScrollTo().performTextReplacement("0")
             compose.onNodeWithText("Images must be",substring = true).assertIsDisplayed()
+            compose.runOnIdle { assertEquals(original.defaultCanvasWidth,model.state.value.preferences.defaultCanvasWidth) }
             compose.onNodeWithTag("canvas-width-input").performTextReplacement("640")
             compose.onNodeWithTag("canvas-height-input").performTextReplacement("480")
-            compose.onNodeWithText("Apply").performClick()
             runBlocking { withTimeout(15000) { settings.preferences.first { it.defaultCanvasWidth == 640 && it.defaultCanvasHeight == 480 } } }
-            compose.runOnIdle { assertEquals(800,model.state.value.raster.width); assertEquals(600,model.state.value.raster.height) }
+            compose.runOnIdle {
+                assertEquals(original.defaultCanvasWidth,model.state.value.raster.width)
+                assertEquals(original.defaultCanvasHeight,model.state.value.raster.height)
+            }
             compose.onNodeWithContentDescription("Back").performClick()
             compose.runOnIdle { model.newImage() }
             compose.onNodeWithTag("paint-canvas-dimensions").assertTextContains("640 x 480 px")
@@ -293,6 +296,13 @@ class PaintStatusTest {
                 assertEquals(640,reopenedState.raster.width)
                 assertEquals(480,reopenedState.raster.height)
             }
+            compose.onNodeWithContentDescription("Settings").performClick()
+            compose.onNodeWithTag("canvas-width-input").performScrollTo().performTextReplacement("")
+            compose.onNodeWithTag("reset-default-canvas-size").performClick()
+            compose.onNodeWithTag("canvas-width-input").assertTextContains("800")
+            compose.onNodeWithTag("canvas-height-input").assertTextContains("600")
+            runBlocking { withTimeout(15000) { settings.preferences.first { it.defaultCanvasWidth == 800 && it.defaultCanvasHeight == 600 } } }
+            compose.runOnIdle { assertEquals(640,model.state.value.raster.width); assertEquals(480,model.state.value.raster.height) }
         } finally {
             compose.runOnIdle { reopened?.viewModelScope?.cancel(); model.preferences { original } }
             runBlocking { withTimeout(15000) { settings.preferences.first { it == original } } }
@@ -304,6 +314,7 @@ class PaintStatusTest {
         compose.onNodeWithContentDescription("Settings").performClick()
         compose.onNodeWithText("Auto").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("canvas-width-input").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("reset-default-canvas-size").assertIsDisplayed()
         compose.onNodeWithContentDescription("JPEG quality").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("Back").performClick()
         compose.onNodeWithTag("paint-canvas").assertIsDisplayed()

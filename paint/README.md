@@ -11,6 +11,12 @@ undo/redo, PNG/JPEG files, PNG sharing, settings, and durable private recovery.
 Modern desktop and the common mobile view remain deferred, as do the extended
 tools listed in the [Android specification](../docs/KD_PAINT_ANDROID_SPEC.md).
 
+Settings → On startup lets you reopen the last edited image or draft (the default),
+start a new image at the default canvas size, or ask each time a previous session
+exists. Android activity and process recreation resume the current session.
+Default canvas dimensions save automatically when valid; Reset beside the inputs
+restores 800 × 600. These defaults apply to new images only.
+
 ## Build and verification
 
 Use Android Studio's JDK and the configured SDK:

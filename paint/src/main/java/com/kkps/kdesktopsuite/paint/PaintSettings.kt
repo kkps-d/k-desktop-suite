@@ -4,6 +4,7 @@ package com.kkps.kdesktopsuite.paint
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,9 +23,22 @@ import kotlin.math.roundToInt
 @Composable
 internal fun PaintSettingsScreen(s: PaintUiState, model: PaintViewModel) {
     val preferences = s.preferences
-    var width by rememberSaveable(preferences.defaultCanvasWidth) { mutableStateOf(preferences.defaultCanvasWidth.toString()) }
-    var height by rememberSaveable(preferences.defaultCanvasHeight) { mutableStateOf(preferences.defaultCanvasHeight.toString()) }
+    var width by rememberSaveable { mutableStateOf(preferences.defaultCanvasWidth.toString()) }
+    var height by rememberSaveable { mutableStateOf(preferences.defaultCanvasHeight.toString()) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    fun saveDefaultCanvasSize(widthText: String, heightText: String) {
+        width = widthText
+        height = heightText
+        try {
+            val w = requireNotNull(widthText.toIntOrNull()) { "Enter a valid width in pixels." }
+            val h = requireNotNull(heightText.toIntOrNull()) { "Enter a valid height in pixels." }
+            checkImageSize(w,h)
+            error = null
+            if (w != preferences.defaultCanvasWidth || h != preferences.defaultCanvasHeight) {
+                model.preferences { it.copy(defaultCanvasWidth = w,defaultCanvasHeight = h) }
+            }
+        } catch (invalid: IllegalArgumentException) { error = invalid.message }
+    }
     val quality = rememberSliderState(value = preferences.jpegQuality.toFloat(),trackRange = 1f..100f)
     quality.value = preferences.jpegQuality.toFloat()
     AppSettingsPage(stringResource(R.string.ui_settings),stringResource(R.string.ui_back),{ model.showSettings(false) }) { availableWidth ->
@@ -48,19 +62,35 @@ internal fun PaintSettingsScreen(s: PaintUiState, model: PaintViewModel) {
                 }
             }
         }
+        Column(Modifier.fillMaxWidth().selectableGroup()) {
+            Text(stringResource(R.string.ui_on_startup),Modifier.padding(bottom = 8.dp).semantics { heading() },style = MaterialTheme.typography.titleMedium)
+            listOf(
+                PaintStartupBehavior.ReopenLastEdit to R.string.ui_reopen_last_edit,
+                PaintStartupBehavior.NewImage to R.string.ui_start_new_image,
+                PaintStartupBehavior.AskEveryTime to R.string.ui_ask_every_time,
+            ).forEach { (behavior,label) ->
+                val selected = preferences.startupBehavior == behavior
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("startup-$behavior")
+                    .selectable(selected = selected,role = Role.RadioButton,
+                        onClick = { model.preferences { it.copy(startupBehavior = behavior) } })
+                    .padding(horizontal = 8.dp,vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    RadioButton(selected = selected,onClick = null)
+                    Text(stringResource(label))
+                }
+            }
+        }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.ui_default_canvas_size),Modifier.semantics { heading() },style = MaterialTheme.typography.titleMedium)
-            CanvasSizeFields(width,height,{ width = it; error = null },{ height = it; error = null })
+            Row(Modifier.fillMaxWidth(),verticalAlignment = Alignment.CenterVertically) {
+                CanvasSizeFields(width,height,{ saveDefaultCanvasSize(it,height) },{ saveDefaultCanvasSize(width,it) },
+                    modifier = Modifier.weight(1f))
+                TextButton(onClick = {
+                    val defaults = PaintPreferences()
+                    saveDefaultCanvasSize(defaults.defaultCanvasWidth.toString(),defaults.defaultCanvasHeight.toString())
+                },modifier = Modifier.testTag("reset-default-canvas-size")) { Text(stringResource(R.string.ui_reset)) }
+            }
             error?.let { Text(it,color = MaterialTheme.colorScheme.error) }
-            TextButton(onClick = {
-                try {
-                    val w = requireNotNull(width.toIntOrNull()) { "Enter a valid width in pixels." }
-                    val h = requireNotNull(height.toIntOrNull()) { "Enter a valid height in pixels." }
-                    checkImageSize(w,h)
-                    model.preferences { it.copy(defaultCanvasWidth = w,defaultCanvasHeight = h) }
-                } catch (invalid: IllegalArgumentException) { error = invalid.message }
-            },enabled = width != preferences.defaultCanvasWidth.toString() || height != preferences.defaultCanvasHeight.toString(),
-                modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.ui_apply)) }
         }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.ui_jpeg_quality,preferences.jpegQuality),Modifier.semantics { heading() },style = MaterialTheme.typography.titleMedium)
@@ -71,8 +101,9 @@ internal fun PaintSettingsScreen(s: PaintUiState, model: PaintViewModel) {
 }
 
 @Composable
-internal fun CanvasSizeFields(width: String, height: String, onWidthChange: (String) -> Unit, onHeightChange: (String) -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp),verticalAlignment = Alignment.CenterVertically) {
+internal fun CanvasSizeFields(width: String, height: String, onWidthChange: (String) -> Unit, onHeightChange: (String) -> Unit,
+    modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth().padding(vertical = 4.dp),verticalAlignment = Alignment.CenterVertically) {
         OutlinedTextField(width,onWidthChange,label = { Text(stringResource(R.string.ui_canvas_width)) },
             suffix = { Text("px") },singleLine = true,keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.weight(1f).testTag("canvas-width-input"))

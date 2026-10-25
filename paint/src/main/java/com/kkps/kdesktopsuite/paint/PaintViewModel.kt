@@ -11,7 +11,7 @@ import java.io.File
 import java.util.UUID
 import kotlin.math.*
 
-internal enum class PaintDialog { Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Geometry, CanvasSize, About, Properties }
+internal enum class PaintDialog { ReopenLastEdit, Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Geometry, CanvasSize, About, Properties }
 internal enum class PickerKind { Open, Insert, Save }
 internal data class PickerRequest(val id: String = UUID.randomUUID().toString(), val kind: PickerKind, val mime: String = "image/png", val launched: Boolean = false)
 internal data class PlatformRequest(val id: String = UUID.randomUUID().toString(), val action: String, val file: File? = null)
@@ -37,6 +37,7 @@ internal class PaintViewModel(
     private var history = RasterHistory(mutableState.value.raster)
     private var fingerprint: String? = null
     private var recoveryWritable = true
+    private var pendingRecovery: RecoverySnapshot? = null
     private var checkpointJob: Job? = null
     private var previewJob: Job? = null
     private var editJob: Job? = null
@@ -83,31 +84,56 @@ internal class PaintViewModel(
         }
         viewModelScope.launch {
             try {
-                recovery.read()?.let { snapshot ->
-                    layoutInitialized = true
-                    history = RasterHistory(snapshot.raster).apply { if (snapshot.dirty) savedRevision = null }
-                    fingerprint = snapshot.fingerprint
-                    mutableState.update { it.copy(raster = snapshot.raster, options = snapshot.options,
-                        preview = snapshot.preview, selection = snapshot.selection,
-                        viewport = snapshot.viewport.resized(it.viewport.width,it.viewport.height,snapshot.raster.width,snapshot.raster.height,it.viewport.margin),
-                        uri = snapshot.uri, title = snapshot.name, mime = snapshot.mime, dirty = snapshot.dirty) }
-                    refreshPreview()
-                    if (snapshot.dirty) message("Recovered draft. Undo history starts again after relaunch.")
-                } ?: run {
-                    val preferences = settings.preferences.first()
-                    history = RasterHistory(Raster.blank(preferences.defaultCanvasWidth,preferences.defaultCanvasHeight))
-                    mutableState.update { it.copy(raster = history.raster,
-                        viewport = it.viewport.copy(fit = history.raster.width > it.viewport.width - it.viewport.margin * 2 ||
-                            history.raster.height > it.viewport.height - it.viewport.margin * 2)
-                            .resized(it.viewport.width,it.viewport.height,history.raster.width,history.raster.height)) }
+                val preferences = settings.preferences.catch { emit(PaintPreferences()) }.first()
+                mutableState.update { it.copy(preferences = preferences) }
+                // Android process recreation resumes the current session regardless of the launch preference.
+                val behavior = if (savedState.get<Boolean>("sessionStarted") == true || savedState.contains("pickerKind"))
+                    PaintStartupBehavior.ReopenLastEdit else preferences.startupBehavior
+                val snapshot = if (behavior == PaintStartupBehavior.NewImage) null else recovery.read()
+                if (snapshot != null && behavior == PaintStartupBehavior.AskEveryTime) {
+                    pendingRecovery = snapshot
+                    dialog(PaintDialog.ReopenLastEdit)
+                    return@launch
                 }
+                if (snapshot != null) restoreSnapshot(snapshot) else startBlankImage()
             } catch (error: Exception) { recoveryWritable = false; message(error.message ?: "Recovery could not be read.") }
-            mutableState.update { it.copy(loading = false) }
-            savedState.get<String>("pickerKind")?.let { kind ->
-                mutableState.update { it.copy(picker = PickerRequest(kind = PickerKind.valueOf(kind), launched = true)) }
-            }
+            finishStartup()
         }
         viewModelScope.launch { while (isActive) { delay(5000); if (checkpointJob?.isActive == true) flush() } }
+    }
+    private fun restoreSnapshot(snapshot: RecoverySnapshot) {
+        layoutInitialized = true
+        history = RasterHistory(snapshot.raster).apply { if (snapshot.dirty) savedRevision = null }
+        fingerprint = snapshot.fingerprint
+        mutableState.update { it.copy(raster = snapshot.raster, options = snapshot.options,
+            preview = snapshot.preview, selection = snapshot.selection,
+            viewport = snapshot.viewport.resized(it.viewport.width,it.viewport.height,snapshot.raster.width,snapshot.raster.height,it.viewport.margin),
+            uri = snapshot.uri, title = snapshot.name, mime = snapshot.mime, dirty = snapshot.dirty) }
+        refreshPreview()
+        if (snapshot.dirty) message("Recovered draft. Undo history starts again after relaunch.")
+    }
+    private fun startBlankImage() {
+        val preferences = state.value.preferences
+        history = RasterHistory(Raster.blank(preferences.defaultCanvasWidth,preferences.defaultCanvasHeight))
+        mutableState.update { it.copy(raster = history.raster,
+            viewport = it.viewport.copy(fit = history.raster.width > it.viewport.width - it.viewport.margin * 2 ||
+                history.raster.height > it.viewport.height - it.viewport.margin * 2)
+                .resized(it.viewport.width,it.viewport.height,history.raster.width,history.raster.height)) }
+    }
+    private fun finishStartup() {
+        savedState["sessionStarted"] = true
+        mutableState.update { it.copy(loading = false) }
+        savedState.get<String>("pickerKind")?.let { kind ->
+            mutableState.update { it.copy(picker = PickerRequest(kind = PickerKind.valueOf(kind), launched = true)) }
+        }
+    }
+    fun resolveStartup(reopen: Boolean) {
+        val snapshot = pendingRecovery ?: return
+        pendingRecovery = null
+        if (reopen) restoreSnapshot(snapshot) else startBlankImage()
+        dialog(null)
+        finishStartup()
+        checkpoint()
     }
     fun message(text: String?) { mutableState.update { it.copy(message = text) } }
     fun dialog(value: PaintDialog?) { mutableState.update { it.copy(dialog = value) } }
@@ -302,6 +328,7 @@ internal class PaintViewModel(
     fun toggleFocus() { mutableState.update { it.copy(focusMode = !it.focusMode) } }
     fun showSettings(show: Boolean) { mutableState.update { it.copy(settingsOpen = show) } }
     fun back(): Boolean = when {
+        state.value.dialog == PaintDialog.ReopenLastEdit -> { resolveStartup(false); true }
         state.value.dialog in setOf(PaintDialog.SaveFormat,PaintDialog.JpegWarning,PaintDialog.Conflict) -> { cancelSave(); true }
         state.value.dialog == PaintDialog.Unsaved -> { cancelReplace(); true }
         state.value.dialog != null -> { dialog(null); true }
