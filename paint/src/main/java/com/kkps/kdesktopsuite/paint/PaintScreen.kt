@@ -369,10 +369,6 @@ private fun SelectionActions(s: PaintUiState, model: PaintViewModel) {
         }
         if (s.preview?.tool == Tool.Text) TextButton(onClick = { model.dialog(PaintDialog.Geometry) }) { Text(stringResource(R.string.ui_text_options)) }
         if (s.preview?.tool in listOf(Tool.Line,Tool.Rectangle,Tool.Ellipse)) ShapeStyles(s,model)
-        s.preview?.bounds?.let { bounds ->
-            if (bounds.x < 0 || bounds.y < 0 || bounds.right > s.raster.width || bounds.bottom > s.raster.height)
-                Text("Preview extends beyond the image; Apply clips the result.",color = MaterialTheme.colorScheme.error,modifier = Modifier.padding(8.dp))
-        }
     }
 }
 
