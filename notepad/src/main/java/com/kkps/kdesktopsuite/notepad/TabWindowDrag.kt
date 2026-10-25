@@ -41,7 +41,7 @@ internal object TabWindows {
     const val transferExtra = "notepad.tabTransfer"
     const val windowExtra = "notepad.windowId"
 
-    fun showWindow(context: Context, id: String) {
+    fun showWindow(context: Context, id: String? = null) {
         context.startActivity(Intent(context, NotepadActivity::class.java).apply {
             putExtra(windowExtra, id)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK or Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT

@@ -83,5 +83,7 @@
     <string name="move_tab_right">Move right</string>
     <string name="move_to_window">Move to window…</string>
     <string name="new_window">New window</string>
+    <string name="new_window_command">New Window</string>
+    <string name="error_new_window">Could not open a new window. Please try again.</string>
     <string name="window_title">Window %1$d: %2$s</string>
 </resources>

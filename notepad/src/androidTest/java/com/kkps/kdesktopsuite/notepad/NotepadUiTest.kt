@@ -167,7 +167,7 @@ class NotepadUiTest {
         compose.onNodeWithTag("recent-file-file:notes.txt").assertTextEquals("notes.txt").performClick()
         compose.waitUntil(5_000) { notepad.active != null }
         compose.onNodeWithTag("welcome-tab").assertDoesNotExist()
-        compose.onNodeWithTag("document-editor").assertTextContains("Saved notes")
+        compose.onNodeWithTag("document-editor").assertTextContains("Saved notes").assertIsNotFocused()
         compose.runOnIdle {
             notepad.requestClose(notepad.activeId)
             repository.files.clear()
@@ -905,7 +905,8 @@ class NotepadUiTest {
         compose.runOnIdle { org.junit.Assert.assertEquals(notepad.documents[1].id, notepad.activeId) }
         first.performKeyInput { pressKey(Key.Enter) }
         compose.runOnIdle { org.junit.Assert.assertEquals(notepad.documents[0].id, notepad.activeId) }
-        compose.onNodeWithTag("document-editor").assertIsFocused()
+        first.assertIsFocused()
+        compose.onNodeWithTag("document-editor").assertIsNotFocused()
         compose.runOnIdle {
             repeat(18) { notepad.newDocument() }
             notepad.select(notepad.documents.first().id)
@@ -997,15 +998,26 @@ class NotepadUiTest {
     fun keyboardCommandsCreateCycleCloseAndZoomWithoutChangingText() {
         showEditor()
         compose.onNodeWithTag("document-editor").performTextReplacement("Keep this")
+        compose.onNodeWithTag("document-editor").performClick().assertIsFocused()
         compose.onNodeWithTag("document-editor").performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.N); keyUp(Key.CtrlLeft) }
-        compose.onNodeWithTag("document-editor").assertTextEquals("")
+        compose.onNodeWithTag("document-editor").assertTextEquals("").assertIsNotFocused()
+        compose.onNodeWithTag("document-editor").performClick().assertIsFocused()
         compose.onNodeWithTag("document-editor").performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.Tab); keyUp(Key.CtrlLeft) }
-        compose.onNodeWithTag("document-editor").assertTextContains("Keep this")
+        compose.onNodeWithTag("document-editor").assertTextContains("Keep this").assertIsNotFocused()
         compose.onNodeWithTag("document-editor").performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.Equals); keyUp(Key.CtrlLeft) }
         compose.runOnIdle { org.junit.Assert.assertEquals(110, notepad.zoom) }
         compose.onNodeWithTag("document-editor").performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.Zero); keyUp(Key.CtrlLeft) }
         compose.runOnIdle { org.junit.Assert.assertEquals(100, notepad.zoom) }
         compose.onNodeWithTag("document-editor").assertTextContains("Keep this")
+
+        repository.put("file:opened.txt", "Opened file")
+        compose.onNodeWithTag("document-editor").performClick().assertIsFocused()
+        compose.runOnIdle {
+            notepad.requestOpen()
+            notepad.pickerResult("file:opened.txt")
+        }
+        compose.waitUntil(5_000) { notepad.active?.uri == "file:opened.txt" }
+        compose.onNodeWithTag("document-editor").assertTextContains("Opened file").assertIsNotFocused()
     }
 
     @Test

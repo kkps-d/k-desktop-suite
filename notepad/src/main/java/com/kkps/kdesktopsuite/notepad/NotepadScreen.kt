@@ -14,6 +14,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
@@ -103,7 +104,8 @@ internal object TabBarDimensions {
 }
 
 internal enum class NotepadCommand(@StringRes val label: Int, val shortcut: String) {
-    New(R.string.new_document, "Ctrl+N"), Open(R.string.open_document, "Ctrl+O"),
+    New(R.string.new_document, "Ctrl+N"), NewWindow(R.string.new_window_command, "Ctrl+Shift+N"),
+    Open(R.string.open_document, "Ctrl+O"),
     Save(R.string.save_document, "Ctrl+S"), SaveAs(R.string.save_as, "Ctrl+Shift+S"), Close(R.string.close_document, "Ctrl+W"),
     Undo(R.string.undo, "Ctrl+Z"), Redo(R.string.redo, "Ctrl+Y"),
     Cut(R.string.cut, "Ctrl+X"), Copy(R.string.copy, "Ctrl+C"), Paste(R.string.paste, "Ctrl+V"), SelectAll(R.string.select_all, "Ctrl+A"),
@@ -125,6 +127,8 @@ internal fun NotepadScreen(
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
+    val commandFocus = remember { FocusRequester() }
+    var editorFocused by remember { mutableStateOf(false) }
     val active = notepad.active
     val focusManager = LocalFocusManager.current
     var aboutOpen by rememberSaveable { mutableStateOf(false) }
@@ -162,6 +166,7 @@ internal fun NotepadScreen(
 
     fun enabled(command: NotepadCommand): Boolean = !notepad.loading && when (command) {
         NotepadCommand.New -> true
+        NotepadCommand.NewWindow -> activity != null
         NotepadCommand.Open -> !notepad.pickerPending
         NotepadCommand.Save, NotepadCommand.SaveAs, NotepadCommand.Close -> active != null && !active.saving && !notepad.pickerPending
         NotepadCommand.Undo -> active?.editor?.undoState?.canUndo == true
@@ -176,12 +181,20 @@ internal fun NotepadScreen(
         if (!enabled(command)) return
         when (command) {
             NotepadCommand.New -> { notepad.newDocument(); return }
+            NotepadCommand.NewWindow -> {
+                try {
+                    activity?.let { TabWindows.showWindow(it) }
+                } catch (_: RuntimeException) {
+                    notepad.reportError(R.string.error_new_window)
+                }
+                return
+            }
             NotepadCommand.Open -> { notepad.requestOpen(); return }
             else -> Unit
         }
         val doc = notepad.active ?: return
         when (command) {
-            NotepadCommand.New, NotepadCommand.Open -> Unit
+            NotepadCommand.New, NotepadCommand.NewWindow, NotepadCommand.Open -> Unit
             NotepadCommand.Save -> notepad.save()
             NotepadCommand.SaveAs -> notepad.requestSaveAs()
             NotepadCommand.Close -> notepad.requestClose(doc.id)
@@ -227,7 +240,10 @@ internal fun NotepadScreen(
     }
 
     LaunchedEffect(notepad.focusRequest, notepad.settingsOpen, aboutOpen) {
-        if (active != null && !notepad.settingsOpen && !aboutOpen) focus.requestFocus()
+        if (editorFocused && active != null && !notepad.settingsOpen && !aboutOpen) {
+            // Keep shortcuts available without keeping the text field (and IME) active.
+            commandFocus.requestFocus()
+        }
     }
 
     val receiveContent = remember(notepad, activity) {
@@ -275,7 +291,7 @@ internal fun NotepadScreen(
                         true
                     } else {
                         val command = when (event.key) {
-                            Key.N -> NotepadCommand.New
+                            Key.N -> if (event.isShiftPressed) NotepadCommand.NewWindow else NotepadCommand.New
                             Key.O -> NotepadCommand.Open
                             Key.S -> if (event.isShiftPressed) NotepadCommand.SaveAs else NotepadCommand.Save
                             Key.W -> NotepadCommand.Close
@@ -292,7 +308,7 @@ internal fun NotepadScreen(
                         }
                         if (command == null) false else { run(command); true }
                     }
-                },
+                }.focusRequester(commandFocus).focusable(),
         ) {
             val density = LocalDensity.current
             var origin by remember { mutableStateOf(Offset.Zero) }
@@ -365,6 +381,7 @@ internal fun NotepadScreen(
                     if (active != null) {
                         DocumentEditor(active, notepad.zoom, notepad::changeZoom, focus,
                             Modifier.weight(1f)
+                                .onFocusChanged { editorFocused = it.isFocused }
                                 .filterTextContextMenuComponents {
                                     it.key !in setOf(TextContextMenuKeys.CutKey, TextContextMenuKeys.CopyKey,
                                         TextContextMenuKeys.PasteKey, TextContextMenuKeys.SelectAllKey)
@@ -857,7 +874,7 @@ private fun CommandBar(
     openAbout: () -> Unit = {},
 ) {
     var menu by remember { mutableStateOf<String?>(null) }
-    val files = NotepadCommand.entries.take(5)
+    val files = NotepadCommand.entries.filter { it in NotepadCommand.New..NotepadCommand.Close }
     val edits = NotepadCommand.entries.filter { it in NotepadCommand.Undo..NotepadCommand.SelectAll }
     val views = NotepadCommand.entries.filter { it in NotepadCommand.ZoomIn..NotepadCommand.StatusBar }
     Surface(color = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface) {
