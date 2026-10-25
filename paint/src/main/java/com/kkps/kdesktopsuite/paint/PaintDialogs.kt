@@ -52,6 +52,7 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel) {
         PaintDialog.Colors -> ColorsDialog(s,model)
         PaintDialog.Geometry -> GeometryDialog(s,model)
         PaintDialog.CanvasSize -> CanvasSizeDialog(s,model)
+        PaintDialog.StrokeSize -> StrokeSizeDialog(s,model)
         PaintDialog.About -> AppAboutDialog(title = stringResource(R.string.ui_about_kd_paint),
             version = stringResource(R.string.ui_about_version,BuildConfig.VERSION_NAME),developer = stringResource(R.string.ui_about_developer),
             sourceLabel = stringResource(R.string.ui_source_code),dismissLabel = stringResource(R.string.ui_dismiss),

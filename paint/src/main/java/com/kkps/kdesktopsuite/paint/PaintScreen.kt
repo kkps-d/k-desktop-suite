@@ -394,29 +394,6 @@ private fun ShapePicker(s: PaintUiState, model: PaintViewModel, shape: Tool, onS
 }
 
 @Composable
-private fun WidthPicker(s: PaintUiState, model: PaintViewModel) {
-    var open by remember { mutableStateOf(false) }
-    var text by remember(s.options.strokeWidth) { mutableStateOf(s.options.strokeWidth.toString()) }
-    val enabled = s.options.tool.isShape || s.options.tool in listOf(Tool.Brush,Tool.Pencil,Tool.Eraser)
-    Box {
-        TextButton({ open = true },enabled = enabled) { Text("${s.options.strokeWidth} px") }
-        AppDropdownMenu(open,{ open = false }) {
-            (when (s.options.tool) {
-                Tool.Eraser -> listOf(4,8,16,24)
-                Tool.Brush -> s.options.brushStyle.widthPresets
-                else -> listOf(1,3,5,8)
-            }).forEach { value ->
-                AppMenuItem({ Text("$value px") },{ model.options { if (it.tool == Tool.Eraser) it.copy(eraserWidth = value) else it.copy(width = value) }; open = false })
-            }
-            OutlinedTextField(text,{ text = it.filter(Char::isDigit).take(3) },label = { Text(stringResource(R.string.ui_width_1_100_px)) },modifier = Modifier.width(180.dp).padding(8.dp),singleLine = true)
-            TextButton({ text.toIntOrNull()?.takeIf { it in 1..100 }?.let { value ->
-                model.options { if (it.tool == Tool.Eraser) it.copy(eraserWidth = value) else it.copy(width = value) }; open = false
-            } },enabled = text.toIntOrNull() in 1..100) { Text(stringResource(R.string.ui_apply_width)) }
-        }
-    }
-}
-
-@Composable
 private fun ShapeStyles(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     Box {

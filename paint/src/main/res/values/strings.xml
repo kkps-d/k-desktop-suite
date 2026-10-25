@@ -49,6 +49,18 @@
     <string name="ui_move_resize_selection">Move / resize selection…</string>
     <string name="ui_width_1_100_px">Width 1–100 px</string>
     <string name="ui_apply_width">Apply width</string>
+    <plurals name="ui_choose_stroke_size">
+        <item quantity="one">Choose size: %1$d pixel</item>
+        <item quantity="other">Choose size: %1$d pixels</item>
+    </plurals>
+    <plurals name="ui_stroke_size_description">
+        <item quantity="one">%1$d image pixel, at %2$d%% zoom</item>
+        <item quantity="other">%1$d image pixels, at %2$d%% zoom</item>
+    </plurals>
+    <string name="ui_stroke_preview_zoom">Preview at %1$d%% zoom</string>
+    <string name="ui_custom_size_menu">Custom size…</string>
+    <string name="ui_custom_size">Custom size</string>
+    <string name="ui_stroke_size_range">Enter a whole number from 1 to 100.</string>
     <string name="ui_style">Style</string>
     <string name="ui_foreground">Foreground</string>
     <string name="ui_background">Background</string>

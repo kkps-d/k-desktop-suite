@@ -14,6 +14,9 @@ pending move or paste.
 The Brushes dropdown shows actual stroke previews for Solid, Calligraphy left/right,
 Airbrush, Oil, Crayon, Marker, Graphite, and Watercolor. Each style remembers its width;
 seeded textures match the live preview and remain unchanged through undo/redo.
+The Size dropdown previews common stroke widths at the current canvas zoom. Custom
+size opens a dialog with the same preview and a 1–100 image-pixel input; changes
+apply only after confirmation.
 The Shapes icon dropdown offers lines, curves, basic geometry, arrows, stars,
 callouts, a heart, and lightning. Drag to create a preview; for curves, place two
 bend points; for polygons, add vertices and choose Finish shape. Previews support

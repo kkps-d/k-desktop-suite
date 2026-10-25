@@ -11,7 +11,7 @@ import java.io.File
 import java.util.UUID
 import kotlin.math.*
 
-internal enum class PaintDialog { ReopenLastEdit, Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Geometry, CanvasSize, About, Properties }
+internal enum class PaintDialog { ReopenLastEdit, Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Geometry, CanvasSize, StrokeSize, About, Properties }
 internal enum class PickerKind { Open, Insert, Save }
 internal data class PickerRequest(val id: String = UUID.randomUUID().toString(), val kind: PickerKind, val mime: String = "image/png", val launched: Boolean = false)
 internal data class PlatformRequest(val id: String = UUID.randomUUID().toString(), val action: String, val file: File? = null)
@@ -185,6 +185,10 @@ internal class PaintViewModel(
             it.copy(options = if (options.tool == Tool.Brush) options.copy(
                 brushWidths = options.brushWidths + (options.brushStyle to options.width)) else options)
         }; checkpoint()
+    }
+    fun strokeWidth(value: Int) {
+        require(value in 1..100)
+        options { if (it.tool == Tool.Eraser) it.copy(eraserWidth = value) else it.copy(width = value) }
     }
     fun brush(style: BrushStyle) {
         if (state.value.busy || state.value.loading) return
