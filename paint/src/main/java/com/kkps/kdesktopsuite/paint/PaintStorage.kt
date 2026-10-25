@@ -238,6 +238,7 @@ private fun RecoverySnapshot.json(): JSONObject {
         .put("scale", viewport.scale).put("cx", viewport.center.x).put("cy", viewport.center.y).put("fit", viewport.fit)
     preview?.let { p -> json.put("preview", JSONObject().put("tool", p.tool.name).put("bounds", p.bounds.json())
         .put("startX", p.start.x).put("startY", p.start.y).put("endX", p.end.x).put("endY", p.end.y)
+        .put("points", JSONArray(p.points.map { JSONArray(listOf(it.x,it.y)) })).put("constructing", p.constructing)
         .put("source", p.source?.json()).put("payload", p.payload != null).put("text", p.text)
         .put("textSelectionStart", p.textSelectionStart).put("textSelectionEnd", p.textSelectionEnd)
         .put("textRaster", p.textRaster != null && p.textLayoutKey == textLayoutKey(p.text,p.bounds.width,options))
@@ -259,7 +260,11 @@ private fun snapshotFromJson(json: JSONObject, raster: Raster, payload: Raster?,
         p.optJSONArray("source")?.rect(), payload, p.optString("text"),
         if (p.has("outputWidth")) p.getInt("outputWidth") else null, if (p.has("outputHeight")) p.getInt("outputHeight") else null,
         textSelectionStart = p.optInt("textSelectionStart"),textSelectionEnd = p.optInt("textSelectionEnd"),
-        textRaster = textRaster,textLayoutKey = textRaster?.let { textLayoutKey(p.optString("text"),p.getJSONArray("bounds").rect().width,options) }) }
+        textRaster = textRaster,textLayoutKey = textRaster?.let { textLayoutKey(p.optString("text"),p.getJSONArray("bounds").rect().width,options) },
+        points = p.optJSONArray("points")?.let { points -> List(points.length()) { index ->
+            val point = points.getJSONArray(index)
+            Point(point.getDouble(0).toFloat(),point.getDouble(1).toFloat())
+        } } ?: emptyList(),constructing = p.optBoolean("constructing")) }
     return RecoverySnapshot(raster, options, preview, json.optJSONArray("selection")?.rect(),
         Viewport(imageWidth = raster.width, imageHeight = raster.height, scale = json.getDouble("scale").toFloat().coerceIn(0.1f,5f),
             center = Point(json.getDouble("cx").toFloat(), json.getDouble("cy").toFloat()), fit = json.getBoolean("fit")),

@@ -11,12 +11,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusProperties
@@ -33,12 +35,18 @@ import com.kkps.kdesktopsuite.ui.AppMenuItem
 
 @Composable
 internal fun PaintButton(icon: PaintIcon, label: String, enabled: Boolean = true, selected: Boolean = false, action: () -> Unit) {
+    PaintButton(icon.vector,label,enabled = enabled,selected = selected,action = action)
+}
+
+@Composable
+private fun PaintButton(icon: ImageVector, label: String, modifier: Modifier = Modifier,
+    enabled: Boolean = true, selected: Boolean = false, action: () -> Unit) {
     TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
         tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState()) {
-        IconButton(onClick = action, enabled = enabled, modifier = Modifier.size(48.dp)
+        IconButton(onClick = action, enabled = enabled, modifier = modifier.size(48.dp)
             .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent, RoundedCornerShape(12.dp))
-            .semantics { if (selected) stateDescription = "Selected" }) {
-            Icon(icon.vector, label, tint = if (!enabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            .semantics { this.selected = selected; if (selected) stateDescription = "Selected" }) {
+            Icon(icon, label, tint = if (!enabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                 else if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface)
         }
     }
@@ -209,12 +217,16 @@ private fun RibbonGroup(label: String, content: @Composable ColumnScope.() -> Un
 internal fun PaintRibbon(s: PaintUiState, model: PaintViewModel, width: Float) {
     val selected = s.selection != null || s.preview?.payload != null
     val tools = listOf(Tool.Pencil,Tool.Fill,Tool.Text,Tool.Pan,Tool.Eraser,Tool.Eyedropper,Tool.Zoom)
+    var lastShape by rememberSaveable { mutableStateOf(Tool.Rectangle) }
+    val shape = s.options.tool.takeIf { it.isShape } ?: lastShape
+    LaunchedEffect(shape) { lastShape = shape }
     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).horizontalScroll(rememberScrollState()).background(MaterialTheme.colorScheme.surfaceContainerLow).testTag("classic-ribbon"),verticalAlignment = Alignment.Top) {
         if (width < 760) {
             RibbonGroup("Clipboard") { ClipboardMenu(s,model) }
             RibbonGroup("Image") { ImageMenu(s,model) }
-            RibbonGroup("Tools") { ToolMenu(s,model,Tool.entries) }
+            RibbonGroup("Tools") { ToolMenu(s,model,Tool.entries.filterNot { it.isShape }) }
             RibbonGroup("Brushes") { BrushPicker(s,model) }
+            RibbonGroup("Shapes") { ShapePicker(s,model,shape) { lastShape = it }; ShapeStyles(s,model) }
             RibbonGroup("Size") { WidthPicker(s,model) }
             RibbonGroup("Colors") { ColorControls(s,model,false) }
         } else {
@@ -241,10 +253,7 @@ internal fun PaintRibbon(s: PaintUiState, model: PaintViewModel, width: Float) {
                 BrushPicker(s,model)
             }
             RibbonGroup("Shapes") {
-                val shapes = listOf(Tool.Line,Tool.Rectangle,Tool.Ellipse)
-                if (width < 1120) ToolMenu(s,model,shapes) else Row { shapes.forEach { tool ->
-                    PaintButton(tool.icon,tool.label,selected = s.options.tool == tool,enabled = !s.busy) { model.tool(tool) }
-                } }
+                ShapePicker(s,model,shape) { lastShape = it }
                 ShapeStyles(s,model)
             }
             RibbonGroup("Size") { WidthPicker(s,model) }
@@ -288,7 +297,7 @@ private fun ToolMenu(s: PaintUiState, model: PaintViewModel, tools: List<Tool>) 
     Box {
         PaintButton((if (s.options.tool in tools) s.options.tool else tools.first()).icon,"Choose drawing tool") { open = true }
         AppDropdownMenu(open,{ open = false }) { tools.forEach { tool ->
-            AppMenuItem({ Text(tool.label) },{ open = false; model.tool(tool) },leadingIcon = { Icon(tool.icon.vector,null) })
+            AppMenuItem({ Text(tool.label) },{ open = false; model.tool(tool) },leadingIcon = { Icon(tool.icon,null) })
         } }
     }
 }
@@ -346,10 +355,49 @@ private fun BrushPreview(style: BrushStyle, modifier: Modifier) {
 }
 
 @Composable
+private fun ShapePicker(s: PaintUiState, model: PaintViewModel, shape: Tool, onSelect: (Tool) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    val focus = remember { FocusRequester() }
+    Box {
+        TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+            tooltip = { PlainTooltip { Text("Choose shape: ${shape.label}") } },state = rememberTooltipState()) {
+            FilledTonalIconButton(onClick = { open = true },enabled = !s.busy && !s.loading,
+                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor =
+                    if (s.options.tool.isShape) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent),
+                modifier = Modifier.size(width = 64.dp,height = 48.dp).testTag("paint-shape-picker")
+                    .semantics { contentDescription = "Choose shape: ${shape.label}"; selected = s.options.tool.isShape }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(shape.icon,null)
+                    Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
+                }
+            }
+        }
+        AppDropdownMenu(open,{ open = false }) {
+            Column(Modifier.padding(8.dp).selectableGroup().onPreviewKeyEvent {
+                if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) { open = false; true } else false
+            }) {
+                shapeTools.chunked(4).forEach { shapes ->
+                    Row {
+                        shapes.forEach { tool ->
+                            PaintButton(tool.icon,tool.label,selected = s.options.tool == tool,
+                                modifier = (if (tool == shape) Modifier.focusRequester(focus) else Modifier)
+                                    .focusProperties { canFocus = true }) {
+                                onSelect(tool); open = false; model.tool(tool)
+                            }
+                        }
+                    }
+                }
+            }
+            LaunchedEffect(open) { if (open) { withFrameNanos { }; focus.requestFocus() } }
+        }
+    }
+}
+
+@Composable
 private fun WidthPicker(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     var text by remember(s.options.strokeWidth) { mutableStateOf(s.options.strokeWidth.toString()) }
-    val enabled = s.options.tool in listOf(Tool.Brush,Tool.Pencil,Tool.Eraser,Tool.Line,Tool.Rectangle,Tool.Ellipse)
+    val enabled = s.options.tool.isShape || s.options.tool in listOf(Tool.Brush,Tool.Pencil,Tool.Eraser)
     Box {
         TextButton({ open = true },enabled = enabled) { Text("${s.options.strokeWidth} px") }
         AppDropdownMenu(open,{ open = false }) {
@@ -429,7 +477,12 @@ private fun SelectionActions(s: PaintUiState, model: PaintViewModel) {
             TextButton(onClick = model::deleteSelection) { Text(stringResource(R.string.ui_delete_pixels)) }
         }
         if (s.preview?.tool == Tool.Text) TextButton(onClick = { model.dialog(PaintDialog.Geometry) }) { Text(stringResource(R.string.ui_text_options)) }
-        if (s.preview?.tool in listOf(Tool.Line,Tool.Rectangle,Tool.Ellipse)) ShapeStyles(s,model)
+        if (s.preview?.tool?.isShape == true) ShapeStyles(s,model)
+        if (s.preview?.constructing == true) {
+            TextButton(onClick = model::finishShape,enabled = !s.busy) { Text("Finish shape") }
+            Text(if (s.preview.tool == Tool.Curve) "Place two bend points" else "Add vertices, then finish",
+                style = MaterialTheme.typography.labelMedium)
+        }
     }
 }
 

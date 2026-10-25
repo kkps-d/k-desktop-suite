@@ -111,4 +111,44 @@ class PaintStorageTest {
         val history = RasterHistory(base); history.commit(text); history.undo()
         assertArrayEquals(base.pixels,history.raster.pixels)
     }
+
+    @Test fun everyClassicShapeRendersDistinctGeometryWithOutlineAndFill() {
+        val base = Raster.blank(140,140)
+        val red = 0xFFFF0000.toInt()
+        val blue = 0xFF0000FF.toInt()
+        val results = mutableSetOf<List<Int>>()
+        assertEquals(23,shapeTools.size)
+        for (tool in shapeTools) {
+            var preview = EditPreview.between(tool,Point(20f,20f),Point(120f,110f))
+            if (tool == Tool.Curve) preview = preview.withShapePoint(Point(25f,100f)).withShapePoint(Point(110f,20f))
+            if (tool == Tool.Polygon) preview = preview.withShapePoint(Point(25f,110f))
+            preview = preview.copy(constructing = false)
+            val result = base.render(preview,ToolOptions(width = 4,foreground = red,background = blue,fill = true))
+            assertTrue("Outline for $tool",result.pixels.any { it == red })
+            if (tool.isClosedShape) assertTrue("Fill for $tool",result.pixels.any { it == blue })
+            else assertFalse("No fill for $tool",result.pixels.any { it == blue })
+            assertEquals("Outside $tool",WHITE,result.pixel(5,5))
+            assertTrue("Distinct geometry for $tool",results.add(result.pixels.toList()))
+        }
+        assertTrue(base.pixels.all { it == WHITE })
+    }
+
+    @Test fun recoveryPreservesCurveAndPolygonConstruction() = runBlocking {
+        val root = File(context.cacheDir,"shape-recovery-${UUID.randomUUID()}")
+        try {
+            val store = PaintRecovery(root)
+            for ((index,tool) in listOf(Tool.Curve,Tool.Polygon).withIndex()) {
+                val preview = EditPreview.between(tool,Point(10f,20f),Point(90f,80f)).withShapePoint(Point(40f,95f))
+                store.write(RecoverySnapshot(Raster.blank(100,100),ToolOptions(tool = tool),preview,null,
+                    Viewport(),null,"Untitled","image/png",null,false,sequence = index + 1L))
+                val restored = requireNotNull(store.read()).preview!!
+                assertEquals(tool,restored.tool)
+                assertEquals(preview.points,restored.points)
+                assertEquals(preview.constructing,restored.constructing)
+                assertEquals(preview.bounds,restored.bounds)
+                assertArrayEquals(Raster.blank(100,100).render(preview,ToolOptions()).pixels,
+                    Raster.blank(100,100).render(restored,ToolOptions()).pixels)
+            }
+        } finally { root.deleteRecursively() }
+    }
 }

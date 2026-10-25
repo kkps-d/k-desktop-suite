@@ -6,7 +6,7 @@ the permanent top ribbon collapses commands in narrow windows. The canvas center
 each axis on which the image fits; larger images pan within the viewport.
 
 The core supports Pencil, nine brush styles, Fill, Eraser, Eyedropper, rectangular
-selection and clipboard operations, Line/Rectangle/Ellipse, native multiline text,
+selection and clipboard operations, all 23 classic Paint shapes, native multiline text,
 undo/redo, PNG/JPEG files, PNG sharing, settings, and durable private recovery.
 The Hand tool pans with one finger; pinch zoom and two-finger pan remain available
 with editing tools as well. Switching tools clears the selection and commits any
@@ -14,6 +14,10 @@ pending move or paste.
 The Brushes dropdown shows actual stroke previews for Solid, Calligraphy left/right,
 Airbrush, Oil, Crayon, Marker, Graphite, and Watercolor. Each style remembers its width;
 seeded textures match the live preview and remain unchanged through undo/redo.
+The Shapes icon dropdown offers lines, curves, basic geometry, arrows, stars,
+callouts, a heart, and lightning. Drag to create a preview; for curves, place two
+bend points; for polygons, add vertices and choose Finish shape. Previews support
+move/resize, stroke width, outline/fill colors, Enter to apply, and Escape to cancel.
 Modern desktop and the common mobile view remain deferred, as do the extended
 tools listed in the [Android specification](../docs/KD_PAINT_ANDROID_SPEC.md).
 

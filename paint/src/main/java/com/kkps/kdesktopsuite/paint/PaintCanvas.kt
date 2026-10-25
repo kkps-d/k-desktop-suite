@@ -66,6 +66,7 @@ internal fun PaintCanvas(
     var dragStart by remember { mutableStateOf<Point?>(null) }
     var dragEnd by remember { mutableStateOf<Point?>(null) }
     var dragConstrained by remember { mutableStateOf(false) }
+    var constructionPoint by remember { mutableStateOf<Point?>(null) }
     var hovering by remember { mutableStateOf<Offset?>(null) }
     var keyboardInput by remember { mutableStateOf(false) }
     var erasing by remember { mutableStateOf(false) }
@@ -86,8 +87,9 @@ internal fun PaintCanvas(
     }
     val payload = state.preview?.payload
     val selectionImage = remember(payload) { payload?.bitmap()?.asImageBitmap() }
-    val dragPreview = remember(dragStart,dragEnd,dragConstrained,state.options) {
-        dragStart?.let { EditPreview.between(state.options.tool,it,dragEnd ?: it,state.options.constrain || dragConstrained) }
+    val dragPreview = remember(dragStart,dragEnd,dragConstrained,constructionPoint,state.preview,state.options) {
+        if (state.preview?.constructing == true && constructionPoint != null) state.preview.withShapePoint(constructionPoint!!)
+        else dragStart?.let { EditPreview.between(state.options.tool,it,dragEnd ?: it,state.options.constrain || dragConstrained) }
     }
 
     LaunchedEffect(hovering,keyboardCursor,keyboardInput,state.viewport,active) {
@@ -108,11 +110,21 @@ internal fun PaintCanvas(
                     keyboardDrawing = !keyboardDrawing
                     if (keyboardDrawing) { strokeSeed = kotlin.random.Random.nextInt(); stroke.add(keyboardCursor) }
                     else { model.stroke(stroke.toList(),seed = strokeSeed); stroke.clear() }
+                } else if (state.options.tool.isShape && state.preview == null) {
+                    keyboardDrawing = !keyboardDrawing
+                    if (keyboardDrawing) { dragStart = keyboardCursor; dragEnd = keyboardCursor }
+                    else {
+                        model.createPreview(dragStart ?: keyboardCursor,keyboardCursor)
+                        dragStart = null; dragEnd = null
+                    }
                 } else model.tap(keyboardCursor)
             }
             return true
         }
         if (event.type != KeyEventType.KeyDown) return false
+        if (event.key == Key.Escape && keyboardDrawing && state.options.tool.isShape) {
+            keyboardDrawing = false; dragStart = null; dragEnd = null; return true
+        }
         if (event.key == Key.F10 && event.isShiftPressed) { contextMenu = Offset.Zero; return true }
         if (event.key == Key.Delete) { model.deleteSelection(); return true }
         if (event.key == Key.X && !event.isCtrlPressed) {
@@ -127,11 +139,13 @@ internal fun PaintCanvas(
         val dy = when (event.key) { Key.DirectionUp -> -step; Key.DirectionDown -> step; else -> 0 }
         if (dx != 0 || dy != 0) {
             val rect = state.preview?.bounds ?: state.selection
-            if (rect != null) model.movePreview(rect.copy(x = rect.x+dx,y = rect.y+dy))
+            if (rect != null && state.preview?.constructing != true) model.movePreview(rect.copy(x = rect.x+dx,y = rect.y+dy))
             else {
                 keyboardCursor = Point((keyboardCursor.x+dx).coerceIn(0f,state.raster.width-1f),(keyboardCursor.y+dy).coerceIn(0f,state.raster.height-1f))
                 keyboardInput = true
-                if (keyboardDrawing) stroke.add(keyboardCursor)
+                if (keyboardDrawing) {
+                    if (state.options.tool.isShape) dragEnd = keyboardCursor else stroke.add(keyboardCursor)
+                }
             }
             return true
         }
@@ -161,14 +175,19 @@ internal fun PaintCanvas(
             }
         }) {
         Canvas(Modifier.fillMaxSize().testTag("paint-canvas").focusRequester(focus)
-            .onFocusChanged { if (!it.hasFocus) { stroke.clear(); keyboardDrawing = false; spacePressed = false } }
+            .onFocusChanged { if (!it.hasFocus) {
+                stroke.clear(); spacePressed = false
+                if (keyboardDrawing) { keyboardDrawing = false; dragStart = null; dragEnd = null }
+            } }
             .focusable().onKeyEvent(::commandKey)
             .semantics {
-                contentDescription = "Image canvas, ${state.raster.width} by ${state.raster.height} pixels. ${state.options.tool.label} tool."
+                contentDescription = "Image canvas, ${state.raster.width} by ${state.raster.height} pixels. ${state.options.tool.label} tool." +
+                    if (state.options.tool.isShape) " Use arrow keys to position, Space to place points, Enter to apply, Escape to cancel." else ""
                 customActions = listOf(
                     CustomAccessibilityAction("Select all image pixels") { model.selectAll(); true },
                     CustomAccessibilityAction("Apply current edit") { model.applyPreview(); true },
                     CustomAccessibilityAction("Cancel current edit") { model.cancelPreview(); true },
+                    CustomAccessibilityAction("Finish shape") { model.finishShape(); true },
                     CustomAccessibilityAction("Move or resize selection") { model.dialog(PaintDialog.Geometry); true },
                     CustomAccessibilityAction("Resize canvas") { model.dialog(PaintDialog.CanvasSize); true },
                     CustomAccessibilityAction("Create text in the image") { model.tool(Tool.Text); model.tap(Point(16f,16f)); true },
@@ -192,9 +211,11 @@ internal fun PaintCanvas(
                     val tool = if (erasing) Tool.Eraser else initial.options.tool
                     val stylus = down.type == PointerType.Stylus || erasing
                     val existing = initial.preview?.bounds ?: initial.selection
-                    val hitExisting = existing?.contains(imageStart.x.toInt(),imageStart.y.toInt()) == true && tool in listOf(Tool.Select,Tool.Text,Tool.Line,Tool.Rectangle,Tool.Ellipse)
+                    val constructing = initial.preview?.constructing == true
+                    val hitExisting = !constructing && existing?.contains(imageStart.x.toInt(),imageStart.y.toInt()) == true &&
+                        (tool.isShape || tool in listOf(Tool.Select,Tool.Text))
                     val bottomRight = existing?.let { initial.viewport.screenPoint(Point(it.right.toFloat(),it.bottom.toFloat())) }
-                    val resize = bottomRight != null && hypot(bottomRight.x-down.position.x,bottomRight.y-down.position.y) <= 14*density.density
+                    val resize = !constructing && bottomRight != null && hypot(bottomRight.x-down.position.x,bottomRight.y-down.position.y) <= 14*density.density
                     var navigation = tool == Tool.Pan || spacePressed || startEvent.buttons.isTertiaryPressed
                     if (!navigation && !hitExisting && !resize &&
                         (imageStart.x !in 0f..initial.raster.width.toFloat() || imageStart.y !in 0f..initial.raster.height.toFloat())) {
@@ -203,7 +224,8 @@ internal fun PaintCanvas(
                     }
                     var moved = false
                     if (!navigation && tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) stroke.add(imageStart)
-                    else if (!navigation && !hitExisting && !resize && tool in listOf(Tool.Select,Tool.Line,Tool.Rectangle,Tool.Ellipse,Tool.Text)) {
+                    else if (!navigation && constructing) constructionPoint = imageStart
+                    else if (!navigation && !hitExisting && !resize && (tool.isShape || tool in listOf(Tool.Select,Tool.Text))) {
                         dragStart = imageStart; dragEnd = imageStart; dragConstrained = startEvent.keyboardModifiers.isShiftPressed
                     }
                     down.consume()
@@ -216,7 +238,7 @@ internal fun PaintCanvas(
                             val pressed = event.changes.count { it.pressed && (!stylus || it.type == down.type) }
                             val touchNavigation = stylus && event.changes.count { it.pressed && it.type == PointerType.Touch } >= 2
                             if (pressed > 1 || touchNavigation) {
-                                navigation = true; stroke.clear(); dragStart = null; dragEnd = null
+                                navigation = true; stroke.clear(); dragStart = null; dragEnd = null; constructionPoint = null
                                 val pan = event.calculatePan(); val zoom = event.calculateZoom()
                                 val centroid = event.calculateCentroid(useCurrent = true)
                                 val view = model.state.value.viewport
@@ -226,6 +248,7 @@ internal fun PaintCanvas(
                                 if ((pointer.position-down.position).getDistance() > viewConfiguration.touchSlop) moved = true
                                 val point = model.state.value.viewport.imagePoint(Point(pointer.position.x,pointer.position.y))
                                 if (navigation) model.viewport(model.state.value.viewport.panned(Point(delta.x,delta.y)))
+                                else if (constructing) constructionPoint = point
                                 else if (resize) {
                                     requireNotNull(existing)
                                     val w = max(1,(point.x-existing.x).roundToInt()); val h = max(1,(point.y-existing.y).roundToInt())
@@ -240,13 +263,14 @@ internal fun PaintCanvas(
                         } while (if (navigation) event.changes.any { it.pressed } else event.changes.any { it.id == down.id && it.pressed })
                         if (!navigation) {
                             when {
+                                constructing -> model.tap(constructionPoint ?: imageStart)
                                 stroke.isNotEmpty() -> model.stroke(stroke.toList(),erasing,strokeSeed)
                                 !hitExisting && !resize && dragStart != null && moved -> model.createPreview(dragStart!!,dragEnd ?: dragStart!!,event.keyboardModifiers.isShiftPressed)
                                 !moved -> model.tap(imageStart)
                             }
                         }
                     } catch (cancelled: CancellationException) { throw cancelled }
-                    finally { stroke.clear(); dragStart = null; dragEnd = null; dragConstrained = false; erasing = false }
+                    finally { stroke.clear(); dragStart = null; dragEnd = null; constructionPoint = null; dragConstrained = false; erasing = false }
                 }
             }) {
             val view = state.viewport
@@ -275,7 +299,7 @@ internal fun PaintCanvas(
                     drawIntoCanvas { canvas ->
                         canvas.save()
                         state.selection?.let { canvas.clipRect(it.x.toFloat(),it.y.toFloat(),it.right.toFloat(),it.bottom.toFloat()) }
-                        state.preview?.let { canvas.nativeCanvas.drawShapePreview(it,state.options) }
+                        state.preview?.takeUnless { it.constructing && dragPreview != null }?.let { canvas.nativeCanvas.drawShapePreview(it,state.options) }
                         dragPreview?.let { canvas.nativeCanvas.drawShapePreview(it,state.options) }
                         canvas.restore()
                     }
@@ -309,6 +333,15 @@ internal fun PaintCanvas(
                     drawCircle(Color.White,radius,point,style = Stroke(3f))
                     drawCircle(Color.Black,radius,point,style = Stroke(1f))
                 }
+            }
+            if (keyboardInput && state.options.tool.isShape) {
+                val p = view.screenPoint(keyboardCursor)
+                val cursor = Path().apply {
+                    moveTo(p.x-8,p.y); lineTo(p.x+8,p.y)
+                    moveTo(p.x,p.y-8); lineTo(p.x,p.y+8)
+                }
+                drawPath(cursor,Color.White,style = Stroke(3f))
+                drawPath(cursor,outline,style = Stroke(1f))
             }
         }
         state.preview?.takeIf { it.tool == Tool.Text }?.let { preview -> key(preview.id) { TextOverlay(state,preview,model) } }

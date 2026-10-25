@@ -223,7 +223,16 @@ internal class PaintViewModel(
     }
     fun tap(point: Point) {
         val s = state.value; val x = floor(point.x).toInt(); val y = floor(point.y).toInt()
+        if (s.busy || s.loading) return
         if (x !in 0 until s.raster.width || y !in 0 until s.raster.height) return
+        val preview = s.preview
+        if (preview?.constructing == true) {
+            if (preview.tool == Tool.Polygon && preview.points.size >= 3 &&
+                hypot(point.x-preview.points.last().x,point.y-preview.points.last().y) * s.viewport.scale < 8) finishShape()
+            else setPreview(preview.withShapePoint(point))
+            return
+        }
+        if (preview?.tool?.isShape == true && !preview.bounds.contains(x,y)) { applyPreview(); return }
         when (s.options.tool) {
             Tool.Fill -> operation({ it.fill(x, y, s.options.foreground, s.selection) })
             Tool.Eyedropper -> { options { it.copy(foreground = s.raster.pixel(x, y)) }; tool(previousDrawingTool) }
@@ -248,15 +257,19 @@ internal class PaintViewModel(
     fun setPreview(preview: EditPreview?) {
         mutableState.update { it.copy(preview = preview) }; checkpoint()
     }
+    fun finishShape() {
+        val preview = state.value.preview ?: return
+        if (preview.constructing && !state.value.busy) setPreview(preview.copy(constructing = false))
+    }
     fun applyPreview(after: () -> Unit = {}) {
         val s = state.value; val preview = currentPreview()
         if (preview == null || !preview.hasContent) {
             mutableState.update { it.copy(preview = null) }; after(); return
         }
-        if (preview.tool in setOf(Tool.Rectangle, Tool.Ellipse) && !s.options.outline && !s.options.fill) {
+        if (preview.tool.isClosedShape && !s.options.outline && !s.options.fill) {
             message("Choose an outline or fill before applying this shape."); return
         }
-        operation({ it.render(preview, s.options, if (preview.tool == Tool.Select) null else s.selection) },
+        operation({ it.render(preview.copy(constructing = false), s.options, if (preview.tool == Tool.Select) null else s.selection) },
             valid = { state.value.preview?.id == preview.id && state.value.options == s.options }) {
             textEditor = null
             mutableState.update { it.copy(preview = null, selection = null) }
@@ -273,10 +286,11 @@ internal class PaintViewModel(
         if (s.busy) return
         checkImageSize(bounds.width, bounds.height)
         val preview = s.preview ?: s.selection?.let { EditPreview(Tool.Select, it, source = it, payload = s.raster.extract(it)) } ?: return
-        if (preview.tool == Tool.Line) {
+        if (preview.tool.isShape) {
             fun transform(point: Point) = Point(bounds.x + (point.x-preview.bounds.x)*bounds.width/preview.bounds.width,
                 bounds.y + (point.y-preview.bounds.y)*bounds.height/preview.bounds.height)
-            setPreview(preview.copy(bounds = bounds, start = transform(preview.start), end = transform(preview.end)))
+            setPreview(preview.copy(bounds = bounds, start = transform(preview.start), end = transform(preview.end),
+                points = preview.points.map(::transform)))
         } else setPreview(preview.copy(bounds = bounds))
     }
     fun deleteSelection() {

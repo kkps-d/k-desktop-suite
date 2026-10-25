@@ -3,7 +3,6 @@ package com.kkps.kdesktopsuite.paint
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
@@ -15,11 +14,21 @@ import androidx.core.graphics.createBitmap
 import java.util.UUID
 import kotlin.math.*
 
-internal enum class Tool(val label: String) {
+internal enum class Tool(val label: String, val isShape: Boolean = false) {
     Pencil("Pencil"), Brush("Brush"), Fill("Fill"), Eraser("Eraser"), Text("Text"),
-    Eyedropper("Eyedropper"), Select("Select"), Line("Line"), Rectangle("Rectangle"), Ellipse("Ellipse"),
-    Zoom("Zoom"), Pan("Hand"),
+    Eyedropper("Eyedropper"), Select("Select"),
+    Line("Line", true), Curve("Curve", true), Ellipse("Ellipse", true), Rectangle("Rectangle", true),
+    RoundedRectangle("Rounded rectangle", true), Polygon("Polygon", true), Triangle("Triangle", true),
+    RightTriangle("Right triangle", true), Diamond("Diamond", true), Pentagon("Pentagon", true), Hexagon("Hexagon", true),
+    RightArrow("Right arrow", true), LeftArrow("Left arrow", true), UpArrow("Up arrow", true), DownArrow("Down arrow", true),
+    FourPointStar("Four-point star", true), FivePointStar("Five-point star", true), SixPointStar("Six-point star", true),
+    RectangleCallout("Rounded rectangle callout", true), EllipseCallout("Ellipse callout", true), CloudCallout("Cloud callout", true),
+    Heart("Heart", true), Lightning("Lightning bolt", true),
+    Zoom("Zoom"), Pan("Hand");
+    val isClosedShape get() = isShape && this != Line && this != Curve
 }
+
+internal val shapeTools = Tool.entries.filter { it.isShape }
 internal data class ToolOptions(
     val tool: Tool = Tool.Brush, val foreground: Int = BLACK, val background: Int = WHITE,
     val width: Int = 3, val eraserWidth: Int = 8, val outline: Boolean = true,
@@ -41,14 +50,15 @@ internal data class EditPreview(
     val id: String = UUID.randomUUID().toString(),
     val textSelectionStart: Int = 0, val textSelectionEnd: Int = 0,
     val textRaster: Raster? = null, val textLayoutKey: TextLayoutKey? = null,
+    val points: List<Point> = emptyList(), val constructing: Boolean = false,
 ) {
-    val hasContent get() = payload != null || tool in setOf(Tool.Line, Tool.Rectangle, Tool.Ellipse) || text.isNotEmpty()
+    val hasContent get() = payload != null || tool.isShape || text.isNotEmpty()
 
     companion object {
         fun between(tool: Tool, start: Point, end: Point, constrain: Boolean = false): EditPreview {
             var target = end
             if (constrain) {
-                if (tool == Tool.Line) {
+                if (tool == Tool.Line || tool == Tool.Curve || tool == Tool.Polygon) {
                     val angle = (atan2(end.y - start.y, end.x - start.x) / (PI / 4)).roundToInt() * PI / 4
                     val length = hypot(end.x - start.x, end.y - start.y)
                     target = Point(start.x + (cos(angle) * length).toFloat(), start.y + (sin(angle) * length).toFloat())
@@ -57,7 +67,9 @@ internal data class EditPreview(
                     target = Point(start.x + size * if (end.x < start.x) -1 else 1, start.y + size * if (end.y < start.y) -1 else 1)
                 }
             }
-            return EditPreview(tool, PixelRect.between(start, target), start, target)
+            return EditPreview(tool, PixelRect.between(start, target), start, target,
+                points = if (tool == Tool.Polygon) listOf(start,target) else emptyList(),
+                constructing = tool == Tool.Curve || tool == Tool.Polygon)
         }
     }
 }
@@ -132,20 +144,13 @@ internal fun Canvas.drawShapePreview(preview: EditPreview, options: ToolOptions)
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
     }
-    val rect = preview.bounds
-    val shape = RectF(rect.x.toFloat(), rect.y.toFloat(), rect.right.toFloat(), rect.bottom.toFloat())
-    fun drawShape() {
-        when (preview.tool) {
-            Tool.Line -> drawLine(preview.start.x, preview.start.y, preview.end.x, preview.end.y, paint)
-            Tool.Rectangle -> drawRect(shape, paint)
-            Tool.Ellipse -> drawOval(shape, paint)
-            else -> Unit
-        }
-    }
-    if (options.fill && preview.tool != Tool.Line) {
+    if (!preview.tool.isShape) return
+    val path = preview.shapePath()
+    fun drawShape() = drawPath(path,paint)
+    if (options.fill && preview.tool.isClosedShape && !preview.constructing) {
         paint.style = Paint.Style.FILL; paint.color = options.background; drawShape()
     }
-    if (options.outline || preview.tool == Tool.Line) {
+    if (options.outline || !preview.tool.isClosedShape || preview.constructing) {
         paint.style = Paint.Style.STROKE; paint.color = options.foreground; drawShape()
     }
 }

@@ -7,8 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.*
@@ -152,6 +152,104 @@ class CanvasToolsTest {
                 model.undo()
             }
         }
+    }
+
+    @Test fun shapeGalleryOffersAllShapesAtWideAndCompactWidths() {
+        for (width in listOf(1200.dp,360.dp)) {
+            compose.runOnIdle { size = DpSize(width,800.dp) }
+            compose.onNodeWithTag("paint-shape-picker").performScrollTo()
+                .assertContentDescriptionEquals("Choose shape: ${if (width == 1200.dp) "Rectangle" else "Heart"}").performClick()
+            for (tool in shapeTools) compose.onNodeWithContentDescription(tool.label).assertExists()
+            compose.onNodeWithContentDescription("Lightning bolt").performScrollTo().performClick()
+            compose.runOnIdle { assertEquals(Tool.Lightning,model.state.value.options.tool) }
+            compose.onNodeWithTag("dropdown-menu").assertDoesNotExist()
+            compose.onNodeWithTag("paint-shape-picker").assertContentDescriptionEquals("Choose shape: Lightning bolt")
+            compose.onNodeWithTag("paint-shape-picker").performClick()
+            compose.onNodeWithContentDescription("Lightning bolt").assertIsSelected().assertIsFocused()
+            compose.onNodeWithTag("dropdown-menu").performKeyInput { pressKey(Key.DirectionLeft); pressKey(Key.Enter) }
+            compose.runOnIdle { assertEquals(Tool.Heart,model.state.value.options.tool) }
+            compose.onNodeWithTag("paint-shape-picker").performClick()
+            compose.onNodeWithTag("dropdown-menu").performKeyInput { pressKey(Key.Escape) }
+            compose.onNodeWithTag("dropdown-menu").assertDoesNotExist()
+            compose.runOnIdle { model.tool(Tool.Brush) }
+        }
+    }
+
+    @Test fun curveBendsThenMovesAndResizesAsOneUndoableEdit() {
+        compose.runOnIdle {
+            model.tool(Tool.Curve)
+            model.options { it.copy(constrain = false) }
+            model.viewport(model.state.value.viewport.actual())
+        }
+        compose.onNodeWithTag("paint-canvas").performTouchInput {
+            down(screenPoint(Point(100f,100f))); moveTo(screenPoint(Point(200f,160f))); up()
+        }
+        for (point in listOf(Point(120f,180f),Point(180f,80f))) {
+            compose.onNodeWithTag("paint-canvas").performTouchInput { click(screenPoint(point)) }
+        }
+        compose.runOnIdle {
+            val preview = requireNotNull(model.state.value.preview)
+            assertFalse(preview.constructing)
+            assertEquals(listOf(Point(120f,180f),Point(180f,80f)),preview.points)
+            assertTrue(model.state.value.raster.pixels.all { it == WHITE })
+            model.movePreview(PixelRect(200,200,200,200))
+            assertEquals(listOf(Point(240f,400f),Point(360f,200f)),model.state.value.preview!!.points)
+            model.applyPreview()
+        }
+        compose.waitUntil(15000) { !model.state.value.busy && model.state.value.preview == null }
+        compose.runOnIdle {
+            assertTrue(model.state.value.raster.pixels.any { it != WHITE })
+            model.undo()
+            assertTrue(model.state.value.raster.pixels.all { it == WHITE })
+        }
+    }
+
+    @Test fun polygonCanFinishFromVisibleActionThenFillAndCancel() {
+        val blue = 0xFF0000FF.toInt()
+        compose.runOnIdle {
+            model.tool(Tool.Polygon)
+            model.options { it.copy(fill = true,background = blue,constrain = false) }
+            model.viewport(model.state.value.viewport.actual())
+        }
+        compose.onNodeWithTag("paint-canvas").performTouchInput {
+            down(screenPoint(Point(100f,100f))); moveTo(screenPoint(Point(200f,100f))); up()
+            click(screenPoint(Point(150f,200f)))
+        }
+        compose.runOnIdle {
+            assertTrue(model.state.value.preview!!.constructing)
+            assertEquals(3,model.state.value.preview!!.points.size)
+        }
+        compose.onNodeWithText("Finish shape").performScrollTo().performClick()
+        compose.runOnIdle { assertFalse(model.state.value.preview!!.constructing) }
+        assertCanvasColors(Point(150f,140f) to blue)
+        compose.runOnIdle {
+            model.cancelPreview()
+            assertNull(model.state.value.preview)
+            assertFalse(model.state.value.dirty)
+            assertTrue(model.state.value.raster.pixels.all { it == WHITE })
+        }
+    }
+
+    @Test fun shapesCanBeCreatedAndAppliedWithKeyboard() {
+        compose.runOnIdle { model.tool(Tool.Heart) }
+        compose.onNodeWithTag("paint-canvas").performClick().performKeyInput {
+            keyDown(Key.ShiftLeft)
+            repeat(2) { pressKey(Key.DirectionRight); pressKey(Key.DirectionDown) }
+            keyUp(Key.ShiftLeft)
+            pressKey(Key.Spacebar)
+            keyDown(Key.ShiftLeft)
+            repeat(6) { pressKey(Key.DirectionRight) }
+            repeat(4) { pressKey(Key.DirectionDown) }
+            keyUp(Key.ShiftLeft)
+            pressKey(Key.Spacebar)
+        }
+        compose.runOnIdle {
+            assertEquals(Tool.Heart,model.state.value.preview?.tool)
+            assertEquals(PixelRect(20,20,60,40),model.state.value.preview?.bounds)
+        }
+        compose.onNodeWithTag("paint-canvas").performKeyInput { pressKey(Key.Enter) }
+        compose.waitUntil(15000) { !model.state.value.busy && model.state.value.preview == null }
+        compose.runOnIdle { assertTrue(model.state.value.raster.pixels.any { it != WHITE }) }
     }
 
     @Test fun shapesShowTheirOutlineAndFillBeforePointerRelease() {

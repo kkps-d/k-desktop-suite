@@ -1,5 +1,8 @@
 package com.kkps.kdesktopsuite.paint
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -45,9 +48,20 @@ internal enum class PaintIcon(private val path: String) {
     }
 }
 
-internal val Tool.icon: PaintIcon get() = when (this) {
-    Tool.Pencil -> PaintIcon.Pencil; Tool.Brush -> PaintIcon.Brush; Tool.Fill -> PaintIcon.Fill
-    Tool.Eraser -> PaintIcon.Eraser; Tool.Text -> PaintIcon.Text; Tool.Eyedropper -> PaintIcon.Eyedropper
-    Tool.Select -> PaintIcon.Select; Tool.Line -> PaintIcon.Line; Tool.Rectangle -> PaintIcon.Rectangle
-    Tool.Ellipse -> PaintIcon.Ellipse; Tool.Zoom -> PaintIcon.Zoom; Tool.Pan -> PaintIcon.Pan
-}
+internal val Tool.icon: ImageVector
+    @Composable get() {
+        if (isShape) return remember(this) {
+            ImageVector.Builder(label,24.dp,24.dp,120f,120f).apply {
+                addGroup(translationX = 10f,translationY = 10f)
+                addPath(addPathNodes(shapePathData),fill = null,stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 7f,strokeLineCap = StrokeCap.Round,strokeLineJoin = StrokeJoin.Round)
+                clearGroup()
+            }.build()
+        }
+        return when (this) {
+            Tool.Pencil -> PaintIcon.Pencil; Tool.Brush -> PaintIcon.Brush; Tool.Fill -> PaintIcon.Fill
+            Tool.Eraser -> PaintIcon.Eraser; Tool.Text -> PaintIcon.Text; Tool.Eyedropper -> PaintIcon.Eyedropper
+            Tool.Select -> PaintIcon.Select; Tool.Zoom -> PaintIcon.Zoom; Tool.Pan -> PaintIcon.Pan
+            else -> error("Missing icon for $label")
+        }.vector
+    }
