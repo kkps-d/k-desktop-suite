@@ -63,6 +63,29 @@ class CanvasToolsTest {
         }
     }
 
+    @Test fun maximumWidthPenAndEraserStrokesCommitPromptlyAndKeepUndo() {
+        val points = listOf(Point(50f,50f),Point(750f,150f),Point(50f,300f),Point(750f,550f))
+        for (tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) {
+            compose.runOnIdle {
+                model.tool(tool)
+                model.options { it.copy(width = 100,eraserWidth = 100,background = 0xFFFF0000.toInt()) }
+            }
+            val start = System.nanoTime()
+            compose.runOnIdle { model.stroke(points) }
+            compose.waitUntil(1000) { !model.state.value.busy }
+            println("100px $tool commit: ${(System.nanoTime()-start)/1_000_000.0} ms")
+            compose.runOnIdle {
+                val result = model.state.value.raster.pixels.copyOf()
+                assertEquals(if (tool == Tool.Eraser) 0xFFFF0000.toInt() else BLACK,model.state.value.raster.pixel(400,100))
+                model.undo()
+                assertTrue(model.state.value.raster.pixels.all { it == WHITE })
+                model.redo()
+                assertArrayEquals(result,model.state.value.raster.pixels)
+                model.undo()
+            }
+        }
+    }
+
     @Test fun brushGalleryOffersPreviewsAndRemembersEachWidthAtWideAndCompactWidths() {
         for (width in listOf(1200.dp,360.dp)) {
             compose.runOnIdle { size = DpSize(width,800.dp) }

@@ -66,17 +66,44 @@ internal class Raster(val width: Int, val height: Int, internal val pixels: IntA
         if (points.isEmpty()) return this
         val output = pixels.copyOf()
         val radius = max(0.5f, size / 2)
+        val area = clip?.clipped(width,height) ?: PixelRect(0,0,width,height)
+        val opaque = color ushr 24 == 255
+        val extent = ceil(radius + 0.5f).toInt()
+        data class DabRow(val y: Int, val left: Int, val coverage: FloatArray, val solid: IntRange)
+        // Every dab is pixel-aligned. Calculate its mask once, and fill opaque interiors by row.
+        val rows = (-extent..extent).mapNotNull { y ->
+            val coverage = FloatArray(extent * 2 + 1) { index ->
+                val distance = hypot((index-extent).toFloat(),y.toFloat())
+                if (hard) { if (distance <= radius) 1f else 0f }
+                else (radius + 0.5f - distance).coerceIn(0f,1f)
+            }
+            val left = coverage.indexOfFirst { it > 0f }
+            if (left < 0) return@mapNotNull null
+            val right = coverage.indexOfLast { it > 0f }
+            val solidLeft = coverage.indexOfFirst { it == 1f }
+            val solid = if (opaque && solidLeft >= 0)
+                (solidLeft-extent)..(coverage.indexOfLast { it == 1f }-extent) else IntRange.EMPTY
+            DabRow(y,left-extent,coverage.copyOfRange(left,right+1),solid)
+        }
         fun dab(point: Point) {
-            val cx = floor(point.x) + 0.5f
-            val cy = floor(point.y) + 0.5f
-            for (y in floor(cy - radius).toInt()..ceil(cy + radius).toInt()) {
-                for (x in floor(cx - radius).toInt()..ceil(cx + radius).toInt()) {
-                    if (x !in 0 until width || y !in 0 until height || clip?.contains(x, y) == false) continue
-                    val distance = hypot(x + 0.5f - cx, y + 0.5f - cy)
-                    val coverage = if (hard) {
-                        if (distance <= radius) 1f else 0f
-                    } else (radius + 0.5f - distance).coerceIn(0f, 1f)
-                    if (coverage > 0) output[y * width + x] = composite(color, output[y * width + x], coverage)
+            val cx = floor(point.x).toInt()
+            val cy = floor(point.y).toInt()
+            for (row in rows) {
+                val y = cy + row.y
+                if (y !in area.y until area.bottom) continue
+                val maskLeft = cx + row.left
+                val left = max(area.x,maskLeft)
+                val right = min(area.right,maskLeft + row.coverage.size)
+                if (left >= right) continue
+                val solidLeft = if (row.solid.isEmpty()) right else (cx+row.solid.first).coerceIn(left,right)
+                val solidRight = if (row.solid.isEmpty()) right else (cx+row.solid.last+1).coerceIn(left,right)
+                val offset = y * width
+                output.fill(color,offset+solidLeft,offset+solidRight)
+                for (x in left until solidLeft) {
+                    output[offset+x] = composite(color,output[offset+x],row.coverage[x-maskLeft])
+                }
+                for (x in solidRight until right) {
+                    output[offset+x] = composite(color,output[offset+x],row.coverage[x-maskLeft])
                 }
             }
         }
@@ -158,11 +185,13 @@ private fun interpolate(a: Int, b: Int, t: Float): Int {
 
 internal fun composite(source: Int, destination: Int, coverage: Float = 1f): Int {
     val alpha = (source ushr 24) / 255f * coverage
-    var result = BLACK
-    for (shift in intArrayOf(0, 8, 16)) {
-        result = result or (((source ushr shift and 255) * alpha + (destination ushr shift and 255) * (1 - alpha)).roundToInt() shl shift)
-    }
-    return result
+    if (alpha == 1f) return source
+    if (alpha == 0f || source == destination) return destination or BLACK
+    val inverse = 1 - alpha
+    val red = ((source ushr 16 and 255) * alpha + (destination ushr 16 and 255) * inverse).roundToInt()
+    val green = ((source ushr 8 and 255) * alpha + (destination ushr 8 and 255) * inverse).roundToInt()
+    val blue = ((source and 255) * alpha + (destination and 255) * inverse).roundToInt()
+    return BLACK or (red shl 16) or (green shl 8) or blue
 }
 
 internal class RasterHistory(initial: Raster, private val budget: Long = 64L * 1024 * 1024) {
