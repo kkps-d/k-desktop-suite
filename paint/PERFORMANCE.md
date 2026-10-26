@@ -1,6 +1,28 @@
 # Paint transform performance
 
-Measured on 26 October 2026 using the local **Small Desktop** emulator, Android API 37, x86_64, 1366 x 768 at 160 dpi. Both versions used debug APKs and the same timing harness. The baseline is commit `ebec86a`; the after measurement includes the optimizations in this working tree. APK hashes and raw samples are in [before](performance/transform-before.json) and [after](performance/transform-after.json).
+## Canvas renderer follow-up
+
+The current implementation uses Android Canvas for resize, skew and arbitrary rotation, retaining Kotlin for quarter turns, flips and integer moves. All operations were benchmarked with Canvas; only families meeting the 10% aggregate improvement / maximum 10% case regression rule switched. Three independent runs were captured for the current Kotlin baseline, all-Canvas candidate and final production policy.
+
+New 4MP opaque-image medians (milliseconds), including bitmap conversion and pixel readback:
+
+| Case | Kotlin baseline | Final | Speedup |
+|---|---:|---:|---:|
+| Resize to 125% | 654.1 | 66.4 | 9.9x |
+| Combined skew | 464.0 | 74.9 | 6.2x |
+| Arbitrary rotation, 33° | 477.9 | 81.8 | 5.8x |
+| Selection render, 33° | 393.0 | 59.3 | 6.6x |
+| Apply command, 33° | 598.8 | 192.5 | 3.1x |
+
+The final run retains the fast 4MP small-selection Apply path (11.1 → 11.0 ms). Some smaller retained Kotlin cases regressed in these measurements: 1MP small-selection render was 1.89 → 2.57 ms and command completion 4.57 → 5.23 ms. Frame times remain near the display interval. No peak-memory or FPS improvement is claimed.
+
+See the [complete Canvas comparison](performance/CANVAS.md) for all operations, alpha fixtures, managed allocations, process-memory snapshots, APK/harness hashes, reproduction commands and limitations. Interrupted attempts were discarded; the emulator was restarted before the final three accepted passes. Concurrent menu changes in the shared workspace were excluded by using the preserved transform-only APK.
+
+Verification: app/test builds and Android lint pass; all 35 JVM tests and 61 relevant instrumentation tests pass. The nine accepted benchmark runs each pass both timing tests. Instrumentation uses local Small Desktop only; its temporary regression-test display override was restored. ARM release performance was not measured.
+
+## Earlier Kotlin optimization measurements
+
+Measured on 26 October 2026 using the local **Small Desktop** emulator, Android API 37, x86_64, 1366 x 768 at 160 dpi. Both versions used debug APKs and the same timing harness. The baseline is commit `ebec86a`; the after measurement covers the Kotlin optimizations committed in `a95e65a`. APK hashes and raw samples are in [before](performance/transform-before.json) and [after](performance/transform-after.json).
 
 ## Timings
 

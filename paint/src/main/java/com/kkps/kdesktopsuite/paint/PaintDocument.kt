@@ -123,11 +123,12 @@ internal fun Bitmap.raster(): Raster = Raster(width, height, IntArray(width * he
     getPixels(it, 0, width, 0, 0, width, height)
 })
 
-internal fun Raster.render(preview: EditPreview, options: ToolOptions, mask: PixelRect? = null): Raster {
+internal fun Raster.render(preview: EditPreview, options: ToolOptions, mask: PixelRect? = null,
+    checkCancelled: () -> Unit = {}): Raster {
     if (preview.tool == Tool.Select) {
         return preview.payload?.let { payload ->
             renderSelection(payload,preview.selectionTransform,preview.bounds,preview.source,
-                preview.outputWidth ?: width,preview.outputHeight ?: height,options.background)
+                preview.outputWidth ?: width,preview.outputHeight ?: height,options.background,checkCancelled)
         } ?: this
     }
     val bitmap = bitmap()

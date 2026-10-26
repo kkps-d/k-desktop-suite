@@ -1,0 +1,4532 @@
+{
+  "metadata": {
+    "stage": "before",
+    "revision": "fe36333e30d9c12fa5cc4d644faf003a45eb6bc3",
+    "measuredAtUtc": "2026-10-26T07:15:43.6462065Z",
+    "appSha256": "25B7C24DC389FBE6D590DB5976BB695EFC188A77F41A21CC1AED6F65D294BD05",
+    "testSha256": "CD405D8C76B1F8ECCD1EAA37A2AC78C98A041CDD8DB9557169F9D337F0DACB63",
+    "harnessSha256": "345D68C39BC18D59445AD356601CB0024ADFD5DD195351B9A88B921AFCFF9CB1",
+    "serial": "emulator-5556",
+    "avd": "Small_Desktop",
+    "androidUser": "10",
+    "display": "Physical size: 1366x768",
+    "density": "Physical density: 160"
+  },
+  "runs": [
+    {
+      "run": 1,
+      "rasterTimings": {
+        "environment": {
+          "stage": "canvas-before-1",
+          "sdk": 37,
+          "fingerprint": "google/sdk_gdesktop_x86_64/emu64xa:17/CLE3.260929.004/16489338:userdebug/dev-keys",
+          "abis": [
+            "x86_64",
+            "arm64-v8a"
+          ],
+          "densityDpi": 160,
+          "widthPixels": 1366,
+          "heightPixels": 688,
+          "maxHeapBytes": 201326592,
+          "debug": true
+        },
+        "1MP opaque rotate90": {
+          "family": "quarterTurns",
+          "medianMs": 18.0135,
+          "samplesMs": [
+            17.8712,
+            18.0135,
+            22.0405,
+            16.9642,
+            17.751,
+            18.3841,
+            18.7029
+          ],
+          "checksum": -16712363,
+          "allocatedBytes": 29487104,
+          "memoryBefore": {
+            "totalPssKb": 141223,
+            "nativeHeapBytes": 23122704
+          },
+          "memoryAfter": {
+            "totalPssKb": 152058,
+            "nativeHeapBytes": 20985968
+          }
+        },
+        "1MP opaque rotate-90": {
+          "family": "quarterTurns",
+          "medianMs": 17.7566,
+          "samplesMs": [
+            17.7566,
+            17.6847,
+            19.4268,
+            21.8246,
+            22.7683,
+            12.5714,
+            10.3833
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 29487104,
+          "memoryBefore": {
+            "totalPssKb": 139902,
+            "nativeHeapBytes": 20958496
+          },
+          "memoryAfter": {
+            "totalPssKb": 143886,
+            "nativeHeapBytes": 20953072
+          }
+        },
+        "1MP opaque rotate180": {
+          "family": "quarterTurns",
+          "medianMs": 14.7579,
+          "samplesMs": [
+            15.5797,
+            21.0902,
+            15.9443,
+            10.4177,
+            11.9387,
+            14.7579,
+            14.1885
+          ],
+          "checksum": -131499,
+          "allocatedBytes": 29552640,
+          "memoryBefore": {
+            "totalPssKb": 152090,
+            "nativeHeapBytes": 20953072
+          },
+          "memoryAfter": {
+            "totalPssKb": 139786,
+            "nativeHeapBytes": 20951952
+          }
+        },
+        "1MP opaque flipH": {
+          "family": "flips",
+          "medianMs": 10.7862,
+          "samplesMs": [
+            10.7862,
+            10.2805,
+            10.2083,
+            12.4402,
+            14.1586,
+            13.1165,
+            10.3704
+          ],
+          "checksum": -196523,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 147990,
+            "nativeHeapBytes": 20952016
+          },
+          "memoryAfter": {
+            "totalPssKb": 156314,
+            "nativeHeapBytes": 20957376
+          }
+        },
+        "1MP opaque flipV": {
+          "family": "flips",
+          "medianMs": 2.9021,
+          "samplesMs": [
+            2.6806,
+            2.9901,
+            2.875,
+            2.6955,
+            2.9021,
+            5.4719,
+            3.9794
+          ],
+          "checksum": -16712107,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 164502,
+            "nativeHeapBytes": 20952080
+          },
+          "memoryAfter": {
+            "totalPssKb": 148106,
+            "nativeHeapBytes": 20952080
+          }
+        },
+        "1MP opaque resize125": {
+          "family": "resize",
+          "medianMs": 164.0721,
+          "samplesMs": [
+            164.0721,
+            164.8783,
+            164.7252,
+            167.885,
+            162.2608,
+            162.623,
+            162.8582
+          ],
+          "checksum": -16711595,
+          "allocatedBytes": 46067712,
+          "memoryBefore": {
+            "totalPssKb": 148542,
+            "nativeHeapBytes": 20953744
+          },
+          "memoryAfter": {
+            "totalPssKb": 159816,
+            "nativeHeapBytes": 20954320
+          }
+        },
+        "1MP opaque resize75": {
+          "family": "resize",
+          "medianMs": 59.7828,
+          "samplesMs": [
+            61.6779,
+            59.7828,
+            60.7215,
+            58.3099,
+            58.8478,
+            59.945,
+            58.3102
+          ],
+          "checksum": -16711595,
+          "allocatedBytes": 16609280,
+          "memoryBefore": {
+            "totalPssKb": 164440,
+            "nativeHeapBytes": 20954320
+          },
+          "memoryAfter": {
+            "totalPssKb": 156904,
+            "nativeHeapBytes": 20959872
+          }
+        },
+        "1MP opaque rotate33": {
+          "family": "affine",
+          "medianMs": 120.5761,
+          "samplesMs": [
+            120.6392,
+            120.5761,
+            121.8403,
+            123.6193,
+            116.3957,
+            116.9932,
+            116.3616
+          ],
+          "checksum": 0,
+          "allocatedBytes": 56389632,
+          "memoryBefore": {
+            "totalPssKb": 135808,
+            "nativeHeapBytes": 20957360
+          },
+          "memoryAfter": {
+            "totalPssKb": 167124,
+            "nativeHeapBytes": 20957552
+          }
+        },
+        "1MP opaque skewH": {
+          "family": "affine",
+          "medianMs": 110.962,
+          "samplesMs": [
+            107.7949,
+            107.4112,
+            114.3565,
+            113.9807,
+            113.8606,
+            110.962,
+            107.7811
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 37371904,
+          "memoryBefore": {
+            "totalPssKb": 154120,
+            "nativeHeapBytes": 20963136
+          },
+          "memoryAfter": {
+            "totalPssKb": 159124,
+            "nativeHeapBytes": 20957616
+          }
+        },
+        "1MP opaque skewV": {
+          "family": "affine",
+          "medianMs": 109.0735,
+          "samplesMs": [
+            111.0681,
+            109.4848,
+            114.0768,
+            108.0917,
+            108.1159,
+            108.1555,
+            109.0735
+          ],
+          "checksum": 0,
+          "allocatedBytes": 37371904,
+          "memoryBefore": {
+            "totalPssKb": 148376,
+            "nativeHeapBytes": 20963040
+          },
+          "memoryAfter": {
+            "totalPssKb": 158656,
+            "nativeHeapBytes": 20957552
+          }
+        },
+        "1MP opaque skewBoth": {
+          "family": "affine",
+          "medianMs": 121.4875,
+          "samplesMs": [
+            121.4875,
+            123.411,
+            122.0563,
+            116.2864,
+            116.0153,
+            120.1605,
+            122.7605
+          ],
+          "checksum": 0,
+          "allocatedBytes": 40697856,
+          "memoryBefore": {
+            "totalPssKb": 149304,
+            "nativeHeapBytes": 20963136
+          },
+          "memoryAfter": {
+            "totalPssKb": 161452,
+            "nativeHeapBytes": 20957504
+          }
+        },
+        "1MP opaque resizeSkew": {
+          "family": "affine",
+          "medianMs": 107.0537,
+          "samplesMs": [
+            106.8271,
+            109.2387,
+            112.261,
+            107.8876,
+            106.3066,
+            107.0537,
+            106.0925
+          ],
+          "checksum": 0,
+          "allocatedBytes": 39178240,
+          "memoryBefore": {
+            "totalPssKb": 149812,
+            "nativeHeapBytes": 20963024
+          },
+          "memoryAfter": {
+            "totalPssKb": 160176,
+            "nativeHeapBytes": 20957440
+          }
+        },
+        "1MP opaque apply33": {
+          "family": "affine",
+          "medianMs": 94.4892,
+          "samplesMs": [
+            94.4892,
+            93.5805,
+            94.7434,
+            99.4668,
+            94.8661,
+            94.3058,
+            94.4123
+          ],
+          "checksum": -1,
+          "allocatedBytes": 29487104,
+          "memoryBefore": {
+            "totalPssKb": 146704,
+            "nativeHeapBytes": 20963712
+          },
+          "memoryAfter": {
+            "totalPssKb": 147976,
+            "nativeHeapBytes": 20958320
+          }
+        },
+        "1MP opaque clippedApply33": {
+          "family": "affine",
+          "medianMs": 61.737,
+          "samplesMs": [
+            63.6085,
+            61.737,
+            61.3365,
+            61.3202,
+            63.1059,
+            64.4669,
+            60.9815
+          ],
+          "checksum": -12947115,
+          "allocatedBytes": 29552640,
+          "memoryBefore": {
+            "totalPssKb": 156180,
+            "nativeHeapBytes": 20958320
+          },
+          "memoryAfter": {
+            "totalPssKb": 139776,
+            "nativeHeapBytes": 20958416
+          }
+        },
+        "1MP opaque smallApply": {
+          "family": "quarterTurns",
+          "medianMs": 1.7829,
+          "samplesMs": [
+            1.7829,
+            1.684,
+            1.8696,
+            1.5822,
+            1.7029,
+            2.9062,
+            3.4247
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 12533760,
+          "memoryBefore": {
+            "totalPssKb": 148000,
+            "nativeHeapBytes": 20958288
+          },
+          "memoryAfter": {
+            "totalPssKb": 161676,
+            "nativeHeapBytes": 20960912
+          }
+        },
+        "1MP alpha rotate90": {
+          "family": "quarterTurns",
+          "medianMs": 10.7008,
+          "samplesMs": [
+            10.0704,
+            12.4939,
+            11.2398,
+            10.6016,
+            13.2356,
+            10.5478,
+            10.7008
+          ],
+          "checksum": 64853,
+          "allocatedBytes": 29552640,
+          "memoryBefore": {
+            "totalPssKb": 139800,
+            "nativeHeapBytes": 20958432
+          },
+          "memoryAfter": {
+            "totalPssKb": 143900,
+            "nativeHeapBytes": 20958496
+          }
+        },
+        "1MP alpha rotate-90": {
+          "family": "quarterTurns",
+          "medianMs": 10.3468,
+          "samplesMs": [
+            10.2723,
+            10.1596,
+            12.3596,
+            10.1165,
+            10.3468,
+            10.3752,
+            10.5067
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 152104,
+            "nativeHeapBytes": 20958432
+          },
+          "memoryAfter": {
+            "totalPssKb": 160428,
+            "nativeHeapBytes": 20963952
+          }
+        },
+        "1MP alpha rotate180": {
+          "family": "quarterTurns",
+          "medianMs": 10.1918,
+          "samplesMs": [
+            10.2857,
+            10.6245,
+            10.1285,
+            10.1918,
+            12.4822,
+            10.0751,
+            10.0749
+          ],
+          "checksum": -131499,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 135704,
+            "nativeHeapBytes": 20958496
+          },
+          "memoryAfter": {
+            "totalPssKb": 148124,
+            "nativeHeapBytes": 20963952
+          }
+        },
+        "1MP alpha flipH": {
+          "family": "flips",
+          "medianMs": 10.8887,
+          "samplesMs": [
+            13.097,
+            11.6105,
+            10.6321,
+            10.4625,
+            10.0892,
+            10.8887,
+            12.7872
+          ],
+          "checksum": -196523,
+          "allocatedBytes": 29552640,
+          "memoryBefore": {
+            "totalPssKb": 156328,
+            "nativeHeapBytes": 20963888
+          },
+          "memoryAfter": {
+            "totalPssKb": 139924,
+            "nativeHeapBytes": 20964080
+          }
+        },
+        "1MP alpha flipV": {
+          "family": "flips",
+          "medianMs": 3.3168,
+          "samplesMs": [
+            2.5039,
+            2.7676,
+            3.3168,
+            2.8308,
+            3.3287,
+            4.2563,
+            3.5132
+          ],
+          "checksum": 65109,
+          "allocatedBytes": 29487104,
+          "memoryBefore": {
+            "totalPssKb": 148132,
+            "nativeHeapBytes": 20963952
+          },
+          "memoryAfter": {
+            "totalPssKb": 152108,
+            "nativeHeapBytes": 20958496
+          }
+        },
+        "1MP alpha resize125": {
+          "family": "resize",
+          "medianMs": 161.2477,
+          "samplesMs": [
+            175.8105,
+            161.2477,
+            161.2197,
+            160.9035,
+            164.34,
+            160.4335,
+            161.4403
+          ],
+          "checksum": 16842752,
+          "allocatedBytes": 46067712,
+          "memoryBefore": {
+            "totalPssKb": 164912,
+            "nativeHeapBytes": 20958400
+          },
+          "memoryAfter": {
+            "totalPssKb": 153128,
+            "nativeHeapBytes": 20958560
+          }
+        },
+        "1MP alpha resize75": {
+          "family": "resize",
+          "medianMs": 58.7191,
+          "samplesMs": [
+            58.089,
+            58.9066,
+            58.7191,
+            62.5729,
+            57.9006,
+            57.6989,
+            60.1984
+          ],
+          "checksum": 16777216,
+          "allocatedBytes": 16609280,
+          "memoryBefore": {
+            "totalPssKb": 157748,
+            "nativeHeapBytes": 20958560
+          },
+          "memoryAfter": {
+            "totalPssKb": 151980,
+            "nativeHeapBytes": 20964080
+          }
+        },
+        "1MP alpha rotate33": {
+          "family": "affine",
+          "medianMs": 117.3738,
+          "samplesMs": [
+            116.9445,
+            117.3738,
+            118.6041,
+            121.5289,
+            116.4291,
+            118.0661,
+            116.7369
+          ],
+          "checksum": 0,
+          "allocatedBytes": 56422400,
+          "memoryBefore": {
+            "totalPssKb": 135348,
+            "nativeHeapBytes": 20958496
+          },
+          "memoryAfter": {
+            "totalPssKb": 166736,
+            "nativeHeapBytes": 20958496
+          }
+        },
+        "1MP alpha skewH": {
+          "family": "affine",
+          "medianMs": 107.942,
+          "samplesMs": [
+            108.4541,
+            107.0694,
+            109.9591,
+            108.8262,
+            107.3109,
+            107.2018,
+            107.942
+          ],
+          "checksum": 85,
+          "allocatedBytes": 37371904,
+          "memoryBefore": {
+            "totalPssKb": 153720,
+            "nativeHeapBytes": 20964144
+          },
+          "memoryAfter": {
+            "totalPssKb": 158724,
+            "nativeHeapBytes": 20958624
+          }
+        },
+        "1MP alpha skewV": {
+          "family": "affine",
+          "medianMs": 110.5884,
+          "samplesMs": [
+            110.5884,
+            109.2516,
+            111.6536,
+            112.963,
+            109.6807,
+            110.7767,
+            108.8631
+          ],
+          "checksum": 0,
+          "allocatedBytes": 37371904,
+          "memoryBefore": {
+            "totalPssKb": 148440,
+            "nativeHeapBytes": 20964080
+          },
+          "memoryAfter": {
+            "totalPssKb": 158728,
+            "nativeHeapBytes": 20958560
+          }
+        },
+        "1MP alpha skewBoth": {
+          "family": "affine",
+          "medianMs": 110.1503,
+          "samplesMs": [
+            110.6153,
+            110.4271,
+            112.6995,
+            109.672,
+            109.8639,
+            110.1503,
+            109.3286
+          ],
+          "checksum": 0,
+          "allocatedBytes": 40697856,
+          "memoryBefore": {
+            "totalPssKb": 149372,
+            "nativeHeapBytes": 20963984
+          },
+          "memoryAfter": {
+            "totalPssKb": 161512,
+            "nativeHeapBytes": 20958624
+          }
+        },
+        "1MP alpha resizeSkew": {
+          "family": "affine",
+          "medianMs": 104.8744,
+          "samplesMs": [
+            104.9694,
+            104.7059,
+            109.8275,
+            104.7785,
+            104.312,
+            105.3225,
+            104.8744
+          ],
+          "checksum": 0,
+          "allocatedBytes": 39178240,
+          "memoryBefore": {
+            "totalPssKb": 149876,
+            "nativeHeapBytes": 20964144
+          },
+          "memoryAfter": {
+            "totalPssKb": 160240,
+            "nativeHeapBytes": 20958496
+          }
+        },
+        "1MP alpha apply33": {
+          "family": "affine",
+          "medianMs": 122.9584,
+          "samplesMs": [
+            122.9211,
+            123.8753,
+            122.3929,
+            126.5869,
+            123.5372,
+            121.2228,
+            122.9584
+          ],
+          "checksum": -1,
+          "allocatedBytes": 29519872,
+          "memoryBefore": {
+            "totalPssKb": 146752,
+            "nativeHeapBytes": 20963888
+          },
+          "memoryAfter": {
+            "totalPssKb": 148032,
+            "nativeHeapBytes": 20958496
+          }
+        },
+        "1MP alpha clippedApply33": {
+          "family": "affine",
+          "medianMs": 79.1584,
+          "samplesMs": [
+            82.3052,
+            78.9063,
+            78.759,
+            78.8511,
+            79.1584,
+            82.4536,
+            79.3496
+          ],
+          "checksum": -2957607,
+          "allocatedBytes": 29552640,
+          "memoryBefore": {
+            "totalPssKb": 156236,
+            "nativeHeapBytes": 20958496
+          },
+          "memoryAfter": {
+            "totalPssKb": 139824,
+            "nativeHeapBytes": 20958496
+          }
+        },
+        "1MP alpha smallApply": {
+          "family": "quarterTurns",
+          "medianMs": 2.0633,
+          "samplesMs": [
+            2.0958,
+            1.8575,
+            2.0633,
+            1.7448,
+            2.8104,
+            1.7525,
+            4.0704
+          ],
+          "checksum": 85,
+          "allocatedBytes": 12533760,
+          "memoryBefore": {
+            "totalPssKb": 148048,
+            "nativeHeapBytes": 20958432
+          },
+          "memoryAfter": {
+            "totalPssKb": 163104,
+            "nativeHeapBytes": 20961040
+          }
+        },
+        "4MP opaque rotate90": {
+          "family": "quarterTurns",
+          "medianMs": 42.6562,
+          "samplesMs": [
+            42.4146,
+            49.4015,
+            42.239,
+            48.1034,
+            42.6562,
+            47.3354,
+            41.8455
+          ],
+          "checksum": -16712107,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156204,
+            "nativeHeapBytes": 20958624
+          },
+          "memoryAfter": {
+            "totalPssKb": 188992,
+            "nativeHeapBytes": 20958560
+          }
+        },
+        "4MP opaque rotate-90": {
+          "family": "quarterTurns",
+          "medianMs": 49.3413,
+          "samplesMs": [
+            48.6284,
+            79.3959,
+            56.395,
+            58.5475,
+            45.1416,
+            49.3413,
+            44.3616
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156212,
+            "nativeHeapBytes": 20958624
+          },
+          "memoryAfter": {
+            "totalPssKb": 188992,
+            "nativeHeapBytes": 20958656
+          }
+        },
+        "4MP opaque rotate180": {
+          "family": "quarterTurns",
+          "medianMs": 40.8409,
+          "samplesMs": [
+            40.8006,
+            46.8022,
+            40.7338,
+            45.0779,
+            40.8409,
+            45.7806,
+            40.6582
+          ],
+          "checksum": -65963,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156212,
+            "nativeHeapBytes": 20958720
+          },
+          "memoryAfter": {
+            "totalPssKb": 188992,
+            "nativeHeapBytes": 20958656
+          }
+        },
+        "4MP opaque flipH": {
+          "family": "flips",
+          "medianMs": 41.8538,
+          "samplesMs": [
+            40.0648,
+            45.633,
+            41.4527,
+            45.6589,
+            40.4986,
+            46.6225,
+            41.8538
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156216,
+            "nativeHeapBytes": 20958720
+          },
+          "memoryAfter": {
+            "totalPssKb": 189000,
+            "nativeHeapBytes": 20958656
+          }
+        },
+        "4MP opaque flipV": {
+          "family": "flips",
+          "medianMs": 12.6084,
+          "samplesMs": [
+            11.3376,
+            13.2676,
+            12.8341,
+            12.6084,
+            16.5789,
+            10.5025,
+            12.5315
+          ],
+          "checksum": -16712107,
+          "allocatedBytes": 117862400,
+          "memoryBefore": {
+            "totalPssKb": 152128,
+            "nativeHeapBytes": 20958720
+          },
+          "memoryAfter": {
+            "totalPssKb": 205500,
+            "nativeHeapBytes": 20958784
+          }
+        },
+        "4MP opaque resize125": {
+          "family": "resize",
+          "medianMs": 653.8616,
+          "samplesMs": [
+            654.9351,
+            656.8377,
+            660.0407,
+            653.0525,
+            653.7762,
+            652.3909,
+            653.8616
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 184643584,
+          "memoryBefore": {
+            "totalPssKb": 165444,
+            "nativeHeapBytes": 20958720
+          },
+          "memoryAfter": {
+            "totalPssKb": 191056,
+            "nativeHeapBytes": 20958784
+          }
+        },
+        "4MP opaque resize75": {
+          "family": "resize",
+          "medianMs": 234.9625,
+          "samplesMs": [
+            236.8859,
+            231.1408,
+            235.5554,
+            231.6773,
+            230.985,
+            234.9625,
+            235.2628
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 66449408,
+          "memoryBefore": {
+            "totalPssKb": 209504,
+            "nativeHeapBytes": 20958784
+          },
+          "memoryAfter": {
+            "totalPssKb": 158300,
+            "nativeHeapBytes": 20959184
+          }
+        },
+        "4MP opaque rotate33": {
+          "family": "affine",
+          "medianMs": 475.5089,
+          "samplesMs": [
+            479.7383,
+            475.0249,
+            475.2747,
+            479.0584,
+            485.2272,
+            475.1557,
+            475.5089
+          ],
+          "checksum": 0,
+          "allocatedBytes": 225853440,
+          "memoryBefore": {
+            "totalPssKb": 171236,
+            "nativeHeapBytes": 20959056
+          },
+          "memoryAfter": {
+            "totalPssKb": 202620,
+            "nativeHeapBytes": 20959120
+          }
+        },
+        "4MP opaque skewH": {
+          "family": "affine",
+          "medianMs": 434.7531,
+          "samplesMs": [
+            437.0374,
+            428.948,
+            435.5642,
+            434.7531,
+            432.5135,
+            430.3461,
+            435.6038
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 149540864,
+          "memoryBefore": {
+            "totalPssKb": 223524,
+            "nativeHeapBytes": 20964576
+          },
+          "memoryAfter": {
+            "totalPssKb": 181436,
+            "nativeHeapBytes": 20959120
+          }
+        },
+        "4MP opaque skewV": {
+          "family": "affine",
+          "medianMs": 455.8599,
+          "samplesMs": [
+            454.2351,
+            449.4617,
+            458.3235,
+            450.2018,
+            478.0741,
+            455.8599,
+            457.5882
+          ],
+          "checksum": 0,
+          "allocatedBytes": 149540864,
+          "memoryBefore": {
+            "totalPssKb": 202336,
+            "nativeHeapBytes": 20964576
+          },
+          "memoryAfter": {
+            "totalPssKb": 181325,
+            "nativeHeapBytes": 20957552
+          }
+        },
+        "4MP opaque skewBoth": {
+          "family": "affine",
+          "medianMs": 462.5882,
+          "samplesMs": [
+            461.9621,
+            462.5882,
+            465.0644,
+            455.1251,
+            463.4787,
+            456.5998,
+            465.5513
+          ],
+          "checksum": 0,
+          "allocatedBytes": 162963456,
+          "memoryBefore": {
+            "totalPssKb": 204097,
+            "nativeHeapBytes": 20963168
+          },
+          "memoryAfter": {
+            "totalPssKb": 185072,
+            "nativeHeapBytes": 20957584
+          }
+        },
+        "4MP opaque resizeSkew": {
+          "family": "affine",
+          "medianMs": 438.0875,
+          "samplesMs": [
+            436.7487,
+            433.3247,
+            439.463,
+            439.7123,
+            444.5357,
+            434.5688,
+            438.0875
+          ],
+          "checksum": 0,
+          "allocatedBytes": 156741632,
+          "memoryBefore": {
+            "totalPssKb": 206976,
+            "nativeHeapBytes": 20963104
+          },
+          "memoryAfter": {
+            "totalPssKb": 183344,
+            "nativeHeapBytes": 20957584
+          }
+        },
+        "4MP opaque apply33": {
+          "family": "affine",
+          "medianMs": 393.0048,
+          "samplesMs": [
+            384.4605,
+            383.4805,
+            393.0048,
+            610.9955,
+            551.3131,
+            404.2144,
+            383.7852
+          ],
+          "checksum": -1,
+          "allocatedBytes": 117993472,
+          "memoryBefore": {
+            "totalPssKb": 199856,
+            "nativeHeapBytes": 20963104
+          },
+          "memoryAfter": {
+            "totalPssKb": 172572,
+            "nativeHeapBytes": 20957712
+          }
+        },
+        "4MP opaque clippedApply33": {
+          "family": "affine",
+          "medianMs": 250.0138,
+          "samplesMs": [
+            250.0138,
+            243.8563,
+            255.677,
+            257.274,
+            249.1992,
+            241.9902,
+            250.6424
+          ],
+          "checksum": -12816299,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 189076,
+            "nativeHeapBytes": 20963232
+          },
+          "memoryAfter": {
+            "totalPssKb": 172572,
+            "nativeHeapBytes": 20957840
+          }
+        },
+        "4MP opaque smallApply": {
+          "family": "quarterTurns",
+          "medianMs": 7.7226,
+          "samplesMs": [
+            7.7226,
+            7.3626,
+            8.3838,
+            9.1588,
+            7.5492,
+            6.6692,
+            7.9104
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 117600256,
+          "memoryBefore": {
+            "totalPssKb": 205504,
+            "nativeHeapBytes": 20963296
+          },
+          "memoryAfter": {
+            "totalPssKb": 254680,
+            "nativeHeapBytes": 20962112
+          }
+        },
+        "4MP alpha rotate90": {
+          "family": "quarterTurns",
+          "medianMs": 42.8107,
+          "samplesMs": [
+            42.2696,
+            47.2988,
+            41.1814,
+            46.3466,
+            42.8107,
+            48.0532,
+            42.4697
+          ],
+          "checksum": 65109,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156192,
+            "nativeHeapBytes": 20957872
+          },
+          "memoryAfter": {
+            "totalPssKb": 188972,
+            "nativeHeapBytes": 20957808
+          }
+        },
+        "4MP alpha rotate-90": {
+          "family": "quarterTurns",
+          "medianMs": 44.1161,
+          "samplesMs": [
+            44.1161,
+            51.5142,
+            42.7279,
+            49.1402,
+            42.8534,
+            48.9038,
+            42.6381
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156196,
+            "nativeHeapBytes": 20957872
+          },
+          "memoryAfter": {
+            "totalPssKb": 188976,
+            "nativeHeapBytes": 20957808
+          }
+        },
+        "4MP alpha rotate180": {
+          "family": "quarterTurns",
+          "medianMs": 41.9889,
+          "samplesMs": [
+            40.5461,
+            47.067,
+            41.9177,
+            46.4072,
+            41.0733,
+            45.9957,
+            41.9889
+          ],
+          "checksum": -65963,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156196,
+            "nativeHeapBytes": 20957872
+          },
+          "memoryAfter": {
+            "totalPssKb": 188976,
+            "nativeHeapBytes": 20957808
+          }
+        },
+        "4MP alpha flipH": {
+          "family": "flips",
+          "medianMs": 43.797,
+          "samplesMs": [
+            40.7547,
+            46.4491,
+            43.797,
+            46.6301,
+            41.6294,
+            45.9796,
+            41.3782
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156196,
+            "nativeHeapBytes": 20957872
+          },
+          "memoryAfter": {
+            "totalPssKb": 188976,
+            "nativeHeapBytes": 20957808
+          }
+        },
+        "4MP alpha flipV": {
+          "family": "flips",
+          "medianMs": 12.7332,
+          "samplesMs": [
+            11.0221,
+            13.1745,
+            11.988,
+            12.7332,
+            14.1708,
+            10.7673,
+            12.8307
+          ],
+          "checksum": 65109,
+          "allocatedBytes": 117895168,
+          "memoryBefore": {
+            "totalPssKb": 160576,
+            "nativeHeapBytes": 20957872
+          },
+          "memoryAfter": {
+            "totalPssKb": 205484,
+            "nativeHeapBytes": 20963264
+          }
+        },
+        "4MP alpha resize125": {
+          "family": "resize",
+          "medianMs": 666.0893,
+          "samplesMs": [
+            656.7738,
+            666.0893,
+            682.1687,
+            780.7889,
+            700.7386,
+            658.0028,
+            646.9833
+          ],
+          "checksum": 85,
+          "allocatedBytes": 184545280,
+          "memoryBefore": {
+            "totalPssKb": 165416,
+            "nativeHeapBytes": 20957808
+          },
+          "memoryAfter": {
+            "totalPssKb": 191020,
+            "nativeHeapBytes": 20957776
+          }
+        },
+        "4MP alpha resize75": {
+          "family": "resize",
+          "medianMs": 234.7193,
+          "samplesMs": [
+            234.7193,
+            237.6549,
+            238.5382,
+            230.89,
+            231.933,
+            237.5995,
+            234.7133
+          ],
+          "checksum": 65621,
+          "allocatedBytes": 66416640,
+          "memoryBefore": {
+            "totalPssKb": 209468,
+            "nativeHeapBytes": 20957776
+          },
+          "memoryAfter": {
+            "totalPssKb": 158252,
+            "nativeHeapBytes": 20957872
+          }
+        },
+        "4MP alpha rotate33": {
+          "family": "affine",
+          "medianMs": 484.5858,
+          "samplesMs": [
+            522.0851,
+            485.6718,
+            479.4633,
+            484.5858,
+            478.0325,
+            506.2234,
+            479.9834
+          ],
+          "checksum": 0,
+          "allocatedBytes": 225853440,
+          "memoryBefore": {
+            "totalPssKb": 171196,
+            "nativeHeapBytes": 20957872
+          },
+          "memoryAfter": {
+            "totalPssKb": 202576,
+            "nativeHeapBytes": 20958288
+          }
+        },
+        "4MP alpha skewH": {
+          "family": "affine",
+          "medianMs": 434.0088,
+          "samplesMs": [
+            450.1376,
+            432.2941,
+            435.4666,
+            434.1492,
+            434.0088,
+            424.8316,
+            432.4986
+          ],
+          "checksum": 85,
+          "allocatedBytes": 149573632,
+          "memoryBefore": {
+            "totalPssKb": 223476,
+            "nativeHeapBytes": 20963744
+          },
+          "memoryAfter": {
+            "totalPssKb": 181392,
+            "nativeHeapBytes": 20958128
+          }
+        },
+        "4MP alpha skewV": {
+          "family": "affine",
+          "medianMs": 459.1894,
+          "samplesMs": [
+            452.654,
+            465.114,
+            459.1894,
+            450.2558,
+            461.9926,
+            458.972,
+            463.3662
+          ],
+          "checksum": 0,
+          "allocatedBytes": 149540864,
+          "memoryBefore": {
+            "totalPssKb": 202292,
+            "nativeHeapBytes": 20963680
+          },
+          "memoryAfter": {
+            "totalPssKb": 181392,
+            "nativeHeapBytes": 20958224
+          }
+        },
+        "4MP alpha skewBoth": {
+          "family": "affine",
+          "medianMs": 460.386,
+          "samplesMs": [
+            460.386,
+            455.936,
+            465.1727,
+            458.7749,
+            463.2841,
+            458.1874,
+            464.1974
+          ],
+          "checksum": 0,
+          "allocatedBytes": 162963456,
+          "memoryBefore": {
+            "totalPssKb": 204160,
+            "nativeHeapBytes": 20963680
+          },
+          "memoryAfter": {
+            "totalPssKb": 185256,
+            "nativeHeapBytes": 20958752
+          }
+        },
+        "4MP alpha resizeSkew": {
+          "family": "affine",
+          "medianMs": 436.1322,
+          "samplesMs": [
+            437.5907,
+            432.6921,
+            438.6487,
+            433.3132,
+            438.0026,
+            428.1367,
+            436.1322
+          ],
+          "checksum": 0,
+          "allocatedBytes": 156708864,
+          "memoryBefore": {
+            "totalPssKb": 207152,
+            "nativeHeapBytes": 20964208
+          },
+          "memoryAfter": {
+            "totalPssKb": 183520,
+            "nativeHeapBytes": 20958752
+          }
+        },
+        "4MP alpha apply33": {
+          "family": "affine",
+          "medianMs": 492.4896,
+          "samplesMs": [
+            493.8257,
+            490.8514,
+            492.4896,
+            486.1976,
+            496.6445,
+            490.7895,
+            501.9562
+          ],
+          "checksum": -1,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 200032,
+            "nativeHeapBytes": 20964208
+          },
+          "memoryAfter": {
+            "totalPssKb": 172736,
+            "nativeHeapBytes": 20958752
+          }
+        },
+        "4MP alpha clippedApply33": {
+          "family": "affine",
+          "medianMs": 318.3743,
+          "samplesMs": [
+            318.3743,
+            310.5534,
+            321.5832,
+            315.8044,
+            322.0053,
+            313.6228,
+            320.2042
+          ],
+          "checksum": -3023401,
+          "allocatedBytes": 117993472,
+          "memoryBefore": {
+            "totalPssKb": 189244,
+            "nativeHeapBytes": 20964208
+          },
+          "memoryAfter": {
+            "totalPssKb": 172740,
+            "nativeHeapBytes": 20958752
+          }
+        },
+        "4MP alpha smallApply": {
+          "family": "quarterTurns",
+          "medianMs": 7.6016,
+          "samplesMs": [
+            7.6016,
+            7.652,
+            8.0133,
+            8.5123,
+            7.1415,
+            6.654,
+            7.597
+          ],
+          "checksum": 85,
+          "allocatedBytes": 117600256,
+          "memoryBefore": {
+            "totalPssKb": 205672,
+            "nativeHeapBytes": 20964208
+          },
+          "memoryAfter": {
+            "totalPssKb": 254848,
+            "nativeHeapBytes": 20963120
+          }
+        }
+      },
+      "livePreviewAndApplyTimings": {
+        "environment": {
+          "stage": "canvas-before-1",
+          "sdk": 37,
+          "fingerprint": "google/sdk_gdesktop_x86_64/emu64xa:17/CLE3.260929.004/16489338:userdebug/dev-keys",
+          "abis": [
+            "x86_64",
+            "arm64-v8a"
+          ],
+          "densityDpi": 160,
+          "widthPixels": 1366,
+          "heightPixels": 688,
+          "maxHeapBytes": 201326592,
+          "debug": true
+        },
+        "1MP live": {
+          "frameMedianMs": 17.415278,
+          "frameP95Ms": 18.181092,
+          "frames": 182,
+          "allocatedBytes": 20508672,
+          "memoryBefore": {
+            "totalPssKb": 175247,
+            "nativeHeapBytes": 38879600
+          },
+          "memoryAfter": {
+            "totalPssKb": 153527,
+            "nativeHeapBytes": 35170992
+          },
+          "interactionMedianMs": 49.4647
+        },
+        "1MP commandApply": {
+          "medianMs": 134.7676,
+          "samplesMs": [
+            201.7205,
+            134.7676,
+            130.3719,
+            134.3594,
+            139.0298
+          ]
+        },
+        "1MP clippedCommandApply": {
+          "medianMs": 93.3696,
+          "samplesMs": [
+            93.0424,
+            93.3696,
+            88.9756,
+            93.6318,
+            118.4353
+          ]
+        },
+        "1MP smallApply": {
+          "medianMs": 4.6233,
+          "samplesMs": [
+            4.6233,
+            10.9314,
+            3.9335,
+            5.0048,
+            3.9512
+          ]
+        },
+        "4MP live": {
+          "frameMedianMs": 13.660255,
+          "frameP95Ms": 34.121656,
+          "frames": 181,
+          "allocatedBytes": 17874944,
+          "memoryBefore": {
+            "totalPssKb": 235015,
+            "nativeHeapBytes": 91258720
+          },
+          "memoryAfter": {
+            "totalPssKb": 242951,
+            "nativeHeapBytes": 75331648
+          },
+          "interactionMedianMs": 48.9562
+        },
+        "4MP commandApply": {
+          "medianMs": 626.2404,
+          "samplesMs": [
+            564.29,
+            626.2404,
+            625.6927,
+            630.381,
+            703.126
+          ]
+        },
+        "4MP clippedCommandApply": {
+          "medianMs": 393.6459,
+          "samplesMs": [
+            393.6459,
+            444.7431,
+            380.2446,
+            406.9305,
+            393.0829
+          ]
+        },
+        "4MP smallApply": {
+          "medianMs": 11.1324,
+          "samplesMs": [
+            12.7497,
+            10.447,
+            10.4175,
+            11.1324,
+            11.4476
+          ]
+        }
+      }
+    },
+    {
+      "run": 2,
+      "rasterTimings": {
+        "environment": {
+          "stage": "canvas-before-2",
+          "sdk": 37,
+          "fingerprint": "google/sdk_gdesktop_x86_64/emu64xa:17/CLE3.260929.004/16489338:userdebug/dev-keys",
+          "abis": [
+            "x86_64",
+            "arm64-v8a"
+          ],
+          "densityDpi": 160,
+          "widthPixels": 1366,
+          "heightPixels": 688,
+          "maxHeapBytes": 201326592,
+          "debug": true
+        },
+        "1MP opaque rotate90": {
+          "family": "quarterTurns",
+          "medianMs": 11.3289,
+          "samplesMs": [
+            11.3289,
+            11.5388,
+            14.6522,
+            13.3732,
+            10.8684,
+            10.7374,
+            10.7565
+          ],
+          "checksum": -16712363,
+          "allocatedBytes": 29519872,
+          "memoryBefore": {
+            "totalPssKb": 141254,
+            "nativeHeapBytes": 23115264
+          },
+          "memoryAfter": {
+            "totalPssKb": 152037,
+            "nativeHeapBytes": 20976864
+          }
+        },
+        "1MP opaque rotate-90": {
+          "family": "quarterTurns",
+          "medianMs": 10.6439,
+          "samplesMs": [
+            10.6377,
+            10.626,
+            10.6969,
+            10.6439,
+            10.4368,
+            13.9623,
+            11.9719
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 29519872,
+          "memoryBefore": {
+            "totalPssKb": 140081,
+            "nativeHeapBytes": 20949392
+          },
+          "memoryAfter": {
+            "totalPssKb": 139813,
+            "nativeHeapBytes": 20944096
+          }
+        },
+        "1MP opaque rotate180": {
+          "family": "quarterTurns",
+          "medianMs": 10.48,
+          "samplesMs": [
+            10.48,
+            10.3396,
+            10.3485,
+            13.0936,
+            11.1846,
+            10.6559,
+            10.3373
+          ],
+          "checksum": -131499,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 148017,
+            "nativeHeapBytes": 20944032
+          },
+          "memoryAfter": {
+            "totalPssKb": 156333,
+            "nativeHeapBytes": 20949392
+          }
+        },
+        "1MP opaque flipH": {
+          "family": "flips",
+          "medianMs": 10.6764,
+          "samplesMs": [
+            10.9921,
+            10.2224,
+            10.5027,
+            10.6764,
+            13.1013,
+            10.0525,
+            11.0773
+          ],
+          "checksum": -196523,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 131601,
+            "nativeHeapBytes": 20944096
+          },
+          "memoryAfter": {
+            "totalPssKb": 148137,
+            "nativeHeapBytes": 20949584
+          }
+        },
+        "1MP opaque flipV": {
+          "family": "flips",
+          "medianMs": 3.2329,
+          "samplesMs": [
+            3.1011,
+            2.8376,
+            3.148,
+            3.2329,
+            4.2443,
+            4.0804,
+            3.6162
+          ],
+          "checksum": -16712107,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 156341,
+            "nativeHeapBytes": 20943040
+          },
+          "memoryAfter": {
+            "totalPssKb": 152221,
+            "nativeHeapBytes": 20943040
+          }
+        },
+        "1MP opaque resize125": {
+          "family": "resize",
+          "medianMs": 166.4149,
+          "samplesMs": [
+            170.1001,
+            166.7357,
+            163.6738,
+            166.7938,
+            162.8717,
+            166.4149,
+            164.8036
+          ],
+          "checksum": -16711595,
+          "allocatedBytes": 46067712,
+          "memoryBefore": {
+            "totalPssKb": 148545,
+            "nativeHeapBytes": 20944704
+          },
+          "memoryAfter": {
+            "totalPssKb": 159687,
+            "nativeHeapBytes": 20945216
+          }
+        },
+        "1MP opaque resize75": {
+          "family": "resize",
+          "medianMs": 58.4385,
+          "samplesMs": [
+            61.9314,
+            58.4385,
+            58.9476,
+            59.2633,
+            58.0439,
+            58.3947,
+            58.3099
+          ],
+          "checksum": -16711595,
+          "allocatedBytes": 16609280,
+          "memoryBefore": {
+            "totalPssKb": 164311,
+            "nativeHeapBytes": 20945216
+          },
+          "memoryAfter": {
+            "totalPssKb": 156771,
+            "nativeHeapBytes": 20950768
+          }
+        },
+        "1MP opaque rotate33": {
+          "family": "affine",
+          "medianMs": 119.2681,
+          "samplesMs": [
+            118.4039,
+            119.2681,
+            121.8219,
+            123.1727,
+            119.2062,
+            120.5522,
+            118.5831
+          ],
+          "checksum": 0,
+          "allocatedBytes": 56389632,
+          "memoryBefore": {
+            "totalPssKb": 135803,
+            "nativeHeapBytes": 20948256
+          },
+          "memoryAfter": {
+            "totalPssKb": 166999,
+            "nativeHeapBytes": 20948384
+          }
+        },
+        "1MP opaque skewH": {
+          "family": "affine",
+          "medianMs": 108.773,
+          "samplesMs": [
+            110.9685,
+            108.773,
+            111.4226,
+            107.9363,
+            107.2847,
+            108.6126,
+            113.8099
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 37371904,
+          "memoryBefore": {
+            "totalPssKb": 153991,
+            "nativeHeapBytes": 20953968
+          },
+          "memoryAfter": {
+            "totalPssKb": 158999,
+            "nativeHeapBytes": 20948448
+          }
+        },
+        "1MP opaque skewV": {
+          "family": "affine",
+          "medianMs": 112.5632,
+          "samplesMs": [
+            112.5632,
+            115.2271,
+            116.2298,
+            114.4473,
+            112.3029,
+            109.642,
+            109.4529
+          ],
+          "checksum": 0,
+          "allocatedBytes": 37371904,
+          "memoryBefore": {
+            "totalPssKb": 148307,
+            "nativeHeapBytes": 20953872
+          },
+          "memoryAfter": {
+            "totalPssKb": 158587,
+            "nativeHeapBytes": 20948384
+          }
+        },
+        "1MP opaque skewBoth": {
+          "family": "affine",
+          "medianMs": 129.2062,
+          "samplesMs": [
+            122.9858,
+            143.8249,
+            129.2062,
+            448.5056,
+            254.8666,
+            125.8036,
+            115.2802
+          ],
+          "checksum": 0,
+          "allocatedBytes": 40697856,
+          "memoryBefore": {
+            "totalPssKb": 149235,
+            "nativeHeapBytes": 20953968
+          },
+          "memoryAfter": {
+            "totalPssKb": 161387,
+            "nativeHeapBytes": 20948336
+          }
+        },
+        "1MP opaque resizeSkew": {
+          "family": "affine",
+          "medianMs": 109.9396,
+          "samplesMs": [
+            106.5511,
+            106.288,
+            113.8925,
+            109.9396,
+            107.2946,
+            111.9129,
+            111.3786
+          ],
+          "checksum": 0,
+          "allocatedBytes": 39211008,
+          "memoryBefore": {
+            "totalPssKb": 149747,
+            "nativeHeapBytes": 20953952
+          },
+          "memoryAfter": {
+            "totalPssKb": 160115,
+            "nativeHeapBytes": 20948368
+          }
+        },
+        "1MP opaque apply33": {
+          "family": "affine",
+          "medianMs": 94.9895,
+          "samplesMs": [
+            94.6936,
+            94.9895,
+            93.8272,
+            99.2134,
+            94.6075,
+            95.2189,
+            95.9202
+          ],
+          "checksum": -1,
+          "allocatedBytes": 29487104,
+          "memoryBefore": {
+            "totalPssKb": 146631,
+            "nativeHeapBytes": 20954640
+          },
+          "memoryAfter": {
+            "totalPssKb": 147911,
+            "nativeHeapBytes": 20949248
+          }
+        },
+        "1MP opaque clippedApply33": {
+          "family": "affine",
+          "medianMs": 67.3144,
+          "samplesMs": [
+            76.8297,
+            71.7715,
+            72.3748,
+            67.3144,
+            63.3112,
+            65.1579,
+            61.357
+          ],
+          "checksum": -12947115,
+          "allocatedBytes": 29552640,
+          "memoryBefore": {
+            "totalPssKb": 156115,
+            "nativeHeapBytes": 20949248
+          },
+          "memoryAfter": {
+            "totalPssKb": 139711,
+            "nativeHeapBytes": 20949248
+          }
+        },
+        "1MP opaque smallApply": {
+          "family": "quarterTurns",
+          "medianMs": 1.8914,
+          "samplesMs": [
+            2.3098,
+            1.8483,
+            1.8914,
+            1.8281,
+            2.8062,
+            1.7801,
+            3.6977
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 12533760,
+          "memoryBefore": {
+            "totalPssKb": 147935,
+            "nativeHeapBytes": 20949120
+          },
+          "memoryAfter": {
+            "totalPssKb": 161687,
+            "nativeHeapBytes": 20951808
+          }
+        },
+        "1MP alpha rotate90": {
+          "family": "quarterTurns",
+          "medianMs": 10.8302,
+          "samplesMs": [
+            10.2093,
+            13.7445,
+            10.2981,
+            10.9379,
+            14.234,
+            10.8302,
+            10.3699
+          ],
+          "checksum": 64853,
+          "allocatedBytes": 29552640,
+          "memoryBefore": {
+            "totalPssKb": 139731,
+            "nativeHeapBytes": 20949328
+          },
+          "memoryAfter": {
+            "totalPssKb": 143835,
+            "nativeHeapBytes": 20949392
+          }
+        },
+        "1MP alpha rotate-90": {
+          "family": "quarterTurns",
+          "medianMs": 10.2703,
+          "samplesMs": [
+            10.2703,
+            10.2989,
+            13.6288,
+            10.2849,
+            10.2701,
+            10.2343,
+            10.2363
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 152039,
+            "nativeHeapBytes": 20949328
+          },
+          "memoryAfter": {
+            "totalPssKb": 160355,
+            "nativeHeapBytes": 20954752
+          }
+        },
+        "1MP alpha rotate180": {
+          "family": "quarterTurns",
+          "medianMs": 10.536,
+          "samplesMs": [
+            10.9461,
+            10.536,
+            10.491,
+            10.9766,
+            12.2381,
+            10.101,
+            10.3336
+          ],
+          "checksum": -131499,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 135631,
+            "nativeHeapBytes": 20949392
+          },
+          "memoryAfter": {
+            "totalPssKb": 148051,
+            "nativeHeapBytes": 20954848
+          }
+        },
+        "1MP alpha flipH": {
+          "family": "flips",
+          "medianMs": 11.7655,
+          "samplesMs": [
+            14.583,
+            11.7655,
+            16.3144,
+            12.131,
+            11.5191,
+            11.407,
+            11.0592
+          ],
+          "checksum": -196523,
+          "allocatedBytes": 29487104,
+          "memoryBefore": {
+            "totalPssKb": 156255,
+            "nativeHeapBytes": 20954784
+          },
+          "memoryAfter": {
+            "totalPssKb": 156301,
+            "nativeHeapBytes": 20957392
+          }
+        },
+        "1MP alpha flipV": {
+          "family": "flips",
+          "medianMs": 3.2691,
+          "samplesMs": [
+            3.7953,
+            3.2691,
+            4.6265,
+            5.1064,
+            2.8145,
+            2.6525,
+            3.1656
+          ],
+          "checksum": 65109,
+          "allocatedBytes": 29487104,
+          "memoryBefore": {
+            "totalPssKb": 148065,
+            "nativeHeapBytes": 20954848
+          },
+          "memoryAfter": {
+            "totalPssKb": 156135,
+            "nativeHeapBytes": 20949328
+          }
+        },
+        "1MP alpha resize125": {
+          "family": "resize",
+          "medianMs": 162.6953,
+          "samplesMs": [
+            163.351,
+            162.6953,
+            165.6977,
+            162.4613,
+            162.5024,
+            160.8419,
+            164.3073
+          ],
+          "checksum": 16842752,
+          "allocatedBytes": 46067712,
+          "memoryBefore": {
+            "totalPssKb": 152663,
+            "nativeHeapBytes": 20954912
+          },
+          "memoryAfter": {
+            "totalPssKb": 153175,
+            "nativeHeapBytes": 20954976
+          }
+        },
+        "1MP alpha resize75": {
+          "family": "resize",
+          "medianMs": 57.817,
+          "samplesMs": [
+            60.6777,
+            57.817,
+            57.4554,
+            60.7523,
+            57.7395,
+            57.6905,
+            59.1051
+          ],
+          "checksum": 16777216,
+          "allocatedBytes": 16642048,
+          "memoryBefore": {
+            "totalPssKb": 157799,
+            "nativeHeapBytes": 20954976
+          },
+          "memoryAfter": {
+            "totalPssKb": 138983,
+            "nativeHeapBytes": 20949456
+          }
+        },
+        "1MP alpha rotate33": {
+          "family": "affine",
+          "medianMs": 122.4238,
+          "samplesMs": [
+            118.0135,
+            122.4238,
+            117.1472,
+            118.507,
+            126.15,
+            135.1193,
+            123.8049
+          ],
+          "checksum": 0,
+          "allocatedBytes": 56422400,
+          "memoryBefore": {
+            "totalPssKb": 140019,
+            "nativeHeapBytes": 20954976
+          },
+          "memoryAfter": {
+            "totalPssKb": 166783,
+            "nativeHeapBytes": 20954912
+          }
+        },
+        "1MP alpha skewH": {
+          "family": "affine",
+          "medianMs": 108.0678,
+          "samplesMs": [
+            108.4052,
+            107.1845,
+            111.114,
+            108.0678,
+            111.3528,
+            107.874,
+            107.184
+          ],
+          "checksum": 85,
+          "allocatedBytes": 37437440,
+          "memoryBefore": {
+            "totalPssKb": 137843,
+            "nativeHeapBytes": 20949456
+          },
+          "memoryAfter": {
+            "totalPssKb": 148243,
+            "nativeHeapBytes": 20949456
+          }
+        },
+        "1MP alpha skewV": {
+          "family": "affine",
+          "medianMs": 110.8721,
+          "samplesMs": [
+            117.6926,
+            116.7182,
+            110.8721,
+            109.1491,
+            113.1007,
+            109.2639,
+            108.6897
+          ],
+          "checksum": 0,
+          "allocatedBytes": 37437440,
+          "memoryBefore": {
+            "totalPssKb": 158647,
+            "nativeHeapBytes": 20949456
+          },
+          "memoryAfter": {
+            "totalPssKb": 148247,
+            "nativeHeapBytes": 20949456
+          }
+        },
+        "1MP alpha skewBoth": {
+          "family": "affine",
+          "medianMs": 116.6559,
+          "samplesMs": [
+            121.4084,
+            116.6559,
+            117.9966,
+            114.7576,
+            120.4469,
+            111.9585,
+            110.4281
+          ],
+          "checksum": 0,
+          "allocatedBytes": 40763392,
+          "memoryBefore": {
+            "totalPssKb": 159579,
+            "nativeHeapBytes": 20949456
+          },
+          "memoryAfter": {
+            "totalPssKb": 150099,
+            "nativeHeapBytes": 20949392
+          }
+        },
+        "1MP alpha resizeSkew": {
+          "family": "affine",
+          "medianMs": 106.5499,
+          "samplesMs": [
+            109.5632,
+            107.2451,
+            104.2651,
+            106.5499,
+            109.6428,
+            104.1738,
+            103.7205
+          ],
+          "checksum": 0,
+          "allocatedBytes": 39243776,
+          "memoryBefore": {
+            "totalPssKb": 161007,
+            "nativeHeapBytes": 20949392
+          },
+          "memoryAfter": {
+            "totalPssKb": 149255,
+            "nativeHeapBytes": 20949392
+          }
+        },
+        "1MP alpha apply33": {
+          "family": "affine",
+          "medianMs": 123.4005,
+          "samplesMs": [
+            123.53,
+            126.7563,
+            122.7351,
+            123.4005,
+            122.7085,
+            127.2452,
+            122.5524
+          ],
+          "checksum": -1,
+          "allocatedBytes": 29552640,
+          "memoryBefore": {
+            "totalPssKb": 157463,
+            "nativeHeapBytes": 20949328
+          },
+          "memoryAfter": {
+            "totalPssKb": 139751,
+            "nativeHeapBytes": 20949392
+          }
+        },
+        "1MP alpha clippedApply33": {
+          "family": "affine",
+          "medianMs": 78.3972,
+          "samplesMs": [
+            79.5221,
+            78.3398,
+            81.6638,
+            78.1893,
+            77.5688,
+            78.3972,
+            83.2726
+          ],
+          "checksum": -2957607,
+          "allocatedBytes": 29552640,
+          "memoryBefore": {
+            "totalPssKb": 147955,
+            "nativeHeapBytes": 20949392
+          },
+          "memoryAfter": {
+            "totalPssKb": 135643,
+            "nativeHeapBytes": 20949456
+          }
+        },
+        "1MP alpha smallApply": {
+          "family": "quarterTurns",
+          "medianMs": 1.8615,
+          "samplesMs": [
+            1.7909,
+            2.212,
+            1.7884,
+            1.8615,
+            1.9156,
+            2.7484,
+            1.8557
+          ],
+          "checksum": 85,
+          "allocatedBytes": 29421568,
+          "memoryBefore": {
+            "totalPssKb": 143871,
+            "nativeHeapBytes": 20949328
+          },
+          "memoryAfter": {
+            "totalPssKb": 156363,
+            "nativeHeapBytes": 20951936
+          }
+        },
+        "4MP opaque rotate90": {
+          "family": "quarterTurns",
+          "medianMs": 46.7034,
+          "samplesMs": [
+            47.4603,
+            56.5369,
+            46.7034,
+            45.1957,
+            46.6561,
+            43.6658,
+            51.5379
+          ],
+          "checksum": -16712107,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156127,
+            "nativeHeapBytes": 20949616
+          },
+          "memoryAfter": {
+            "totalPssKb": 172548,
+            "nativeHeapBytes": 20949296
+          }
+        },
+        "4MP opaque rotate-90": {
+          "family": "quarterTurns",
+          "medianMs": 47.7332,
+          "samplesMs": [
+            47.7332,
+            43.1934,
+            48.9081,
+            42.9655,
+            49.0189,
+            44.5394,
+            50.2839
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 118059008,
+          "memoryBefore": {
+            "totalPssKb": 189056,
+            "nativeHeapBytes": 20954752
+          },
+          "memoryAfter": {
+            "totalPssKb": 172548,
+            "nativeHeapBytes": 20949296
+          }
+        },
+        "4MP opaque rotate180": {
+          "family": "quarterTurns",
+          "medianMs": 44.1217,
+          "samplesMs": [
+            44.1217,
+            40.5756,
+            46.6857,
+            39.5321,
+            47.2298,
+            39.7623,
+            46.9575
+          ],
+          "checksum": -65963,
+          "allocatedBytes": 118059008,
+          "memoryBefore": {
+            "totalPssKb": 189056,
+            "nativeHeapBytes": 20954752
+          },
+          "memoryAfter": {
+            "totalPssKb": 172556,
+            "nativeHeapBytes": 20949296
+          }
+        },
+        "4MP opaque flipH": {
+          "family": "flips",
+          "medianMs": 44.2515,
+          "samplesMs": [
+            44.2515,
+            41.0931,
+            46.9529,
+            40.6747,
+            46.041,
+            42.5941,
+            47.3044
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 118059008,
+          "memoryBefore": {
+            "totalPssKb": 189064,
+            "nativeHeapBytes": 20954752
+          },
+          "memoryAfter": {
+            "totalPssKb": 172564,
+            "nativeHeapBytes": 20949296
+          }
+        },
+        "4MP opaque flipV": {
+          "family": "flips",
+          "medianMs": 12.8102,
+          "samplesMs": [
+            13.3333,
+            12.4288,
+            12.8102,
+            13.5558,
+            11.1309,
+            12.6464,
+            12.9814
+          ],
+          "checksum": -16712107,
+          "allocatedBytes": 67416064,
+          "memoryBefore": {
+            "totalPssKb": 189072,
+            "nativeHeapBytes": 20954752
+          },
+          "memoryAfter": {
+            "totalPssKb": 168572,
+            "nativeHeapBytes": 20949424
+          }
+        },
+        "4MP opaque resize125": {
+          "family": "resize",
+          "medianMs": 654.1345,
+          "samplesMs": [
+            652.9907,
+            658.1271,
+            688.5771,
+            653.5754,
+            654.6943,
+            654.1345,
+            651.6692
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 184545280,
+          "memoryBefore": {
+            "totalPssKb": 165400,
+            "nativeHeapBytes": 20949296
+          },
+          "memoryAfter": {
+            "totalPssKb": 191012,
+            "nativeHeapBytes": 20949504
+          }
+        },
+        "4MP opaque resize75": {
+          "family": "resize",
+          "medianMs": 234.7129,
+          "samplesMs": [
+            234.7129,
+            232.8707,
+            236.8889,
+            232.57,
+            234.5747,
+            240.1233,
+            237.7073
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 66416640,
+          "memoryBefore": {
+            "totalPssKb": 209464,
+            "nativeHeapBytes": 20949504
+          },
+          "memoryAfter": {
+            "totalPssKb": 158256,
+            "nativeHeapBytes": 20949456
+          }
+        },
+        "4MP opaque rotate33": {
+          "family": "affine",
+          "medianMs": 477.9178,
+          "samplesMs": [
+            482.5396,
+            472.9618,
+            476.4535,
+            478.6874,
+            479.1359,
+            476.9673,
+            477.9178
+          ],
+          "checksum": 0,
+          "allocatedBytes": 225853440,
+          "memoryBefore": {
+            "totalPssKb": 171192,
+            "nativeHeapBytes": 20949232
+          },
+          "memoryAfter": {
+            "totalPssKb": 202576,
+            "nativeHeapBytes": 20949392
+          }
+        },
+        "4MP opaque skewH": {
+          "family": "affine",
+          "medianMs": 432.8433,
+          "samplesMs": [
+            435.0737,
+            430.0851,
+            431.5801,
+            434.8064,
+            435.6694,
+            429.539,
+            432.8433
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 149573632,
+          "memoryBefore": {
+            "totalPssKb": 223480,
+            "nativeHeapBytes": 20954848
+          },
+          "memoryAfter": {
+            "totalPssKb": 181396,
+            "nativeHeapBytes": 20949392
+          }
+        },
+        "4MP opaque skewV": {
+          "family": "affine",
+          "medianMs": 454.7651,
+          "samplesMs": [
+            454.7651,
+            454.578,
+            458.9531,
+            453.5453,
+            456.3643,
+            453.8388,
+            456.5986
+          ],
+          "checksum": 0,
+          "allocatedBytes": 149540864,
+          "memoryBefore": {
+            "totalPssKb": 202292,
+            "nativeHeapBytes": 20954848
+          },
+          "memoryAfter": {
+            "totalPssKb": 181293,
+            "nativeHeapBytes": 20948112
+          }
+        },
+        "4MP opaque skewBoth": {
+          "family": "affine",
+          "medianMs": 464.0414,
+          "samplesMs": [
+            459.0598,
+            459.9306,
+            464.6397,
+            464.0414,
+            466.9786,
+            463.7522,
+            464.7599
+          ],
+          "checksum": 0,
+          "allocatedBytes": 162930688,
+          "memoryBefore": {
+            "totalPssKb": 204069,
+            "nativeHeapBytes": 20953632
+          },
+          "memoryAfter": {
+            "totalPssKb": 185037,
+            "nativeHeapBytes": 20948048
+          }
+        },
+        "4MP opaque resizeSkew": {
+          "family": "affine",
+          "medianMs": 437.6951,
+          "samplesMs": [
+            437.6951,
+            432.6867,
+            438.5109,
+            438.7161,
+            447.6149,
+            436.7257,
+            437.5826
+          ],
+          "checksum": 0,
+          "allocatedBytes": 156741632,
+          "memoryBefore": {
+            "totalPssKb": 206941,
+            "nativeHeapBytes": 20953568
+          },
+          "memoryAfter": {
+            "totalPssKb": 183309,
+            "nativeHeapBytes": 20948048
+          }
+        },
+        "4MP opaque apply33": {
+          "family": "affine",
+          "medianMs": 380.6562,
+          "samplesMs": [
+            381.5684,
+            378.7153,
+            382.4508,
+            378.6266,
+            380.6562,
+            377.1124,
+            385.2706
+          ],
+          "checksum": -1,
+          "allocatedBytes": 117993472,
+          "memoryBefore": {
+            "totalPssKb": 199821,
+            "nativeHeapBytes": 20953568
+          },
+          "memoryAfter": {
+            "totalPssKb": 172533,
+            "nativeHeapBytes": 20948176
+          }
+        },
+        "4MP opaque clippedApply33": {
+          "family": "affine",
+          "medianMs": 249.1611,
+          "samplesMs": [
+            247.3187,
+            243.9321,
+            251.6275,
+            245.7649,
+            257.8981,
+            249.1611,
+            252.7312
+          ],
+          "checksum": -12816299,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 189041,
+            "nativeHeapBytes": 20953696
+          },
+          "memoryAfter": {
+            "totalPssKb": 172537,
+            "nativeHeapBytes": 20948304
+          }
+        },
+        "4MP opaque smallApply": {
+          "family": "quarterTurns",
+          "medianMs": 7.3077,
+          "samplesMs": [
+            7.0688,
+            6.773,
+            7.9011,
+            8.0231,
+            7.525,
+            6.3334,
+            7.3077
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 117600256,
+          "memoryBefore": {
+            "totalPssKb": 205469,
+            "nativeHeapBytes": 20953760
+          },
+          "memoryAfter": {
+            "totalPssKb": 254669,
+            "nativeHeapBytes": 20952576
+          }
+        },
+        "4MP alpha rotate90": {
+          "family": "quarterTurns",
+          "medianMs": 42.5432,
+          "samplesMs": [
+            42.1933,
+            47.4084,
+            42.5432,
+            48.0849,
+            41.3465,
+            48.2516,
+            41.415
+          ],
+          "checksum": 65109,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156157,
+            "nativeHeapBytes": 20948336
+          },
+          "memoryAfter": {
+            "totalPssKb": 188941,
+            "nativeHeapBytes": 20948272
+          }
+        },
+        "4MP alpha rotate-90": {
+          "family": "quarterTurns",
+          "medianMs": 45.2474,
+          "samplesMs": [
+            45.1512,
+            50.0395,
+            43.1759,
+            49.6479,
+            45.2474,
+            49.1769,
+            43.5176
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156161,
+            "nativeHeapBytes": 20948336
+          },
+          "memoryAfter": {
+            "totalPssKb": 188941,
+            "nativeHeapBytes": 20948272
+          }
+        },
+        "4MP alpha rotate180": {
+          "family": "quarterTurns",
+          "medianMs": 44.3013,
+          "samplesMs": [
+            40.6186,
+            48.034,
+            41.2848,
+            48.6855,
+            40.9422,
+            47.3701,
+            44.3013
+          ],
+          "checksum": -65963,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156161,
+            "nativeHeapBytes": 20948336
+          },
+          "memoryAfter": {
+            "totalPssKb": 188941,
+            "nativeHeapBytes": 20948272
+          }
+        },
+        "4MP alpha flipH": {
+          "family": "flips",
+          "medianMs": 43.3138,
+          "samplesMs": [
+            41.8757,
+            46.2893,
+            41.9279,
+            46.2324,
+            43.0679,
+            48.5291,
+            43.3138
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 117993472,
+          "memoryBefore": {
+            "totalPssKb": 156161,
+            "nativeHeapBytes": 20948336
+          },
+          "memoryAfter": {
+            "totalPssKb": 188945,
+            "nativeHeapBytes": 20948272
+          }
+        },
+        "4MP alpha flipV": {
+          "family": "flips",
+          "medianMs": 12.887,
+          "samplesMs": [
+            10.8883,
+            14.2659,
+            13.1371,
+            12.887,
+            13.2569,
+            11.7764,
+            12.8868
+          ],
+          "checksum": 65109,
+          "allocatedBytes": 117862400,
+          "memoryBefore": {
+            "totalPssKb": 160541,
+            "nativeHeapBytes": 20948336
+          },
+          "memoryAfter": {
+            "totalPssKb": 205449,
+            "nativeHeapBytes": 20953728
+          }
+        },
+        "4MP alpha resize125": {
+          "family": "resize",
+          "medianMs": 652.1311,
+          "samplesMs": [
+            650.8964,
+            651.2416,
+            651.8774,
+            653.9752,
+            665.5339,
+            652.1311,
+            653.3278
+          ],
+          "checksum": 85,
+          "allocatedBytes": 184578048,
+          "memoryBefore": {
+            "totalPssKb": 165381,
+            "nativeHeapBytes": 20948272
+          },
+          "memoryAfter": {
+            "totalPssKb": 190985,
+            "nativeHeapBytes": 20948336
+          }
+        },
+        "4MP alpha resize75": {
+          "family": "resize",
+          "medianMs": 234.5276,
+          "samplesMs": [
+            233.4691,
+            231.938,
+            233.3247,
+            234.5276,
+            240.3905,
+            243.5102,
+            266.3467
+          ],
+          "checksum": 65621,
+          "allocatedBytes": 66416640,
+          "memoryBefore": {
+            "totalPssKb": 209433,
+            "nativeHeapBytes": 20948336
+          },
+          "memoryAfter": {
+            "totalPssKb": 158221,
+            "nativeHeapBytes": 20948336
+          }
+        },
+        "4MP alpha rotate33": {
+          "family": "affine",
+          "medianMs": 491.8179,
+          "samplesMs": [
+            497.2358,
+            479.3271,
+            491.8179,
+            499.5937,
+            512.7433,
+            475.5316,
+            477.2093
+          ],
+          "checksum": 0,
+          "allocatedBytes": 225853440,
+          "memoryBefore": {
+            "totalPssKb": 171165,
+            "nativeHeapBytes": 20948400
+          },
+          "memoryAfter": {
+            "totalPssKb": 202545,
+            "nativeHeapBytes": 20948816
+          }
+        },
+        "4MP alpha skewH": {
+          "family": "affine",
+          "medianMs": 444.671,
+          "samplesMs": [
+            431.6759,
+            428.8927,
+            432.9964,
+            444.671,
+            539.5341,
+            479.3936,
+            487.9921
+          ],
+          "checksum": 85,
+          "allocatedBytes": 149573632,
+          "memoryBefore": {
+            "totalPssKb": 223445,
+            "nativeHeapBytes": 20954272
+          },
+          "memoryAfter": {
+            "totalPssKb": 181357,
+            "nativeHeapBytes": 20948752
+          }
+        },
+        "4MP alpha skewV": {
+          "family": "affine",
+          "medianMs": 521.0072,
+          "samplesMs": [
+            521.0072,
+            548.2995,
+            527.2423,
+            570.5267,
+            519.8738,
+            459.2295,
+            460.517
+          ],
+          "checksum": 0,
+          "allocatedBytes": 149573632,
+          "memoryBefore": {
+            "totalPssKb": 202257,
+            "nativeHeapBytes": 20954208
+          },
+          "memoryAfter": {
+            "totalPssKb": 181357,
+            "nativeHeapBytes": 20948752
+          }
+        },
+        "4MP alpha skewBoth": {
+          "family": "affine",
+          "medianMs": 464.0966,
+          "samplesMs": [
+            465.5838,
+            456.6735,
+            506.8987,
+            459.1961,
+            464.0966,
+            460.1513,
+            474.3299
+          ],
+          "checksum": 0,
+          "allocatedBytes": 162963456,
+          "memoryBefore": {
+            "totalPssKb": 204125,
+            "nativeHeapBytes": 20954208
+          },
+          "memoryAfter": {
+            "totalPssKb": 185229,
+            "nativeHeapBytes": 20949280
+          }
+        },
+        "4MP alpha resizeSkew": {
+          "family": "affine",
+          "medianMs": 442.6271,
+          "samplesMs": [
+            443.3238,
+            439.3599,
+            448.2103,
+            433.9785,
+            444.8549,
+            440.6184,
+            442.6271
+          ],
+          "checksum": 0,
+          "allocatedBytes": 156741632,
+          "memoryBefore": {
+            "totalPssKb": 207129,
+            "nativeHeapBytes": 20954736
+          },
+          "memoryAfter": {
+            "totalPssKb": 183501,
+            "nativeHeapBytes": 20949280
+          }
+        },
+        "4MP alpha apply33": {
+          "family": "affine",
+          "medianMs": 495.4075,
+          "samplesMs": [
+            495.7608,
+            492.2944,
+            500.689,
+            488.824,
+            498.836,
+            491.4678,
+            495.4075
+          ],
+          "checksum": -1,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 200005,
+            "nativeHeapBytes": 20954640
+          },
+          "memoryAfter": {
+            "totalPssKb": 172713,
+            "nativeHeapBytes": 20949280
+          }
+        },
+        "4MP alpha clippedApply33": {
+          "family": "affine",
+          "medianMs": 317.5584,
+          "samplesMs": [
+            317.5584,
+            314.0461,
+            320.0349,
+            316.1077,
+            320.6697,
+            315.6728,
+            321.4447
+          ],
+          "checksum": -3023401,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 189221,
+            "nativeHeapBytes": 20954736
+          },
+          "memoryAfter": {
+            "totalPssKb": 172717,
+            "nativeHeapBytes": 20949280
+          }
+        },
+        "4MP alpha smallApply": {
+          "family": "quarterTurns",
+          "medianMs": 7.8808,
+          "samplesMs": [
+            7.2902,
+            7.8808,
+            8.183,
+            8.0908,
+            8.1292,
+            6.3286,
+            7.6127
+          ],
+          "checksum": 85,
+          "allocatedBytes": 117600256,
+          "memoryBefore": {
+            "totalPssKb": 205649,
+            "nativeHeapBytes": 20954736
+          },
+          "memoryAfter": {
+            "totalPssKb": 254821,
+            "nativeHeapBytes": 20953648
+          }
+        }
+      },
+      "livePreviewAndApplyTimings": {
+        "environment": {
+          "stage": "canvas-before-2",
+          "sdk": 37,
+          "fingerprint": "google/sdk_gdesktop_x86_64/emu64xa:17/CLE3.260929.004/16489338:userdebug/dev-keys",
+          "abis": [
+            "x86_64",
+            "arm64-v8a"
+          ],
+          "densityDpi": 160,
+          "widthPixels": 1366,
+          "heightPixels": 688,
+          "maxHeapBytes": 201326592,
+          "debug": true
+        },
+        "1MP live": {
+          "frameMedianMs": 17.883774,
+          "frameP95Ms": 19.603928,
+          "frames": 182,
+          "allocatedBytes": 19361792,
+          "memoryBefore": {
+            "totalPssKb": 175061,
+            "nativeHeapBytes": 38924128
+          },
+          "memoryAfter": {
+            "totalPssKb": 151705,
+            "nativeHeapBytes": 35136144
+          },
+          "interactionMedianMs": 49.4619
+        },
+        "1MP commandApply": {
+          "medianMs": 136.8138,
+          "samplesMs": [
+            198.0831,
+            138.5774,
+            131.711,
+            136.8138,
+            129.0332
+          ]
+        },
+        "1MP clippedCommandApply": {
+          "medianMs": 91.7261,
+          "samplesMs": [
+            91.7261,
+            89.0117,
+            92.6929,
+            91.0168,
+            92.3356
+          ]
+        },
+        "1MP smallApply": {
+          "medianMs": 4.5653,
+          "samplesMs": [
+            4.8768,
+            4.4694,
+            4.6253,
+            4.5653,
+            3.9183
+          ]
+        },
+        "4MP live": {
+          "frameMedianMs": 18.027312,
+          "frameP95Ms": 18.789974,
+          "frames": 181,
+          "allocatedBytes": 17088512,
+          "memoryBefore": {
+            "totalPssKb": 241185,
+            "nativeHeapBytes": 91279680
+          },
+          "memoryAfter": {
+            "totalPssKb": 242501,
+            "nativeHeapBytes": 75347248
+          },
+          "interactionMedianMs": 39.0099
+        },
+        "4MP commandApply": {
+          "medianMs": 527.4526,
+          "samplesMs": [
+            527.4526,
+            541.8822,
+            527.7671,
+            525.4141,
+            521.0236
+          ]
+        },
+        "4MP clippedCommandApply": {
+          "medianMs": 358.4825,
+          "samplesMs": [
+            355.7955,
+            390.3211,
+            358.4825,
+            354.884,
+            362.2926
+          ]
+        },
+        "4MP smallApply": {
+          "medianMs": 11.9713,
+          "samplesMs": [
+            10.7608,
+            12.9831,
+            11.9713,
+            13.1261,
+            10.9721
+          ]
+        }
+      }
+    },
+    {
+      "run": 3,
+      "rasterTimings": {
+        "environment": {
+          "stage": "canvas-before-3",
+          "sdk": 37,
+          "fingerprint": "google/sdk_gdesktop_x86_64/emu64xa:17/CLE3.260929.004/16489338:userdebug/dev-keys",
+          "abis": [
+            "x86_64",
+            "arm64-v8a"
+          ],
+          "densityDpi": 160,
+          "widthPixels": 1366,
+          "heightPixels": 688,
+          "maxHeapBytes": 201326592,
+          "debug": true
+        },
+        "1MP opaque rotate90": {
+          "family": "quarterTurns",
+          "medianMs": 14.2537,
+          "samplesMs": [
+            14.7294,
+            14.0163,
+            22.3952,
+            17.701,
+            14.2537,
+            13.1157,
+            13.3209
+          ],
+          "checksum": -16712363,
+          "allocatedBytes": 29487104,
+          "memoryBefore": {
+            "totalPssKb": 141006,
+            "nativeHeapBytes": 23147424
+          },
+          "memoryAfter": {
+            "totalPssKb": 151904,
+            "nativeHeapBytes": 21007472
+          }
+        },
+        "1MP opaque rotate-90": {
+          "family": "quarterTurns",
+          "medianMs": 16.1307,
+          "samplesMs": [
+            16.1307,
+            14.1069,
+            16.0889,
+            17.9468,
+            14.9464,
+            21.0396,
+            16.2991
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 29487104,
+          "memoryBefore": {
+            "totalPssKb": 139768,
+            "nativeHeapBytes": 20979872
+          },
+          "memoryAfter": {
+            "totalPssKb": 139668,
+            "nativeHeapBytes": 20974640
+          }
+        },
+        "1MP opaque rotate180": {
+          "family": "quarterTurns",
+          "medianMs": 16.0026,
+          "samplesMs": [
+            16.0026,
+            16.5793,
+            17.5894,
+            13.7359,
+            13.94,
+            11.951,
+            17.2523
+          ],
+          "checksum": -131499,
+          "allocatedBytes": 4231168,
+          "memoryBefore": {
+            "totalPssKb": 147872,
+            "nativeHeapBytes": 20974576
+          },
+          "memoryAfter": {
+            "totalPssKb": 135552,
+            "nativeHeapBytes": 20973648
+          }
+        },
+        "1MP opaque flipH": {
+          "family": "flips",
+          "medianMs": 12.0076,
+          "samplesMs": [
+            14.7701,
+            12.0076,
+            11.6381,
+            19.1151,
+            11.7552,
+            12.1884,
+            11.7531
+          ],
+          "checksum": -196523,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 143768,
+            "nativeHeapBytes": 20973584
+          },
+          "memoryAfter": {
+            "totalPssKb": 156192,
+            "nativeHeapBytes": 20979008
+          }
+        },
+        "1MP opaque flipV": {
+          "family": "flips",
+          "medianMs": 3.7137,
+          "samplesMs": [
+            3.5013,
+            3.7137,
+            3.2577,
+            3.4096,
+            5.9248,
+            6.9084,
+            4.3568
+          ],
+          "checksum": -16712107,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 164396,
+            "nativeHeapBytes": 20973776
+          },
+          "memoryAfter": {
+            "totalPssKb": 152068,
+            "nativeHeapBytes": 20973712
+          }
+        },
+        "1MP opaque resize125": {
+          "family": "resize",
+          "medianMs": 187.1379,
+          "samplesMs": [
+            205.8125,
+            187.1379,
+            180.6951,
+            184.9845,
+            193.1285,
+            192.4548,
+            184.2343
+          ],
+          "checksum": -16711595,
+          "allocatedBytes": 46067712,
+          "memoryBefore": {
+            "totalPssKb": 148388,
+            "nativeHeapBytes": 20975056
+          },
+          "memoryAfter": {
+            "totalPssKb": 159675,
+            "nativeHeapBytes": 20975696
+          }
+        },
+        "1MP opaque resize75": {
+          "family": "resize",
+          "medianMs": 74.0589,
+          "samplesMs": [
+            76.1354,
+            65.0169,
+            69.5747,
+            70.2945,
+            74.0589,
+            83.649,
+            86.9134
+          ],
+          "checksum": -16711595,
+          "allocatedBytes": 16642048,
+          "memoryBefore": {
+            "totalPssKb": 164403,
+            "nativeHeapBytes": 20977888
+          },
+          "memoryAfter": {
+            "totalPssKb": 156843,
+            "nativeHeapBytes": 20983600
+          }
+        },
+        "1MP opaque rotate33": {
+          "family": "affine",
+          "medianMs": 143.3531,
+          "samplesMs": [
+            139.2026,
+            152.9086,
+            150.3985,
+            138.896,
+            157.8379,
+            132.6931,
+            143.3531
+          ],
+          "checksum": 0,
+          "allocatedBytes": 56389632,
+          "memoryBefore": {
+            "totalPssKb": 135599,
+            "nativeHeapBytes": 20978080
+          },
+          "memoryAfter": {
+            "totalPssKb": 166975,
+            "nativeHeapBytes": 20978112
+          }
+        },
+        "1MP opaque skewH": {
+          "family": "affine",
+          "medianMs": 121.5581,
+          "samplesMs": [
+            121.5248,
+            125.846,
+            130.8281,
+            141.3998,
+            117.4061,
+            121.5581,
+            118.4348
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 37371904,
+          "memoryBefore": {
+            "totalPssKb": 153967,
+            "nativeHeapBytes": 20983696
+          },
+          "memoryAfter": {
+            "totalPssKb": 158495,
+            "nativeHeapBytes": 20978176
+          }
+        },
+        "1MP opaque skewV": {
+          "family": "affine",
+          "medianMs": 125.1608,
+          "samplesMs": [
+            127.3486,
+            136.086,
+            142.7257,
+            121.1716,
+            119.2613,
+            125.1608,
+            124.0011
+          ],
+          "checksum": 0,
+          "allocatedBytes": 37371904,
+          "memoryBefore": {
+            "totalPssKb": 148207,
+            "nativeHeapBytes": 20983696
+          },
+          "memoryAfter": {
+            "totalPssKb": 158491,
+            "nativeHeapBytes": 20978000
+          }
+        },
+        "1MP opaque skewBoth": {
+          "family": "affine",
+          "medianMs": 126.8468,
+          "samplesMs": [
+            139.3096,
+            130.19,
+            148.1568,
+            123.6677,
+            123.4541,
+            126.8468,
+            125.0762
+          ],
+          "checksum": 0,
+          "allocatedBytes": 40730624,
+          "memoryBefore": {
+            "totalPssKb": 149139,
+            "nativeHeapBytes": 20983584
+          },
+          "memoryAfter": {
+            "totalPssKb": 161291,
+            "nativeHeapBytes": 20978064
+          }
+        },
+        "1MP opaque resizeSkew": {
+          "family": "affine",
+          "medianMs": 123.5651,
+          "samplesMs": [
+            113.5421,
+            139.9473,
+            124.3863,
+            122.2585,
+            123.5651,
+            123.301,
+            135.0862
+          ],
+          "checksum": 0,
+          "allocatedBytes": 39178240,
+          "memoryBefore": {
+            "totalPssKb": 149651,
+            "nativeHeapBytes": 20983584
+          },
+          "memoryAfter": {
+            "totalPssKb": 160011,
+            "nativeHeapBytes": 20978000
+          }
+        },
+        "1MP opaque apply33": {
+          "family": "affine",
+          "medianMs": 144.6438,
+          "samplesMs": [
+            124.5033,
+            139.758,
+            144.6438,
+            142.537,
+            180.0702,
+            327.8516,
+            264.2244
+          ],
+          "checksum": -1,
+          "allocatedBytes": 29487104,
+          "memoryBefore": {
+            "totalPssKb": 146535,
+            "nativeHeapBytes": 20984272
+          },
+          "memoryAfter": {
+            "totalPssKb": 147807,
+            "nativeHeapBytes": 20978784
+          }
+        },
+        "1MP opaque clippedApply33": {
+          "family": "affine",
+          "medianMs": 92.2728,
+          "samplesMs": [
+            87.1759,
+            97.0518,
+            96.5839,
+            81.3803,
+            90.2872,
+            92.2728,
+            94.4134
+          ],
+          "checksum": -12947115,
+          "allocatedBytes": 29552640,
+          "memoryBefore": {
+            "totalPssKb": 156019,
+            "nativeHeapBytes": 20978784
+          },
+          "memoryAfter": {
+            "totalPssKb": 139611,
+            "nativeHeapBytes": 20978944
+          }
+        },
+        "1MP opaque smallApply": {
+          "family": "quarterTurns",
+          "medianMs": 2.7791,
+          "samplesMs": [
+            2.8415,
+            2.7791,
+            2.5881,
+            2.7664,
+            3.8756,
+            2.548,
+            5.1685
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 12533760,
+          "memoryBefore": {
+            "totalPssKb": 147835,
+            "nativeHeapBytes": 20978816
+          },
+          "memoryAfter": {
+            "totalPssKb": 160383,
+            "nativeHeapBytes": 20981440
+          }
+        },
+        "1MP alpha rotate90": {
+          "family": "quarterTurns",
+          "medianMs": 19.9171,
+          "samplesMs": [
+            15.6046,
+            20.2781,
+            20.0545,
+            16.8225,
+            24.9873,
+            19.9171,
+            15.9525
+          ],
+          "checksum": 64853,
+          "allocatedBytes": 29552640,
+          "memoryBefore": {
+            "totalPssKb": 139635,
+            "nativeHeapBytes": 20978960
+          },
+          "memoryAfter": {
+            "totalPssKb": 143735,
+            "nativeHeapBytes": 20979024
+          }
+        },
+        "1MP alpha rotate-90": {
+          "family": "quarterTurns",
+          "medianMs": 18.111,
+          "samplesMs": [
+            20.735,
+            21.5705,
+            16.304,
+            18.111,
+            17.2562,
+            22.9509,
+            16.733
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 29552640,
+          "memoryBefore": {
+            "totalPssKb": 151939,
+            "nativeHeapBytes": 20978960
+          },
+          "memoryAfter": {
+            "totalPssKb": 139635,
+            "nativeHeapBytes": 20979024
+          }
+        },
+        "1MP alpha rotate180": {
+          "family": "quarterTurns",
+          "medianMs": 16.4454,
+          "samplesMs": [
+            12.2943,
+            12.0953,
+            16.4454,
+            20.7666,
+            17.9674,
+            16.853,
+            12.5561
+          ],
+          "checksum": -131499,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 147839,
+            "nativeHeapBytes": 20978960
+          },
+          "memoryAfter": {
+            "totalPssKb": 156159,
+            "nativeHeapBytes": 20984480
+          }
+        },
+        "1MP alpha flipH": {
+          "family": "flips",
+          "medianMs": 15.7269,
+          "samplesMs": [
+            19.8746,
+            14.5727,
+            14.1765,
+            15.7269,
+            18.4019,
+            16.6514,
+            11.7414
+          ],
+          "checksum": -196523,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 128991,
+            "nativeHeapBytes": 20979088
+          },
+          "memoryAfter": {
+            "totalPssKb": 147959,
+            "nativeHeapBytes": 20984480
+          }
+        },
+        "1MP alpha flipV": {
+          "family": "flips",
+          "medianMs": 5.167,
+          "samplesMs": [
+            4.9539,
+            3.8707,
+            5.167,
+            4.3124,
+            5.8049,
+            6.4879,
+            5.9363
+          ],
+          "checksum": 65109,
+          "allocatedBytes": 29454336,
+          "memoryBefore": {
+            "totalPssKb": 156159,
+            "nativeHeapBytes": 20979024
+          },
+          "memoryAfter": {
+            "totalPssKb": 152043,
+            "nativeHeapBytes": 20979024
+          }
+        },
+        "1MP alpha resize125": {
+          "family": "resize",
+          "medianMs": 185.2057,
+          "samplesMs": [
+            245.8136,
+            193.4861,
+            172.7145,
+            185.2057,
+            196.6103,
+            171.6726,
+            177.5306
+          ],
+          "checksum": 16842752,
+          "allocatedBytes": 46067712,
+          "memoryBefore": {
+            "totalPssKb": 148351,
+            "nativeHeapBytes": 20979024
+          },
+          "memoryAfter": {
+            "totalPssKb": 159359,
+            "nativeHeapBytes": 20979088
+          }
+        },
+        "1MP alpha resize75": {
+          "family": "resize",
+          "medianMs": 64.7868,
+          "samplesMs": [
+            68.1217,
+            62.2687,
+            66.102,
+            61.6834,
+            62.3305,
+            64.7868,
+            67.8821
+          ],
+          "checksum": 16777216,
+          "allocatedBytes": 16609280,
+          "memoryBefore": {
+            "totalPssKb": 163979,
+            "nativeHeapBytes": 20979088
+          },
+          "memoryAfter": {
+            "totalPssKb": 156435,
+            "nativeHeapBytes": 20984608
+          }
+        },
+        "1MP alpha rotate33": {
+          "family": "affine",
+          "medianMs": 134.3457,
+          "samplesMs": [
+            125.9205,
+            128.0449,
+            130.9749,
+            135.4836,
+            134.3457,
+            138.9801,
+            142.4739
+          ],
+          "checksum": 0,
+          "allocatedBytes": 56389632,
+          "memoryBefore": {
+            "totalPssKb": 135191,
+            "nativeHeapBytes": 20979152
+          },
+          "memoryAfter": {
+            "totalPssKb": 166559,
+            "nativeHeapBytes": 20978992
+          }
+        },
+        "1MP alpha skewH": {
+          "family": "affine",
+          "medianMs": 122.8354,
+          "samplesMs": [
+            114.703,
+            122.8354,
+            122.2702,
+            129.7261,
+            115.8955,
+            124.5139,
+            127.4825
+          ],
+          "checksum": 85,
+          "allocatedBytes": 37371904,
+          "memoryBefore": {
+            "totalPssKb": 153555,
+            "nativeHeapBytes": 20984672
+          },
+          "memoryAfter": {
+            "totalPssKb": 158555,
+            "nativeHeapBytes": 20979152
+          }
+        },
+        "1MP alpha skewV": {
+          "family": "affine",
+          "medianMs": 121.9187,
+          "samplesMs": [
+            122.4814,
+            121.9187,
+            145.5515,
+            120.1168,
+            121.4767,
+            137.7474,
+            121.5921
+          ],
+          "checksum": 0,
+          "allocatedBytes": 37371904,
+          "memoryBefore": {
+            "totalPssKb": 148275,
+            "nativeHeapBytes": 20984672
+          },
+          "memoryAfter": {
+            "totalPssKb": 158555,
+            "nativeHeapBytes": 20979088
+          }
+        },
+        "1MP alpha skewBoth": {
+          "family": "affine",
+          "medianMs": 124.1221,
+          "samplesMs": [
+            120.4102,
+            136.2025,
+            124.8508,
+            123.595,
+            148.4415,
+            124.1221,
+            122.9186
+          ],
+          "checksum": 0,
+          "allocatedBytes": 40697856,
+          "memoryBefore": {
+            "totalPssKb": 149199,
+            "nativeHeapBytes": 20984672
+          },
+          "memoryAfter": {
+            "totalPssKb": 161347,
+            "nativeHeapBytes": 20979152
+          }
+        },
+        "1MP alpha resizeSkew": {
+          "family": "affine",
+          "medianMs": 118.6976,
+          "samplesMs": [
+            119.9223,
+            113.733,
+            128.7681,
+            116.6839,
+            124.231,
+            116.1938,
+            118.6976
+          ],
+          "checksum": 0,
+          "allocatedBytes": 39178240,
+          "memoryBefore": {
+            "totalPssKb": 149711,
+            "nativeHeapBytes": 20984672
+          },
+          "memoryAfter": {
+            "totalPssKb": 160071,
+            "nativeHeapBytes": 20979088
+          }
+        },
+        "1MP alpha apply33": {
+          "family": "affine",
+          "medianMs": 141.7517,
+          "samplesMs": [
+            170.9606,
+            134.4409,
+            147.2787,
+            141.7517,
+            134.2894,
+            154.0661,
+            135.0027
+          ],
+          "checksum": -1,
+          "allocatedBytes": 29487104,
+          "memoryBefore": {
+            "totalPssKb": 146583,
+            "nativeHeapBytes": 20984544
+          },
+          "memoryAfter": {
+            "totalPssKb": 147859,
+            "nativeHeapBytes": 20979088
+          }
+        },
+        "1MP alpha clippedApply33": {
+          "family": "affine",
+          "medianMs": 101.1634,
+          "samplesMs": [
+            97.4291,
+            87.8223,
+            104.4166,
+            102.4529,
+            92.685,
+            101.1634,
+            107.1159
+          ],
+          "checksum": -2957607,
+          "allocatedBytes": 29585408,
+          "memoryBefore": {
+            "totalPssKb": 156063,
+            "nativeHeapBytes": 20979088
+          },
+          "memoryAfter": {
+            "totalPssKb": 139659,
+            "nativeHeapBytes": 20979088
+          }
+        },
+        "1MP alpha smallApply": {
+          "family": "quarterTurns",
+          "medianMs": 2.2786,
+          "samplesMs": [
+            2.2315,
+            2.2786,
+            2.0108,
+            1.9065,
+            2.7004,
+            2.5998,
+            3.9874
+          ],
+          "checksum": 85,
+          "allocatedBytes": 12533760,
+          "memoryBefore": {
+            "totalPssKb": 147883,
+            "nativeHeapBytes": 20979024
+          },
+          "memoryAfter": {
+            "totalPssKb": 160435,
+            "nativeHeapBytes": 20981632
+          }
+        },
+        "4MP opaque rotate90": {
+          "family": "quarterTurns",
+          "medianMs": 49.7585,
+          "samplesMs": [
+            49.7585,
+            58.8518,
+            48.0017,
+            58.8855,
+            49.4905,
+            60.8103,
+            48.9666
+          ],
+          "checksum": -16712107,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156035,
+            "nativeHeapBytes": 20979216
+          },
+          "memoryAfter": {
+            "totalPssKb": 188823,
+            "nativeHeapBytes": 20979152
+          }
+        },
+        "4MP opaque rotate-90": {
+          "family": "quarterTurns",
+          "medianMs": 59.0614,
+          "samplesMs": [
+            51.3767,
+            77.5274,
+            59.0614,
+            61.6055,
+            50.1386,
+            61.9958,
+            49.8198
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156043,
+            "nativeHeapBytes": 20979216
+          },
+          "memoryAfter": {
+            "totalPssKb": 188827,
+            "nativeHeapBytes": 20979152
+          }
+        },
+        "4MP opaque rotate180": {
+          "family": "quarterTurns",
+          "medianMs": 52.1816,
+          "samplesMs": [
+            46.8694,
+            57.7862,
+            52.1816,
+            60.8233,
+            46.5853,
+            57.3342,
+            46.6963
+          ],
+          "checksum": -65963,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156047,
+            "nativeHeapBytes": 20979216
+          },
+          "memoryAfter": {
+            "totalPssKb": 188831,
+            "nativeHeapBytes": 20979152
+          }
+        },
+        "4MP opaque flipH": {
+          "family": "flips",
+          "medianMs": 53.1663,
+          "samplesMs": [
+            51.1916,
+            62.4048,
+            48.9595,
+            57.5703,
+            47.5284,
+            58.439,
+            53.1663
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156051,
+            "nativeHeapBytes": 20979216
+          },
+          "memoryAfter": {
+            "totalPssKb": 188839,
+            "nativeHeapBytes": 20979152
+          }
+        },
+        "4MP opaque flipV": {
+          "family": "flips",
+          "medianMs": 15.2974,
+          "samplesMs": [
+            12.7641,
+            20.8122,
+            14.4869,
+            15.2974,
+            15.4197,
+            13.1563,
+            17.4546
+          ],
+          "checksum": -16712107,
+          "allocatedBytes": 117862400,
+          "memoryBefore": {
+            "totalPssKb": 152207,
+            "nativeHeapBytes": 20979216
+          },
+          "memoryAfter": {
+            "totalPssKb": 205347,
+            "nativeHeapBytes": 20984736
+          }
+        },
+        "4MP opaque resize125": {
+          "family": "resize",
+          "medianMs": 750.8254,
+          "samplesMs": [
+            758.4549,
+            750.8254,
+            760.6714,
+            739.3997,
+            738.0688,
+            767.2362,
+            739.2009
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 184479744,
+          "memoryBefore": {
+            "totalPssKb": 165283,
+            "nativeHeapBytes": 20979120
+          },
+          "memoryAfter": {
+            "totalPssKb": 190899,
+            "nativeHeapBytes": 20979072
+          }
+        },
+        "4MP opaque resize75": {
+          "family": "resize",
+          "medianMs": 264.3942,
+          "samplesMs": [
+            264.3942,
+            252.0846,
+            362.3932,
+            271.4356,
+            255.0128,
+            262.5076,
+            288.0868
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 66416640,
+          "memoryBefore": {
+            "totalPssKb": 209351,
+            "nativeHeapBytes": 20979072
+          },
+          "memoryAfter": {
+            "totalPssKb": 158143,
+            "nativeHeapBytes": 20979376
+          }
+        },
+        "4MP opaque rotate33": {
+          "family": "affine",
+          "medianMs": 560.7094,
+          "samplesMs": [
+            583.1099,
+            560.7094,
+            536.1086,
+            562.9523,
+            531.1276,
+            578.7009,
+            522.9595
+          ],
+          "checksum": 0,
+          "allocatedBytes": 225853440,
+          "memoryBefore": {
+            "totalPssKb": 171079,
+            "nativeHeapBytes": 20979248
+          },
+          "memoryAfter": {
+            "totalPssKb": 202467,
+            "nativeHeapBytes": 20979312
+          }
+        },
+        "4MP opaque skewH": {
+          "family": "affine",
+          "medianMs": 496.8728,
+          "samplesMs": [
+            514.0414,
+            477.9668,
+            532.076,
+            466.6493,
+            506.8501,
+            486.9035,
+            496.8728
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 149573632,
+          "memoryBefore": {
+            "totalPssKb": 223371,
+            "nativeHeapBytes": 20984768
+          },
+          "memoryAfter": {
+            "totalPssKb": 181312,
+            "nativeHeapBytes": 20979312
+          }
+        },
+        "4MP opaque skewV": {
+          "family": "affine",
+          "medianMs": 522.8849,
+          "samplesMs": [
+            525.5297,
+            496.3497,
+            522.8849,
+            500.9789,
+            531.7571,
+            499.6361,
+            534.4245
+          ],
+          "checksum": 0,
+          "allocatedBytes": 149573632,
+          "memoryBefore": {
+            "totalPssKb": 202212,
+            "nativeHeapBytes": 20984768
+          },
+          "memoryAfter": {
+            "totalPssKb": 181312,
+            "nativeHeapBytes": 20979216
+          }
+        },
+        "4MP opaque skewBoth": {
+          "family": "affine",
+          "medianMs": 516.3174,
+          "samplesMs": [
+            507.5162,
+            542.0361,
+            516.3174,
+            535.5553,
+            512.1415,
+            522.5783,
+            514.3409
+          ],
+          "checksum": 0,
+          "allocatedBytes": 162865152,
+          "memoryBefore": {
+            "totalPssKb": 204084,
+            "nativeHeapBytes": 20984832
+          },
+          "memoryAfter": {
+            "totalPssKb": 185056,
+            "nativeHeapBytes": 20979248
+          }
+        },
+        "4MP opaque resizeSkew": {
+          "family": "affine",
+          "medianMs": 509.5784,
+          "samplesMs": [
+            502.3399,
+            506.4032,
+            546.5498,
+            544.0635,
+            530.4023,
+            509.5784,
+            485.7634
+          ],
+          "checksum": 0,
+          "allocatedBytes": 156676096,
+          "memoryBefore": {
+            "totalPssKb": 206960,
+            "nativeHeapBytes": 20984672
+          },
+          "memoryAfter": {
+            "totalPssKb": 183332,
+            "nativeHeapBytes": 20979248
+          }
+        },
+        "4MP opaque apply33": {
+          "family": "affine",
+          "medianMs": 462.0794,
+          "samplesMs": [
+            445.2731,
+            434.0847,
+            439.222,
+            466.3339,
+            462.0794,
+            481.2492,
+            463.4015
+          ],
+          "checksum": -1,
+          "allocatedBytes": 118026240,
+          "memoryBefore": {
+            "totalPssKb": 199848,
+            "nativeHeapBytes": 20977088
+          },
+          "memoryAfter": {
+            "totalPssKb": 172532,
+            "nativeHeapBytes": 20971696
+          }
+        },
+        "4MP opaque clippedApply33": {
+          "family": "affine",
+          "medianMs": 295.7331,
+          "samplesMs": [
+            289.6813,
+            285.1204,
+            311.2284,
+            291.4375,
+            295.7331,
+            319.9618,
+            319.9264
+          ],
+          "checksum": -12816299,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 189036,
+            "nativeHeapBytes": 20977216
+          },
+          "memoryAfter": {
+            "totalPssKb": 172528,
+            "nativeHeapBytes": 20971728
+          }
+        },
+        "4MP opaque smallApply": {
+          "family": "quarterTurns",
+          "medianMs": 9.1258,
+          "samplesMs": [
+            7.9961,
+            7.5562,
+            8.4925,
+            10.3414,
+            9.1678,
+            9.1258,
+            10.2717
+          ],
+          "checksum": -16777131,
+          "allocatedBytes": 117600256,
+          "memoryBefore": {
+            "totalPssKb": 205460,
+            "nativeHeapBytes": 20977280
+          },
+          "memoryAfter": {
+            "totalPssKb": 258908,
+            "nativeHeapBytes": 20976192
+          }
+        },
+        "4MP alpha rotate90": {
+          "family": "quarterTurns",
+          "medianMs": 51.5416,
+          "samplesMs": [
+            51.5416,
+            58.7133,
+            48.5836,
+            60.1388,
+            49.5931,
+            71.974,
+            50.7289
+          ],
+          "checksum": 65109,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156148,
+            "nativeHeapBytes": 20971952
+          },
+          "memoryAfter": {
+            "totalPssKb": 188928,
+            "nativeHeapBytes": 20971888
+          }
+        },
+        "4MP alpha rotate-90": {
+          "family": "quarterTurns",
+          "medianMs": 56.7224,
+          "samplesMs": [
+            54.4401,
+            73.5586,
+            60.4301,
+            56.7224,
+            52.0977,
+            60.4819,
+            49.3717
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156148,
+            "nativeHeapBytes": 20971952
+          },
+          "memoryAfter": {
+            "totalPssKb": 188928,
+            "nativeHeapBytes": 20971888
+          }
+        },
+        "4MP alpha rotate180": {
+          "family": "quarterTurns",
+          "medianMs": 54.5403,
+          "samplesMs": [
+            48.4071,
+            58.4557,
+            50.3961,
+            66.076,
+            54.5403,
+            61.7623,
+            49.2605
+          ],
+          "checksum": -65963,
+          "allocatedBytes": 117960704,
+          "memoryBefore": {
+            "totalPssKb": 156148,
+            "nativeHeapBytes": 20971952
+          },
+          "memoryAfter": {
+            "totalPssKb": 188932,
+            "nativeHeapBytes": 20971888
+          }
+        },
+        "4MP alpha flipH": {
+          "family": "flips",
+          "medianMs": 56.5435,
+          "samplesMs": [
+            47.2035,
+            56.5435,
+            58.4489,
+            58.7651,
+            47.8116,
+            57.6139,
+            47.7263
+          ],
+          "checksum": -130987,
+          "allocatedBytes": 117993472,
+          "memoryBefore": {
+            "totalPssKb": 156152,
+            "nativeHeapBytes": 20971952
+          },
+          "memoryAfter": {
+            "totalPssKb": 188932,
+            "nativeHeapBytes": 20971888
+          }
+        },
+        "4MP alpha flipV": {
+          "family": "flips",
+          "medianMs": 16.5968,
+          "samplesMs": [
+            14.4058,
+            19.1402,
+            15.7835,
+            16.5968,
+            19.5982,
+            12.3458,
+            17.2458
+          ],
+          "checksum": 65109,
+          "allocatedBytes": 117862400,
+          "memoryBefore": {
+            "totalPssKb": 156144,
+            "nativeHeapBytes": 20971952
+          },
+          "memoryAfter": {
+            "totalPssKb": 205436,
+            "nativeHeapBytes": 20977344
+          }
+        },
+        "4MP alpha resize125": {
+          "family": "resize",
+          "medianMs": 775.5876,
+          "samplesMs": [
+            1376.5583,
+            896.9071,
+            961.1556,
+            775.5876,
+            737.8568,
+            733.3315,
+            754.9795
+          ],
+          "checksum": 85,
+          "allocatedBytes": 184545280,
+          "memoryBefore": {
+            "totalPssKb": 165372,
+            "nativeHeapBytes": 20971888
+          },
+          "memoryAfter": {
+            "totalPssKb": 190976,
+            "nativeHeapBytes": 20971952
+          }
+        },
+        "4MP alpha resize75": {
+          "family": "resize",
+          "medianMs": 265.5277,
+          "samplesMs": [
+            265.765,
+            258.6293,
+            268.391,
+            265.511,
+            269.9228,
+            255.9984,
+            265.5277
+          ],
+          "checksum": 65621,
+          "allocatedBytes": 66449408,
+          "memoryBefore": {
+            "totalPssKb": 209424,
+            "nativeHeapBytes": 20971856
+          },
+          "memoryAfter": {
+            "totalPssKb": 158212,
+            "nativeHeapBytes": 20971952
+          }
+        },
+        "4MP alpha rotate33": {
+          "family": "affine",
+          "medianMs": 545.631,
+          "samplesMs": [
+            538.1717,
+            538.2876,
+            545.631,
+            547.3085,
+            547.1251,
+            545.0499,
+            559.0534
+          ],
+          "checksum": 0,
+          "allocatedBytes": 225853440,
+          "memoryBefore": {
+            "totalPssKb": 171152,
+            "nativeHeapBytes": 20971952
+          },
+          "memoryAfter": {
+            "totalPssKb": 202536,
+            "nativeHeapBytes": 20972368
+          }
+        },
+        "4MP alpha skewH": {
+          "family": "affine",
+          "medianMs": 505.2881,
+          "samplesMs": [
+            511.4368,
+            505.2881,
+            475.3971,
+            473.9533,
+            520.5954,
+            476.6051,
+            526.0994
+          ],
+          "checksum": 85,
+          "allocatedBytes": 149475328,
+          "memoryBefore": {
+            "totalPssKb": 223432,
+            "nativeHeapBytes": 20977824
+          },
+          "memoryAfter": {
+            "totalPssKb": 181352,
+            "nativeHeapBytes": 20972304
+          }
+        },
+        "4MP alpha skewV": {
+          "family": "affine",
+          "medianMs": 516.546,
+          "samplesMs": [
+            507.3138,
+            521.6044,
+            510.1565,
+            511.3659,
+            524.9427,
+            532.9692,
+            516.546
+          ],
+          "checksum": 0,
+          "allocatedBytes": 149540864,
+          "memoryBefore": {
+            "totalPssKb": 202252,
+            "nativeHeapBytes": 20977760
+          },
+          "memoryAfter": {
+            "totalPssKb": 181352,
+            "nativeHeapBytes": 20972208
+          }
+        },
+        "4MP alpha skewBoth": {
+          "family": "affine",
+          "medianMs": 526.6838,
+          "samplesMs": [
+            517.172,
+            526.6838,
+            546.7783,
+            512.1643,
+            528.4579,
+            519.8084,
+            535.2726
+          ],
+          "checksum": 0,
+          "allocatedBytes": 162832384,
+          "memoryBefore": {
+            "totalPssKb": 204120,
+            "nativeHeapBytes": 20977760
+          },
+          "memoryAfter": {
+            "totalPssKb": 185088,
+            "nativeHeapBytes": 20972304
+          }
+        },
+        "4MP alpha resizeSkew": {
+          "family": "affine",
+          "medianMs": 492.9643,
+          "samplesMs": [
+            492.9643,
+            477.8821,
+            533.4443,
+            476.4916,
+            529.8729,
+            476.9078,
+            512.9953
+          ],
+          "checksum": 0,
+          "allocatedBytes": 156643328,
+          "memoryBefore": {
+            "totalPssKb": 206992,
+            "nativeHeapBytes": 20977664
+          },
+          "memoryAfter": {
+            "totalPssKb": 183360,
+            "nativeHeapBytes": 20972304
+          }
+        },
+        "4MP alpha apply33": {
+          "family": "affine",
+          "medianMs": 594.2468,
+          "samplesMs": [
+            606.2006,
+            619.2599,
+            609.4695,
+            583.5819,
+            591.4617,
+            575.7855,
+            594.2468
+          ],
+          "checksum": -1,
+          "allocatedBytes": 118026240,
+          "memoryBefore": {
+            "totalPssKb": 199872,
+            "nativeHeapBytes": 20977760
+          },
+          "memoryAfter": {
+            "totalPssKb": 172576,
+            "nativeHeapBytes": 20972304
+          }
+        },
+        "4MP alpha clippedApply33": {
+          "family": "affine",
+          "medianMs": 370.476,
+          "samplesMs": [
+            395.2053,
+            365.0449,
+            370.0223,
+            393.6068,
+            370.476,
+            363.8685,
+            380.9632
+          ],
+          "checksum": -3023401,
+          "allocatedBytes": 117993472,
+          "memoryBefore": {
+            "totalPssKb": 189088,
+            "nativeHeapBytes": 20977760
+          },
+          "memoryAfter": {
+            "totalPssKb": 172576,
+            "nativeHeapBytes": 20972304
+          }
+        },
+        "4MP alpha smallApply": {
+          "family": "quarterTurns",
+          "medianMs": 8.6351,
+          "samplesMs": [
+            8.6351,
+            8.8714,
+            7.7433,
+            10.3709,
+            8.7007,
+            7.7202,
+            8.027
+          ],
+          "checksum": 85,
+          "allocatedBytes": 117600256,
+          "memoryBefore": {
+            "totalPssKb": 205508,
+            "nativeHeapBytes": 20977760
+          },
+          "memoryAfter": {
+            "totalPssKb": 254596,
+            "nativeHeapBytes": 20976672
+          }
+        }
+      },
+      "livePreviewAndApplyTimings": {
+        "environment": {
+          "stage": "canvas-before-3",
+          "sdk": 37,
+          "fingerprint": "google/sdk_gdesktop_x86_64/emu64xa:17/CLE3.260929.004/16489338:userdebug/dev-keys",
+          "abis": [
+            "x86_64",
+            "arm64-v8a"
+          ],
+          "densityDpi": 160,
+          "widthPixels": 1366,
+          "heightPixels": 688,
+          "maxHeapBytes": 201326592,
+          "debug": true
+        },
+        "1MP live": {
+          "frameMedianMs": 17.51312,
+          "frameP95Ms": 19.436076,
+          "frames": 182,
+          "allocatedBytes": 16175104,
+          "memoryBefore": {
+            "totalPssKb": 174765,
+            "nativeHeapBytes": 39010480
+          },
+          "memoryAfter": {
+            "totalPssKb": 178205,
+            "nativeHeapBytes": 35569456
+          },
+          "interactionMedianMs": 50.9507
+        },
+        "1MP commandApply": {
+          "medianMs": 156.301,
+          "samplesMs": [
+            251.1992,
+            156.301,
+            143.6448,
+            164.4283,
+            147.1817
+          ]
+        },
+        "1MP clippedCommandApply": {
+          "medianMs": 104.6134,
+          "samplesMs": [
+            103.4847,
+            117.6263,
+            104.6134,
+            103.0765,
+            112.3504
+          ]
+        },
+        "1MP smallApply": {
+          "medianMs": 4.2497,
+          "samplesMs": [
+            3.9036,
+            4.6695,
+            5.482,
+            4.2497,
+            3.8998
+          ]
+        },
+        "4MP live": {
+          "frameMedianMs": 17.435592,
+          "frameP95Ms": 19.082294,
+          "frames": 181,
+          "allocatedBytes": 19025920,
+          "memoryBefore": {
+            "totalPssKb": 231221,
+            "nativeHeapBytes": 91256976
+          },
+          "memoryAfter": {
+            "totalPssKb": 244421,
+            "nativeHeapBytes": 75331008
+          },
+          "interactionMedianMs": 49.0735
+        },
+        "4MP commandApply": {
+          "medianMs": 598.8349,
+          "samplesMs": [
+            586.109,
+            605.8066,
+            611.5683,
+            579.1844,
+            598.8349
+          ]
+        },
+        "4MP clippedCommandApply": {
+          "medianMs": 388.5863,
+          "samplesMs": [
+            388.5863,
+            434.2731,
+            384.1352,
+            401.1054,
+            385.927
+          ]
+        },
+        "4MP smallApply": {
+          "medianMs": 10.4667,
+          "samplesMs": [
+            12.1248,
+            10.3814,
+            10.4667,
+            11.0004,
+            9.9793
+          ]
+        }
+      }
+    }
+  ]
+}

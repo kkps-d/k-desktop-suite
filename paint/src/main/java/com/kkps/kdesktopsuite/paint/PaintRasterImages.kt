@@ -1,5 +1,6 @@
 package com.kkps.kdesktopsuite.paint
 
+import android.graphics.Bitmap
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -35,12 +36,22 @@ internal fun EditPreview.selectionImageRequest() = SelectionImageRequest(require
 internal fun rememberSelectionImage(request: SelectionImageRequest?, dragging: Boolean, onError: (String) -> Unit): SelectionImage? {
     val image by produceState<SelectionImage?>(null,request,dragging) {
         if (request == null) value = null
-        else if (!dragging && value?.request != request) try {
-            value = withContext(Dispatchers.Default) {
-                val pixels = request.payload.transformed(request.transform,PixelRect(0,0,request.width,request.height),{ ensureActive() })
-                SelectionImage(request,pixels.bitmap().apply { prepareToDraw() }.asImageBitmap())
-            }
-        } catch (_: OutOfMemoryError) { onError("Not enough memory to preview this selection.") }
+        else if (!dragging && value?.request != request) {
+            var unpublished: Bitmap? = null
+            try {
+                value = withContext(Dispatchers.Default) {
+                    val bounds = PixelRect(0,0,request.width,request.height)
+                    val bitmap = if (request.transform.usesCanvas()) request.payload.transformedBitmap(request.transform,bounds,checkCancelled = { ensureActive() })
+                        else request.payload.transformed(request.transform,bounds,{ ensureActive() }).bitmap()
+                    unpublished = bitmap
+                    ensureActive()
+                    bitmap.prepareToDraw()
+                    SelectionImage(request,bitmap.asImageBitmap())
+                }
+                unpublished = null
+            } catch (_: OutOfMemoryError) { onError("Not enough memory to preview this selection.") }
+            finally { unpublished?.recycle() }
+        }
     }
     return image?.takeIf { it.request == request }
 }

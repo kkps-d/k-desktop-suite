@@ -59,16 +59,43 @@ internal fun resizeSkewTransform(bounds: PixelRect, width: Int, height: Int, hor
         .then(RasterTransform.translation((bounds.x-result.x).toDouble(),(bounds.y-result.y).toDouble()))
 }
 
+internal enum class TransformFamily { QuarterTurns, Flips, Resize, Affine }
+
+internal fun RasterTransform.family(): TransformFamily {
+    val integral = listOf(a,b,c,d,tx,ty).all { it == round(it) }
+    val permutation = integral && abs(a)+abs(b) == 1.0 && abs(c)+abs(d) == 1.0 && a*c+b*d == 0.0
+    return when {
+        permutation && a*d-b*c < 0 -> TransformFamily.Flips
+        permutation -> TransformFamily.QuarterTurns
+        b == 0.0 && c == 0.0 -> TransformFamily.Resize
+        else -> TransformFamily.Affine
+    }
+}
+
+// Three-pass benchmarks favor Canvas resampling, but Kotlin wins exact turns/flips and row copies.
+// See performance/CANVAS.md; this policy is shared by settled previews and committed pixels.
+internal fun RasterTransform.usesCanvas() = when (family()) {
+    TransformFamily.QuarterTurns,TransformFamily.Flips -> false
+    TransformFamily.Resize,TransformFamily.Affine -> true
+}
+
 /** Inverse sampling avoids holes; premultiplied channels keep transparent edges free of halos. */
 internal fun Raster.transformed(transform: RasterTransform, bounds: PixelRect = transform.bounds(width,height),
     checkCancelled: () -> Unit = {}): Raster = transformRaster(transform,bounds,checkCancelled,null)
 
-internal fun Raster.transformed(transform: RasterTransform, bounds: PixelRect, background: Int): Raster =
-    transformRaster(transform,bounds,{},background)
+internal fun Raster.transformed(transform: RasterTransform, bounds: PixelRect, background: Int,
+    checkCancelled: () -> Unit = {}): Raster = transformRaster(transform,bounds,checkCancelled,background)
 
 private fun Raster.transformRaster(transform: RasterTransform, bounds: PixelRect, checkCancelled: () -> Unit, background: Int?): Raster {
     checkImageSize(bounds.width,bounds.height)
     if (transform == RasterTransform() && bounds == PixelRect(0,0,width,height) && background == null) return this
+    if (transform.usesCanvas()) {
+        val bitmap = transformedBitmap(transform,bounds,background,checkCancelled)
+        return try {
+            checkCancelled()
+            bitmap.raster().also { checkCancelled() }
+        } finally { bitmap.recycle() }
+    }
     val output = IntArray(bounds.width*bounds.height) { background ?: 0 }
     transformInto(transform,bounds,output,bounds.width,bounds.x,bounds.y,background != null,checkCancelled)
     return Raster(bounds.width,bounds.height,output)
@@ -76,8 +103,10 @@ private fun Raster.transformRaster(transform: RasterTransform, bounds: PixelRect
 
 /** Copy the canvas once, clear the lifted region, then sample only the visible destination. */
 internal fun Raster.renderSelection(payload: Raster, transform: RasterTransform, bounds: PixelRect, source: PixelRect?,
-    outputWidth: Int, outputHeight: Int, background: Int): Raster {
+    outputWidth: Int, outputHeight: Int, background: Int, checkCancelled: () -> Unit = {}): Raster {
     checkImageSize(outputWidth,outputHeight)
+    if (transform.usesCanvas()) return renderSelectionCanvas(payload,transform,bounds,source,outputWidth,outputHeight,background,checkCancelled)
+    checkCancelled()
     val output = if (outputWidth == width && outputHeight == height) pixels.copyOf()
     else IntArray(outputWidth*outputHeight) { background }.also { result ->
         for (y in 0 until min(height,outputHeight)) pixels.copyInto(result,y*outputWidth,y*width,y*width+min(width,outputWidth))
@@ -85,7 +114,7 @@ internal fun Raster.renderSelection(payload: Raster, transform: RasterTransform,
     source?.clipped(min(width,outputWidth),min(height,outputHeight))?.let { area ->
         for (y in area.y until area.bottom) output.fill(background or BLACK,y*outputWidth+area.x,y*outputWidth+area.right)
     }
-    payload.transformInto(transform,bounds.clipped(outputWidth,outputHeight),output,outputWidth,0,0,true,{})
+    payload.transformInto(transform,bounds.clipped(outputWidth,outputHeight),output,outputWidth,0,0,true,checkCancelled)
     return Raster(outputWidth,outputHeight,output)
 }
 

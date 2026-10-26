@@ -1,6 +1,7 @@
 package com.kkps.kdesktopsuite.paint
 
 import android.os.Debug
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.view.FrameMetrics
@@ -56,6 +57,12 @@ class TransformPerformanceTest {
             PaintTheme { Box(Modifier.requiredSize(1000.dp,640.dp)) { PaintScreen(state,model) } }
         }
         compose.waitUntil(15000) { !model.state.value.loading }
+        report.put("environment",JSONObject().put("stage",stage).put("sdk",Build.VERSION.SDK_INT)
+            .put("fingerprint",Build.FINGERPRINT).put("abis",JSONArray(Build.SUPPORTED_ABIS.toList()))
+            .put("densityDpi",context.resources.displayMetrics.densityDpi)
+            .put("widthPixels",context.resources.displayMetrics.widthPixels)
+            .put("heightPixels",context.resources.displayMetrics.heightPixels)
+            .put("maxHeapBytes",Runtime.getRuntime().maxMemory()).put("debug",BuildConfig.DEBUG))
     }
 
     @After fun cleanup() {
@@ -66,12 +73,19 @@ class TransformPerformanceTest {
         println("TRANSFORM_PERFORMANCE $stage $report")
     }
 
-    private fun fixture(side: Int) = Raster(side,side,IntArray(side*side) { index ->
-        BLACK or ((index%side*255/side) shl 16) or ((index/side*255/side) shl 8) or 85
+    private fun fixture(side: Int, translucent: Boolean = false) = Raster(side,side,IntArray(side*side) { index ->
+        val alpha = if (translucent) (index%side*255/(side-1)) shl 24 else BLACK
+        alpha or ((index%side*255/side) shl 16) or ((index/side*255/side) shl 8) or 85
     })
 
-    private fun measure(name: String, work: () -> Raster) {
+    private fun memory() = Debug.MemoryInfo().also { Debug.getMemoryInfo(it) }.let {
+        JSONObject().put("totalPssKb",it.totalPss).put("nativeHeapBytes",Debug.getNativeHeapAllocatedSize())
+    }
+
+    private fun measure(name: String, family: String, work: () -> Raster) {
         repeat(2) { work() }
+        val memoryBefore = memory()
+        val allocated = Debug.getRuntimeStat("art.gc.bytes-allocated").toLong()
         val samples = mutableListOf<Double>()
         var checksum = 0
         repeat(7) {
@@ -81,18 +95,40 @@ class TransformPerformanceTest {
             checksum = checksum xor output.pixels[it%output.pixels.size]
         }
         val sorted = samples.sorted()
-        report.put(name,JSONObject().put("medianMs",sorted[3]).put("samplesMs",JSONArray(samples)).put("checksum",checksum))
+        report.put(name,JSONObject().put("family",family).put("medianMs",sorted[3]).put("samplesMs",JSONArray(samples))
+            .put("checksum",checksum).put("allocatedBytes",Debug.getRuntimeStat("art.gc.bytes-allocated").toLong()-allocated)
+            .put("memoryBefore",memoryBefore).put("memoryAfter",memory()))
+        println("TRANSFORM_CASE $stage $name ${sorted[3]} ms")
     }
 
     @Test fun rasterTimings() {
-        for (side in listOf(1024,2048)) {
-            val source = fixture(side)
-            val tag = if (side == 1024) "1MP" else "4MP"
-            measure("$tag rotate90") { source.transformed(RasterTransform.rotation(90.0).then(RasterTransform.translation(side.toDouble(),0.0))) }
-            measure("$tag flip") { source.transformed(RasterTransform.scale(-1.0,1.0).then(RasterTransform.translation(side.toDouble(),0.0))) }
-            measure("$tag resize125") { source.transformed(RasterTransform.scale(1.25,1.25)) }
+        for (side in listOf(1024,2048)) for (translucent in listOf(false,true)) {
+            val source = fixture(side,translucent)
+            val tag = "${if (side == 1024) "1MP" else "4MP"} ${if (translucent) "alpha" else "opaque"}"
+            for (angle in listOf(90,-90,180)) measure("$tag rotate$angle","quarterTurns") {
+                source.transformed(RasterTransform.rotation(angle.toDouble()))
+            }
+            for (horizontal in listOf(true,false)) measure("$tag flip${if (horizontal) "H" else "V"}","flips") {
+                source.transformed(RasterTransform.scale(if (horizontal) -1.0 else 1.0,if (horizontal) 1.0 else -1.0))
+            }
+            for (scale in listOf(1.25,0.75)) measure("$tag resize${(scale*100).toInt()}","resize") {
+                source.transformed(RasterTransform.scale(scale,scale))
+            }
+            val area = PixelRect(0,0,side,side)
+            for ((name,transform) in listOf(
+                "rotate33" to RasterTransform.rotation(33.0),
+                "skewH" to resizeSkewTransform(area,side,side,15,0),
+                "skewV" to resizeSkewTransform(area,side,side,0,-15),
+                "skewBoth" to resizeSkewTransform(area,side,side,12,-10),
+                "resizeSkew" to resizeSkewTransform(area,side*5/4,side*3/4,12,-10),
+            )) measure("$tag $name","affine") { source.transformed(transform) }
             val selection = EditPreview(Tool.Select,PixelRect(0,0,side,side),source = PixelRect(0,0,side,side),payload = source).rotatedSelection(33.0)
-            measure("$tag apply33") { source.render(selection,ToolOptions()) }
+            measure("$tag apply33","affine") { source.render(selection,ToolOptions()) }
+            val clipped = selection.resizedSelection(selection.bounds.copy(x = -side/2,y = -side/2))
+            measure("$tag clippedApply33","affine") { source.render(clipped,ToolOptions()) }
+            val small = EditPreview(Tool.Select,PixelRect(side/2+12,side/2,64,64),source = PixelRect(side/2,side/2,64,64),
+                payload = source.extract(PixelRect(0,0,64,64)))
+            measure("$tag smallApply","quarterTurns") { source.render(small,ToolOptions()) }
         }
     }
 
@@ -123,6 +159,7 @@ class TransformPerformanceTest {
                 val pivot = model.state.value.viewport.screenPoint(original.selectionCenter).let { Offset(it.x,it.y) }
                 val vector = start-pivot
                 val allocated = Debug.getRuntimeStat("art.gc.bytes-allocated").toLong()
+                val memoryBefore = memory()
                 frames.clear()
                 val interactionSamples = mutableListOf<Double>()
                 viewport.performTouchInput { down(start) }
@@ -146,6 +183,7 @@ class TransformPerformanceTest {
                 report.put("$tag live",JSONObject().put("frameMedianMs",frameSamples[frameSamples.size/2])
                     .put("frameP95Ms",frameSamples[((frameSamples.size-1)*0.95).toInt()])
                     .put("frames",frameSamples.size).put("allocatedBytes",Debug.getRuntimeStat("art.gc.bytes-allocated").toLong()-allocated)
+                    .put("memoryBefore",memoryBefore).put("memoryAfter",memory())
                     .put("interactionMedianMs",interactionSamples.sorted()[interactionSamples.size/2]))
                 viewport.performTouchInput { up() }
                 val applySamples = mutableListOf<Double>()
@@ -159,6 +197,18 @@ class TransformPerformanceTest {
                     compose.runOnIdle { model.undo() }
                 }
                 report.put("$tag commandApply",JSONObject().put("medianMs",applySamples.sorted()[2]).put("samplesMs",JSONArray(applySamples)))
+                val clippedSamples = mutableListOf<Double>()
+                repeat(5) {
+                    val rotated = original.rotatedSelection(33.0)
+                    compose.runOnIdle { model.setPreview(rotated.resizedSelection(rotated.bounds.copy(x = -side/2,y = -side/2))) }
+                    Thread.sleep(2000)
+                    val startTime = System.nanoTime()
+                    instrumentation.runOnMainSync { model.applyPreview() }
+                    while (model.state.value.busy) Thread.sleep(1)
+                    clippedSamples += (System.nanoTime()-startTime)/1e6
+                    compose.runOnIdle { model.undo() }
+                }
+                report.put("$tag clippedCommandApply",JSONObject().put("medianMs",clippedSamples.sorted()[2]).put("samplesMs",JSONArray(clippedSamples)))
                 val smallSamples = mutableListOf<Double>()
                 val area = PixelRect(side/2,side/2,64,64)
                 val small = EditPreview(Tool.Select,area.copy(x = area.x+12),source = area,payload = source.extract(PixelRect(0,0,64,64)))

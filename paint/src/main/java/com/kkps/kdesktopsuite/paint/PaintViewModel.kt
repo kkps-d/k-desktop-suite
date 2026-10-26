@@ -164,7 +164,11 @@ internal class PaintViewModel(
         mutableState.update { it.copy(busy = true) }
         editJob = viewModelScope.launch {
             try {
-                val result = withContext(compute) { history.prepare(work(source),affectedArea) }
+                val result = withContext(compute) {
+                    val candidate = work(source)
+                    ensureActive()
+                    history.prepare(candidate,affectedArea)
+                }
                 if (history.revision == revision && history.raster === source && valid()) {
                     result?.let { history.commit(it) }; sync(); after()
                 }
@@ -277,7 +281,11 @@ internal class PaintViewModel(
         if (preview.tool.isClosedShape && !s.options.outline && !s.options.fill) {
             message("Choose an outline or fill before applying this shape."); return
         }
-        operation({ it.render(preview.copy(constructing = false), s.options, if (preview.tool == Tool.Select) null else s.selection) },
+        operation({
+            val context = currentCoroutineContext()
+            it.render(preview.copy(constructing = false),s.options,if (preview.tool == Tool.Select) null else s.selection,
+                checkCancelled = { context.ensureActive() })
+        },
             valid = { state.value.preview?.id == preview.id && state.value.options == s.options },
             affectedArea = preview.takeIf { it.tool == Tool.Select }?.affectedSelectionArea(s.raster.width,s.raster.height)) {
             textEditor = null
@@ -373,7 +381,8 @@ internal class PaintViewModel(
                 val preview = currentPreview()
                 operation({ source ->
                     val composed = preview?.let { source.render(it,s.options,s.selection) } ?: source
-                    composed.transformed(transform,output,background = s.options.background)
+                    val context = currentCoroutineContext()
+                    composed.transformed(transform,output,background = s.options.background,checkCancelled = { context.ensureActive() })
                 },valid = { state.value.preview == s.preview && state.value.selection == s.selection && state.value.options == s.options }) { clearSelection() }
             }
         } catch (error: IllegalArgumentException) { message(error.message) }
@@ -395,7 +404,9 @@ internal class PaintViewModel(
             ?.clipped(s.raster.width,s.raster.height) ?: return
         if (rect.width == 0 || rect.height == 0) { message("The selection is outside the image."); return }
         operation({ source ->
-            val composed = s.preview?.let { source.render(it,s.options) } ?: source
+            val context = currentCoroutineContext()
+            val composed = s.preview?.let { source.render(it,s.options,checkCancelled = { context.ensureActive() }) } ?: source
+            context.ensureActive()
             composed.extract(rect)
         }) { clearSelection(); viewport(state.value.viewport.copy(fit = true).resized(s.viewport.width,s.viewport.height,rect.width,rect.height)) }
     }
@@ -577,10 +588,14 @@ internal class PaintViewModel(
         pendingCut = if (cut && source != null) PendingCut(source,history.revision,documentId) else null
         viewModelScope.launch {
             try {
-                val content = withContext(compute) { s.preview?.takeIf { it.payload != null }?.selectionPixels() ?: s.raster.extract(rect) }
+                val content = withContext(compute) {
+                    val context = currentCoroutineContext()
+                    s.preview?.takeIf { it.payload != null }?.selectionPixels { context.ensureActive() } ?: s.raster.extract(rect)
+                }
                 val staged = images.stage(content,"image/png",100)
                 mutableState.update { it.copy(platform = PlatformRequest(action = if (cut) "cut" else "copy", file = staged.file)) }
-            } catch (error: Exception) { message(error.message) }
+            } catch (cancel: CancellationException) { throw cancel }
+            catch (error: Exception) { message(error.message) }
         }
     }
     fun share() { applyPreview { viewModelScope.launch {
