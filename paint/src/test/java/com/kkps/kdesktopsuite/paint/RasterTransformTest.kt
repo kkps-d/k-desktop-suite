@@ -76,4 +76,54 @@ class RasterTransformTest {
         assertThrows(IllegalArgumentException::class.java) { RasterTransform.scale(0.0,1.0).inverse() }
         assertThrows(IllegalArgumentException::class.java) { resizeSkewTransform(PixelRect(0,0,2,3),2,3,90,0) }
     }
+
+    @Test fun exactTransformsPreserveTransparentPixelsAndSupportClippedOutput() {
+        val source = Raster(2,2,intArrayOf(0x00FF0000,0x800000FF.toInt(),BLACK,WHITE))
+        assertSame(source,source.transformed(RasterTransform()))
+        val turned = source.transformed(RasterTransform.rotation(90.0).then(RasterTransform.translation(2.0,0.0)))
+        assertArrayEquals(intArrayOf(BLACK,0x00FF0000,WHITE,0x800000FF.toInt()),turned.pixels)
+        val moved = source.transformed(RasterTransform.translation(-1.0,1.0),PixelRect(0,0,3,3))
+        assertArrayEquals(intArrayOf(0,0,0,0x800000FF.toInt(),0,0,WHITE,0,0),moved.pixels)
+    }
+
+    @Test fun fusedSelectionMatchesSeparateClearTransformAndPasteWithAlphaAndClipping() {
+        val canvas = Raster(6,5,IntArray(30) { 0xFF334455.toInt() })
+        val payload = Raster(2,2,intArrayOf(0x80FF0000.toInt(),0x0000FF00,0x400000FF,WHITE))
+        val options = ToolOptions(background = 0xFFABCDEF.toInt())
+        for (bounds in listOf(PixelRect(-1,1,4,3),PixelRect(4,-1,4,3),PixelRect(2,2,3,3))) {
+            val preview = EditPreview(Tool.Select,bounds,source = PixelRect(1,1,2,2),payload = payload).rotatedSelection(33.0)
+            for ((width,height) in listOf(6 to 5,8 to 7,3 to 3)) {
+                val edit = preview.copy(outputWidth = width,outputHeight = height)
+                val expected = canvas.clear(requireNotNull(edit.source),options.background)
+                    .paste(edit.selectionPixels(),edit.bounds,width,height,options.background)
+                assertArrayEquals(expected.pixels,canvas.render(edit,options).pixels)
+            }
+        }
+    }
+
+    @Test fun backgroundCompositingInOnePassMatchesFlattening() {
+        val source = Raster(2,2,intArrayOf(0x8000FF00.toInt(),0,WHITE,BLACK))
+        for (transform in listOf(RasterTransform.rotation(33.0),RasterTransform.scale(-1.0,1.0),RasterTransform())) {
+            val bounds = transform.bounds(2,2)
+            assertArrayEquals(source.transformed(transform,bounds).flatten(WHITE).pixels,
+                source.transformed(transform,bounds,background = WHITE).pixels)
+        }
+    }
+
+    @Test fun selectionHistoryRegionIncludesSourceAndClippedDestination() {
+        val preview = EditPreview(Tool.Select,PixelRect(-2,4,5,4),source = PixelRect(6,1,2,2),payload = fixture)
+        assertEquals(PixelRect(0,1,8,7),preview.affectedSelectionArea(10,10))
+        val moved = preview.resizedSelection(preview.bounds.copy(x = preview.bounds.x+12,y = preview.bounds.y+8))
+        assertEquals(preview.selectionImageRequest(),moved.selectionImageRequest())
+    }
+
+    @Test fun cachedAndGlobalSamplingHaveIdenticalAlphaAtFractionalRotationEdges() {
+        val payload = Raster(40,20,IntArray(800) { if (it%40 < 20) 0x80FF0000.toInt() else 0xFF0000FF.toInt() })
+        val preview = EditPreview(Tool.Select,PixelRect(30,40,40,20),payload = payload).rotatedSelection(45.0)
+        val request = preview.selectionImageRequest()
+        val cached = payload.transformed(request.transform,PixelRect(0,0,request.width,request.height))
+        assertArrayEquals(preview.selectionPixels().pixels,cached.pixels)
+        val moved = preview.resizedSelection(preview.bounds.copy(x = 200,y = 300))
+        assertArrayEquals(preview.selectionPixels().pixels,moved.selectionPixels().pixels)
+    }
 }

@@ -60,33 +60,99 @@ internal fun resizeSkewTransform(bounds: PixelRect, width: Int, height: Int, hor
 }
 
 /** Inverse sampling avoids holes; premultiplied channels keep transparent edges free of halos. */
-internal fun Raster.transformed(transform: RasterTransform, bounds: PixelRect = transform.bounds(width,height), checkCancelled: () -> Unit = {}): Raster {
+internal fun Raster.transformed(transform: RasterTransform, bounds: PixelRect = transform.bounds(width,height),
+    checkCancelled: () -> Unit = {}): Raster = transformRaster(transform,bounds,checkCancelled,null)
+
+internal fun Raster.transformed(transform: RasterTransform, bounds: PixelRect, background: Int): Raster =
+    transformRaster(transform,bounds,{},background)
+
+private fun Raster.transformRaster(transform: RasterTransform, bounds: PixelRect, checkCancelled: () -> Unit, background: Int?): Raster {
     checkImageSize(bounds.width,bounds.height)
-    val inverse = transform.inverse()
-    val output = IntArray(bounds.width*bounds.height)
-    for (y in 0 until bounds.height) {
+    if (transform == RasterTransform() && bounds == PixelRect(0,0,width,height) && background == null) return this
+    val output = IntArray(bounds.width*bounds.height) { background ?: 0 }
+    transformInto(transform,bounds,output,bounds.width,bounds.x,bounds.y,background != null,checkCancelled)
+    return Raster(bounds.width,bounds.height,output)
+}
+
+/** Copy the canvas once, clear the lifted region, then sample only the visible destination. */
+internal fun Raster.renderSelection(payload: Raster, transform: RasterTransform, bounds: PixelRect, source: PixelRect?,
+    outputWidth: Int, outputHeight: Int, background: Int): Raster {
+    checkImageSize(outputWidth,outputHeight)
+    val output = if (outputWidth == width && outputHeight == height) pixels.copyOf()
+    else IntArray(outputWidth*outputHeight) { background }.also { result ->
+        for (y in 0 until min(height,outputHeight)) pixels.copyInto(result,y*outputWidth,y*width,y*width+min(width,outputWidth))
+    }
+    source?.clipped(min(width,outputWidth),min(height,outputHeight))?.let { area ->
+        for (y in area.y until area.bottom) output.fill(background or BLACK,y*outputWidth+area.x,y*outputWidth+area.right)
+    }
+    payload.transformInto(transform,bounds.clipped(outputWidth,outputHeight),output,outputWidth,0,0,true,{})
+    return Raster(outputWidth,outputHeight,output)
+}
+
+private fun Raster.transformInto(transform: RasterTransform, area: PixelRect, output: IntArray, outputWidth: Int,
+    originX: Int, originY: Int, blend: Boolean, checkCancelled: () -> Unit) {
+    // A common local origin makes cached previews and committed pixels agree at rounding boundaries.
+    val samplingOrigin = transform.bounds(width,height)
+    val inverse = transform.then(RasterTransform.translation(-samplingOrigin.x.toDouble(),-samplingOrigin.y.toDouble())).inverse()
+    val exact = listOf(inverse.a,inverse.b,inverse.c,inverse.d,inverse.tx,inverse.ty).all { it == round(it) } &&
+        abs(inverse.a)+abs(inverse.b) == 1.0 && abs(inverse.c)+abs(inverse.d) == 1.0 &&
+        inverse.a*inverse.c+inverse.b*inverse.d == 0.0
+    if (exact) {
+        val ax = inverse.a.toInt(); val bx = inverse.b.toInt()
+        val cx = inverse.c.toInt(); val dx = inverse.d.toInt()
+        val offsetX = (inverse.tx+(ax+cx-1)/2.0).toInt()
+        val offsetY = (inverse.ty+(bx+dx-1)/2.0).toInt()
+        for (y in area.y until area.bottom) {
+            checkCancelled()
+            var sx = ax*(area.x-samplingOrigin.x)+cx*(y-samplingOrigin.y)+offsetX
+            var sy = bx*(area.x-samplingOrigin.x)+dx*(y-samplingOrigin.y)+offsetY
+            var destination = (y-originY)*outputWidth+area.x-originX
+            if (!blend && ax == 1 && bx == 0 && sx >= 0 && sx+area.width <= width && sy in 0 until height) {
+                pixels.copyInto(output,destination,sy*width+sx,sy*width+sx+area.width)
+                continue
+            }
+            for (x in area.x until area.right) {
+                if (sx in 0 until width && sy in 0 until height) {
+                    val color = pixels[sy*width+sx]
+                    output[destination] = if (blend) composite(color,output[destination]) else color
+                }
+                sx += ax; sy += bx; destination++
+            }
+        }
+        return
+    }
+    for (y in area.y until area.bottom) {
         checkCancelled()
-        for (x in 0 until bounds.width) {
-            val px = inverse.x(x+bounds.x+0.5,y+bounds.y+0.5)
-            val py = inverse.y(x+bounds.x+0.5,y+bounds.y+0.5)
+        for (x in area.x until area.right) {
+            val px = inverse.x(x-samplingOrigin.x+0.5,y-samplingOrigin.y+0.5)
+            val py = inverse.y(x-samplingOrigin.x+0.5,y-samplingOrigin.y+0.5)
             if (px < -1e-6 || py < -1e-6 || px >= width || py >= height) continue
             val sx = (px-0.5).coerceIn(0.0,width-1.0); val sy = (py-0.5).coerceIn(0.0,height-1.0)
             val ix = sx.toInt(); val iy = sy.toInt()
             val fx = sx-ix; val fy = sy-iy
-            if (fx < 1e-10 && fy < 1e-10) { output[y*bounds.width+x] = pixel(ix,iy); continue }
-            var alpha = 0.0; var red = 0.0; var green = 0.0; var blue = 0.0
-            for (j in 0..1) for (i in 0..1) {
-                val color = pixel(min(ix+i,width-1),min(iy+j,height-1))
-                val weight = (if (i == 0) 1-fx else fx)*(if (j == 0) 1-fy else fy)*(color ushr 24)
-                alpha += weight; red += (color ushr 16 and 255)*weight
-                green += (color ushr 8 and 255)*weight; blue += (color and 255)*weight
+            val destination = (y-originY)*outputWidth+x-originX
+            if (fx < 1e-10 && fy < 1e-10) {
+                val color = pixel(ix,iy)
+                output[destination] = if (blend) composite(color,output[destination]) else color
+                continue
             }
-            if (alpha > 0) output[y*bounds.width+x] = (alpha.roundToInt().coerceIn(0,255) shl 24) or
-                ((red/alpha).roundToInt().coerceIn(0,255) shl 16) or
-                ((green/alpha).roundToInt().coerceIn(0,255) shl 8) or (blue/alpha).roundToInt().coerceIn(0,255)
+            val nextX = min(ix+1,width-1); val nextY = min(iy+1,height-1)
+            val p00 = pixel(ix,iy); val p10 = pixel(nextX,iy)
+            val p01 = pixel(ix,nextY); val p11 = pixel(nextX,nextY)
+            val w00 = (1-fx)*(1-fy)*(p00 ushr 24); val w10 = fx*(1-fy)*(p10 ushr 24)
+            val w01 = (1-fx)*fy*(p01 ushr 24); val w11 = fx*fy*(p11 ushr 24)
+            val alpha = w00+w10+w01+w11
+            val red = (p00 ushr 16 and 255)*w00+(p10 ushr 16 and 255)*w10+(p01 ushr 16 and 255)*w01+(p11 ushr 16 and 255)*w11
+            val green = (p00 ushr 8 and 255)*w00+(p10 ushr 8 and 255)*w10+(p01 ushr 8 and 255)*w01+(p11 ushr 8 and 255)*w11
+            val blue = (p00 and 255)*w00+(p10 and 255)*w10+(p01 and 255)*w01+(p11 and 255)*w11
+            if (alpha > 0) {
+                val color = (alpha.roundToInt().coerceIn(0,255) shl 24) or
+                    ((red/alpha).roundToInt().coerceIn(0,255) shl 16) or
+                    ((green/alpha).roundToInt().coerceIn(0,255) shl 8) or (blue/alpha).roundToInt().coerceIn(0,255)
+                output[destination] = if (blend) composite(color,output[destination]) else color
+            }
         }
     }
-    return Raster(bounds.width,bounds.height,output)
 }
 
 internal fun Raster.flatten(background: Int) = Raster(width,height,IntArray(pixels.size) { composite(pixels[it],background) })

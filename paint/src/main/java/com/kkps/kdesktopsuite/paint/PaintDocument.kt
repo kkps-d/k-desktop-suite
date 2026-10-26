@@ -61,6 +61,11 @@ internal data class EditPreview(
         .then(RasterTransform.translation(bounds.x.toDouble(),bounds.y.toDouble()))
     val selectionCenter get() = rotationCenter ?: Point(bounds.x+bounds.width/2f,bounds.y+bounds.height/2f)
     fun selectionPixels(checkCancelled: () -> Unit = {}) = requireNotNull(payload).transformed(selectionTransform,bounds,checkCancelled)
+    fun affectedSelectionArea(width: Int, height: Int): PixelRect {
+        val original = source ?: bounds
+        val left = min(original.x,bounds.x); val top = min(original.y,bounds.y)
+        return PixelRect(left,top,max(original.right,bounds.right)-left,max(original.bottom,bounds.bottom)-top).clipped(width,height)
+    }
     fun resizedSelection(area: PixelRect): EditPreview = transformedSelection(
         RasterTransform.translation(-bounds.x.toDouble(),-bounds.y.toDouble())
             .then(RasterTransform.scale(area.width.toDouble()/bounds.width,area.height.toDouble()/bounds.height))
@@ -120,9 +125,9 @@ internal fun Bitmap.raster(): Raster = Raster(width, height, IntArray(width * he
 
 internal fun Raster.render(preview: EditPreview, options: ToolOptions, mask: PixelRect? = null): Raster {
     if (preview.tool == Tool.Select) {
-        val cleared = preview.source?.let { clear(it, options.background) } ?: this
-        return preview.payload?.let {
-            cleared.paste(preview.selectionPixels(), preview.bounds, preview.outputWidth ?: width, preview.outputHeight ?: height, options.background)
+        return preview.payload?.let { payload ->
+            renderSelection(payload,preview.selectionTransform,preview.bounds,preview.source,
+                preview.outputWidth ?: width,preview.outputHeight ?: height,options.background)
         } ?: this
     }
     val bitmap = bitmap()

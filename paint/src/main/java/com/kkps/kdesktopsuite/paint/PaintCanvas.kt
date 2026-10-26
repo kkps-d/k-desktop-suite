@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.ensureActive
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -77,10 +76,15 @@ internal fun PaintCanvas(
     var contextMenu by remember { mutableStateOf<Offset?>(null) }
     var canvasResize by remember { mutableStateOf<PixelRect?>(null) }
     var rotatingSelection by remember { mutableStateOf(false) }
+    var movingSelection by remember { mutableStateOf(false) }
     var rotationCancelGeneration by remember { mutableIntStateOf(0) }
     var suppressRotationPointers by remember { mutableStateOf(false) }
     val raster = state.raster
-    val image = remember(raster) { raster.bitmap().asImageBitmap() }
+    val image = rememberRasterImage(raster,model::message)
+    var retainedState by remember { mutableStateOf(state) }
+    // Keep the last complete image/preview together while the next committed bitmap is prepared.
+    val displayedState = if (image != null && image.raster !== raster) retainedState else state
+    SideEffect { if (image?.raster === raster) retainedState = state }
     var brushImage by remember(brushSession) { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(brushSession) {
         val session = brushSession ?: return@LaunchedEffect
@@ -95,20 +99,24 @@ internal fun PaintCanvas(
             }
         }
     }
-    LaunchedEffect(state.raster,state.busy,strokePending) {
+    LaunchedEffect(state.raster,state.busy,strokePending,image?.raster) {
         val latest = model.state.value
         // Keep released points until composition has the committed image (or cancellation).
-        if (strokePending && !latest.busy && state.raster === latest.raster) {
+        if (strokePending && !latest.busy && state.raster === latest.raster && image?.raster === raster) {
             stroke.clear(); strokePending = false; brushSession = null; erasing = false
         }
     }
-    val selectionPreview = state.preview?.takeIf { it.payload != null }
-    val selectionImage by produceState<Pair<EditPreview,ImageBitmap>?>(null,selectionPreview) {
-        if (selectionPreview == null) value = null
-        else try {
-            value = withContext(Dispatchers.Default) { selectionPreview to selectionPreview.selectionPixels { ensureActive() }.bitmap().asImageBitmap() }
-        } catch (_: OutOfMemoryError) { model.message("Not enough memory to preview this selection.") }
+    val selectionPreview = displayedState.preview?.takeIf { it.payload != null }
+    val payloadImage = rememberRasterImage(selectionPreview?.payload,model::message)
+    val selectionRequest = remember(selectionPreview) { selectionPreview?.selectionImageRequest() }
+    val selectionImage = rememberSelectionImage(selectionRequest,movingSelection || rotatingSelection,model::message)
+    val selectionMatrix = remember(selectionPreview) {
+        selectionPreview?.selectionTransform?.let { transform -> android.graphics.Matrix().apply {
+            setValues(floatArrayOf(transform.a.toFloat(),transform.c.toFloat(),transform.tx.toFloat(),
+                transform.b.toFloat(),transform.d.toFloat(),transform.ty.toFloat(),0f,0f,1f))
+        } }
     }
+    val selectionPaint = remember { android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG) }
     val dragPreview = remember(dragStart,dragEnd,dragConstrained,constructionPoint,state.preview,state.options) {
         if (state.preview?.constructing == true && constructionPoint != null) state.preview.withShapePoint(constructionPoint!!)
         else dragStart?.let { EditPreview.between(state.options.tool,it,dragEnd ?: it,state.options.constrain || dragConstrained) }
@@ -279,6 +287,8 @@ internal fun PaintCanvas(
                     }
                     down.consume()
                     try {
+                        movingSelection = !navigation && (hitExisting || resize) &&
+                            (initial.preview?.payload != null || initial.selection != null)
                         var event: PointerEvent
                         do {
                             event = awaitPointerEvent()
@@ -323,6 +333,7 @@ internal fun PaintCanvas(
                         }
                     } catch (cancelled: CancellationException) { throw cancelled }
                     finally {
+                        movingSelection = false
                         if (!strokePending) { stroke.clear(); brushSession = null; erasing = false }
                         dragStart = null; dragEnd = null; constructionPoint = null; dragConstrained = false
                     }
@@ -330,38 +341,50 @@ internal fun PaintCanvas(
             }) {
             val view = state.viewport
             val origin = view.origin
-            val canvasBounds = canvasResize ?: PixelRect(0,0,state.preview?.outputWidth ?: raster.width,state.preview?.outputHeight ?: raster.height)
+            val shownRaster = displayedState.raster
+            val canvasBounds = canvasResize ?: PixelRect(0,0,displayedState.preview?.outputWidth ?: shownRaster.width,displayedState.preview?.outputHeight ?: shownRaster.height)
             val canvasOrigin = view.screenPoint(Point(canvasBounds.x.toFloat(),canvasBounds.y.toFloat()))
             val canvasSize = Size(canvasBounds.width * view.scale,canvasBounds.height * view.scale)
-            drawRect(Color(state.options.background),Offset(canvasOrigin.x,canvasOrigin.y),canvasSize)
+            drawRect(Color(displayedState.options.background),Offset(canvasOrigin.x,canvasOrigin.y),canvasSize)
             clipRect(canvasOrigin.x,canvasOrigin.y,canvasOrigin.x + canvasSize.width,canvasOrigin.y + canvasSize.height) {
                 withTransform({
                     translate(origin.x,origin.y)
                     scale(view.scale,view.scale,pivot = Offset.Zero)
                 }) {
-                    drawImage(brushImage?.takeIf { brushSession?.source === raster } ?: image,dstSize = IntSize(raster.width,raster.height),
-                        filterQuality = if (view.scale >= 1) FilterQuality.None else FilterQuality.Low)
-                    state.preview?.takeIf { it.tool == Tool.Select }?.let { preview ->
+                    (brushImage?.takeIf { brushSession?.source === shownRaster } ?: image?.bitmap)?.let { bitmap ->
+                        drawImage(bitmap,dstSize = IntSize(shownRaster.width,shownRaster.height),
+                            filterQuality = if (view.scale >= 1) FilterQuality.None else FilterQuality.Low)
+                    }
+                    selectionPreview?.let { preview ->
+                        if (selectionImage == null && payloadImage?.raster !== preview.payload) return@let
                         preview.source?.let { source ->
-                            drawRect(Color(state.options.background or BLACK),Offset(source.x.toFloat(),source.y.toFloat()),Size(source.width.toFloat(),source.height.toFloat()))
+                            drawRect(Color(displayedState.options.background or BLACK),Offset(source.x.toFloat(),source.y.toFloat()),Size(source.width.toFloat(),source.height.toFloat()))
                         }
-                        selectionImage?.takeIf { it.first.id == preview.id }?.let { (rendered,selected) ->
-                            drawImage(selected,dstOffset = IntOffset(rendered.bounds.x,rendered.bounds.y),
+                        if (selectionImage != null) {
+                            drawImage(selectionImage.bitmap,dstOffset = IntOffset(preview.bounds.x,preview.bounds.y),
                                 filterQuality = if (view.scale >= 1) FilterQuality.None else FilterQuality.Low)
+                        } else payloadImage?.takeIf { it.raster === preview.payload }?.let { payload ->
+                            // During interaction, move the cached texture instead of rebuilding its pixels.
+                            drawIntoCanvas { canvas ->
+                                canvas.save()
+                                canvas.nativeCanvas.concat(selectionMatrix)
+                                canvas.nativeCanvas.drawBitmap(payload.bitmap.asAndroidBitmap(),0f,0f,selectionPaint)
+                                canvas.restore()
+                            }
                         }
                     }
                     // Draw geometry directly so dragging never waits for a full-image raster render.
                     drawIntoCanvas { canvas ->
                         canvas.save()
-                        state.selection?.let { canvas.clipRect(it.x.toFloat(),it.y.toFloat(),it.right.toFloat(),it.bottom.toFloat()) }
-                        state.preview?.takeUnless { it.constructing && dragPreview != null }?.let { canvas.nativeCanvas.drawShapePreview(it,state.options) }
+                        displayedState.selection?.let { canvas.clipRect(it.x.toFloat(),it.y.toFloat(),it.right.toFloat(),it.bottom.toFloat()) }
+                        displayedState.preview?.takeUnless { it.constructing && dragPreview != null }?.let { canvas.nativeCanvas.drawShapePreview(it,displayedState.options) }
                         dragPreview?.let { canvas.nativeCanvas.drawShapePreview(it,state.options) }
                         canvas.restore()
                     }
                 }
             }
             drawRect(Color.Gray,Offset(canvasOrigin.x,canvasOrigin.y),canvasSize,style = Stroke(1f))
-            if (stroke.isNotEmpty() && brushSession?.source === raster && (state.options.tool != Tool.Brush || erasing)) {
+            if (stroke.isNotEmpty() && brushSession?.source === displayedState.raster && (state.options.tool != Tool.Brush || erasing)) {
                 val path = Path()
                 stroke.forEachIndexed { index, point ->
                     val p = view.screenPoint(point)
@@ -410,7 +433,9 @@ internal fun PaintCanvas(
                 drawPath(cursor,outline,style = Stroke(1f))
             }
         }
-        state.preview?.takeIf { it.tool == Tool.Text }?.let { preview -> key(preview.id) { TextOverlay(state,preview,model) } }
+        displayedState.preview?.takeIf { it.tool == Tool.Text }?.let { preview -> key(preview.id) {
+            TextOverlay(displayedState.copy(viewport = state.viewport,busy = state.busy || image?.raster !== raster),preview,model)
+        } }
         if (state.options.tool != Tool.Pan) {
             if (state.selection == null && state.preview?.payload == null)
                 CanvasResizeHandles(state,model,canvasResize,active,onBoundsChange = { canvasResize = it })

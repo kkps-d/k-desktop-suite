@@ -1,0 +1,172 @@
+{
+  "date": "2026-10-26",
+  "emulator": "Small_Desktop",
+  "api": 37,
+  "abi": "x86_64",
+  "display": "1366x768",
+  "densityDpi": 160,
+  "buildType": "debug",
+  "apkSha256": "9a9c29566d8fdef634d09ec2d5673820f4587521dfbbc6ebcaedd769e940472f",
+  "raster": {
+    "1MP rotate90": {
+      "medianMs": 10.649,
+      "samplesMs": [
+        10.4767,
+        10.7938,
+        14.4485,
+        12.6769,
+        10.574,
+        10.5843,
+        10.649
+      ],
+      "checksum": -16712363
+    },
+    "1MP flip": {
+      "medianMs": 10.6743,
+      "samplesMs": [
+        10.6743,
+        10.8557,
+        10.8523,
+        10.2613,
+        13.1578,
+        10.5654,
+        10.4664
+      ],
+      "checksum": -196523
+    },
+    "1MP resize125": {
+      "medianMs": 162.7152,
+      "samplesMs": [
+        162.7152,
+        161.4376,
+        163.7982,
+        163.2496,
+        165.2576,
+        161.3585,
+        161.8072
+      ],
+      "checksum": -16711595
+    },
+    "1MP apply33": {
+      "medianMs": 93.5742,
+      "samplesMs": [
+        95.9023,
+        93.5742,
+        93.8081,
+        92.3549,
+        92.6456,
+        97.0352,
+        92.9251
+      ],
+      "checksum": -1
+    },
+    "4MP rotate90": {
+      "medianMs": 45.5236,
+      "samplesMs": [
+        46.642,
+        45.5236,
+        42.0273,
+        48.138,
+        41.7264,
+        47.6541,
+        42.653
+      ],
+      "checksum": -16712107
+    },
+    "4MP flip": {
+      "medianMs": 42.1327,
+      "samplesMs": [
+        40.5364,
+        46.4772,
+        41.483,
+        47.3808,
+        42.1327,
+        45.4194,
+        40.8938
+      ],
+      "checksum": -130987
+    },
+    "4MP resize125": {
+      "medianMs": 653.3915,
+      "samplesMs": [
+        657.857,
+        653.3915,
+        653.7413,
+        652.7898,
+        677.7711,
+        651.6118,
+        650.506
+      ],
+      "checksum": -16777131
+    },
+    "4MP apply33": {
+      "medianMs": 380.261,
+      "samplesMs": [
+        380.0309,
+        380.261,
+        383.4694,
+        377.6949,
+        382.7387,
+        379.1322,
+        383.1939
+      ],
+      "checksum": -1
+    }
+  },
+  "ui": {
+    "1MP live": {
+      "frameMedianMs": 17.4803,
+      "frameP95Ms": 18.92996,
+      "frames": 182,
+      "allocatedBytes": 22212608,
+      "interactionMedianMs": 49.5476
+    },
+    "1MP commandApply": {
+      "medianMs": 133.0036,
+      "samplesMs": [
+        198.4171,
+        133.1377,
+        128.8478,
+        133.0036,
+        128.5686
+      ]
+    },
+    "1MP smallApply": {
+      "medianMs": 4.4197,
+      "samplesMs": [
+        3.9864,
+        7.1028,
+        4.4197,
+        4.4379,
+        3.8559
+      ]
+    },
+    "4MP live": {
+      "frameMedianMs": 10.01172,
+      "frameP95Ms": 18.626878,
+      "frames": 181,
+      "allocatedBytes": 18137088,
+      "interactionMedianMs": 36.0593
+    },
+    "4MP commandApply": {
+      "medianMs": 526.6544,
+      "samplesMs": [
+        515.9528,
+        540.7496,
+        553.7224,
+        526.6544,
+        518.5889
+      ]
+    },
+    "4MP smallApply": {
+      "medianMs": 10.3207,
+      "samplesMs": [
+        10.2463,
+        12.0203,
+        9.9506,
+        10.3207,
+        13.569
+      ]
+    }
+  }
+}

@@ -278,7 +278,8 @@ internal class PaintViewModel(
             message("Choose an outline or fill before applying this shape."); return
         }
         operation({ it.render(preview.copy(constructing = false), s.options, if (preview.tool == Tool.Select) null else s.selection) },
-            valid = { state.value.preview?.id == preview.id && state.value.options == s.options }) {
+            valid = { state.value.preview?.id == preview.id && state.value.options == s.options },
+            affectedArea = preview.takeIf { it.tool == Tool.Select }?.affectedSelectionArea(s.raster.width,s.raster.height)) {
             textEditor = null
             mutableState.update { it.copy(preview = null, selection = null) }
             checkpoint()
@@ -372,7 +373,7 @@ internal class PaintViewModel(
                 val preview = currentPreview()
                 operation({ source ->
                     val composed = preview?.let { source.render(it,s.options,s.selection) } ?: source
-                    composed.transformed(transform,output).flatten(s.options.background)
+                    composed.transformed(transform,output,background = s.options.background)
                 },valid = { state.value.preview == s.preview && state.value.selection == s.selection && state.value.options == s.options }) { clearSelection() }
             }
         } catch (error: IllegalArgumentException) { message(error.message) }
