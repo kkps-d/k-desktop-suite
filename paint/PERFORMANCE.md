@@ -20,6 +20,12 @@ See the [complete Canvas comparison](performance/CANVAS.md) for all operations, 
 
 Verification: app/test builds and Android lint pass; all 35 JVM tests and 61 relevant instrumentation tests pass. The nine accepted benchmark runs each pass both timing tests. Instrumentation uses local Small Desktop only; its temporary regression-test display override was restored. ARM release performance was not measured.
 
+## Complete rotation and flip commands
+
+A separate [complete-command comparison](performance/COMMANDS.md) now covers right/left 90°, 180°, and both flips for the full canvas, raw selections, translucent floating selections, clipping, previously rotated selections, and 64 × 64 selections. It includes selection lifting, pixel commit and undo-history preparation; display uploads and recovery PNGs are excluded.
+
+This changes the performance conclusion for some targets: Canvas is about 1.20x faster for whole-canvas commands and 1.69x for large translucent floating selections. Raw full selections improve only about 1.09x, while clipped and small selections favor Kotlin. The current global backend policy remains unchanged; these results identify an opportunity for target-aware dispatch rather than switching all flips/quarter turns to Canvas.
+
 ## Earlier Kotlin optimization measurements
 
 Measured on 26 October 2026 using the local **Small Desktop** emulator, Android API 37, x86_64, 1366 x 768 at 160 dpi. Both versions used debug APKs and the same timing harness. The baseline is commit `ebec86a`; the after measurement covers the Kotlin optimizations committed in `a95e65a`. APK hashes and raw samples are in [before](performance/transform-before.json) and [after](performance/transform-after.json).

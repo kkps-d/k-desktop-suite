@@ -72,8 +72,8 @@ internal fun RasterTransform.family(): TransformFamily {
     }
 }
 
-// Three-pass benchmarks favor Canvas resampling, but Kotlin wins exact turns/flips and row copies.
-// See performance/CANVAS.md; this policy is shared by settled previews and committed pixels.
+// Policy selected from raster benchmarks; target-specific command costs are in performance/COMMANDS.md.
+// Keep this decision shared by settled previews and committed pixels.
 internal fun RasterTransform.usesCanvas() = when (family()) {
     TransformFamily.QuarterTurns,TransformFamily.Flips -> false
     TransformFamily.Resize,TransformFamily.Affine -> true

@@ -2,6 +2,8 @@
 
 Measured 26 October 2026 on the local **Small Desktop** emulator, API 37, x86_64, 1366 × 768, density 160. All stages use debug APKs and the same expanded instrumentation harness. This comparison starts from the already optimized Kotlin renderer at `fe36333e30d9c12fa5cc4d644faf003a45eb6bc3`.
 
+The later [complete-command comparison](COMMANDS.md) includes selection lifting and undo-history preparation for every flip/quarter-turn target. It finds Canvas gains for whole-canvas commands and large translucent selections that the standalone raster timings do not capture; small and clipped selections still favor Kotlin.
+
 ## Method and selection
 
 - Three independent instrumentation runs per stage: Kotlin baseline, all-Canvas candidate, and the selected production combination. Tables use the median of the three run medians.

@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory)][ValidateSet('before','candidate','after')][string]$Stage,
-    [string]$Serial = 'emulator-5556'
+    [string]$Serial = 'emulator-5556',
+    [ValidateSet('raster','commands')][string]$Suite = 'raster'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -10,11 +11,15 @@ if ($Serial -notmatch '^emulator-\d+$') { throw 'Only a local emulator may run t
 $avd = & $adb -s $Serial emu avd name
 if ($LASTEXITCODE -ne 0 -or $avd[0].Trim() -ne 'Small_Desktop') { throw 'Use the local Small Desktop emulator.' }
 $androidUser = (& $adb -s $Serial shell am get-current-user).Trim()
-$saved = Join-Path $repo "paint/build/canvas-benchmarks/$Stage"
+$prefix = if ($Suite -eq 'commands') { 'commands' } else { 'canvas' }
+$className = if ($Suite -eq 'commands') { 'TransformCommandPerformanceTest' } else { 'TransformPerformanceTest' }
+$methods = if ($Suite -eq 'commands') { @('commandTimings') } else { @('rasterTimings','livePreviewAndApplyTimings') }
+$success = 'OK \(' + $methods.Count + ' tests?\)'
+$saved = Join-Path $repo "paint/build/$prefix-benchmarks/$Stage"
 New-Item -ItemType Directory -Force -Path $saved | Out-Null
 $app = Join-Path $repo 'paint/build/outputs/apk/debug/paint-debug.apk'
 $test = Join-Path $repo 'paint/build/outputs/apk/androidTest/debug/paint-debug-androidTest.apk'
-$harness = Join-Path $repo 'paint/src/androidTest/java/com/kkps/kdesktopsuite/paint/TransformPerformanceTest.kt'
+$harness = Join-Path $repo "paint/src/androidTest/java/com/kkps/kdesktopsuite/paint/$className.kt"
 if (!(Test-Path -LiteralPath (Join-Path $saved 'app.apk'))) {
     Copy-Item -LiteralPath $app -Destination (Join-Path $saved 'app.apk')
     Copy-Item -LiteralPath $test -Destination (Join-Path $saved 'test.apk')
@@ -24,7 +29,7 @@ if (!(Test-Path -LiteralPath (Join-Path $saved 'app.apk'))) {
 }
 $app = Join-Path $saved 'app.apk'
 $test = Join-Path $saved 'test.apk'
-$harness = Join-Path $saved 'TransformPerformanceTest.kt'
+$harness = Join-Path $saved "$className.kt"
 $revision = (git -C $repo rev-parse HEAD).Trim()
 $metadata = [ordered]@{
     stage = $Stage; revision = $revision; measuredAtUtc = [DateTime]::UtcNow.ToString('o')
@@ -41,13 +46,13 @@ if ($LASTEXITCODE -ne 0) { throw 'App installation failed.' }
 if ($LASTEXITCODE -ne 0) { throw 'Test installation failed.' }
 $runs = @()
 foreach ($run in 1..3) {
-    $label = "canvas-$Stage-$run"
+    $label = "$prefix-$Stage-$run"
     Write-Output "Starting $label"
     $log = Join-Path $saved "$label.log"
-    if (!(Test-Path -LiteralPath $log) -or !(Select-String -LiteralPath $log -Pattern 'OK \(2 tests\)' -Quiet)) {
-        & $adb -s $Serial shell am instrument --user $androidUser -w -e class com.kkps.kdesktopsuite.paint.TransformPerformanceTest -e performanceStage $label com.kkps.kdesktopsuite.paint.test/androidx.test.runner.AndroidJUnitRunner > $log
+    if (!(Test-Path -LiteralPath $log) -or !(Select-String -LiteralPath $log -Pattern $success -Quiet)) {
+        & $adb -s $Serial shell am instrument --user $androidUser -w -e class "com.kkps.kdesktopsuite.paint.$className" -e performanceStage $label com.kkps.kdesktopsuite.paint.test/androidx.test.runner.AndroidJUnitRunner > $log
     }
-    if (!(Select-String -LiteralPath $log -Pattern 'OK \(2 tests\)' -Quiet)) {
+    if (!(Select-String -LiteralPath $log -Pattern $success -Quiet)) {
         Get-Content -LiteralPath $log -Tail 30
         throw "Benchmark failed: $label"
     }
@@ -57,13 +62,21 @@ foreach ($run in 1..3) {
     $installedHash = (& $adb -s $Serial shell sha256sum $installedPath.Trim()) -split '\s+' | Select-Object -First 1
     if ($installedHash -ne $metadata.appSha256) { throw 'The installed APK changed during measurement; discard this run.' }
     $entry = [ordered]@{ run = $run }
-    foreach ($method in @('rasterTimings','livePreviewAndApplyTimings')) {
+    foreach ($method in $methods) {
         $json = & $adb -s $Serial exec-out run-as com.kkps.kdesktopsuite.paint --user $androidUser cat "cache/transform-performance-$label-$method.json"
         if ($LASTEXITCODE -ne 0) { throw "Cannot read $method report." }
         $entry[$method] = ($json -join "`n") | ConvertFrom-Json
     }
+    if ($Suite -eq 'commands') {
+        $policy = $entry.commandTimings.environment
+        $expectedQuarterTurns = $Stage -eq 'candidate'
+        $expectedAffine = $Stage -ne 'before'
+        if ($policy.quarterTurnsCanvas -ne $expectedQuarterTurns -or $policy.affineCanvas -ne $expectedAffine) {
+            throw 'The compiled renderer policy does not match this benchmark stage.'
+        }
+    }
     $runs += $entry
     $report = [ordered]@{ metadata = $metadata; runs = $runs }
-    $report | ConvertTo-Json -Depth 100 | Set-Content -Encoding utf8 (Join-Path $PSScriptRoot "canvas-$Stage.json")
+    $report | ConvertTo-Json -Depth 100 | Set-Content -Encoding utf8 (Join-Path $PSScriptRoot "$prefix-$Stage.json")
     Write-Output "Finished $label"
 }
