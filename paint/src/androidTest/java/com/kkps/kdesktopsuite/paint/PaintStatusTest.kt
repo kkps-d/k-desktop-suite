@@ -251,6 +251,22 @@ class PaintStatusTest {
         compose.runOnIdle { assertEquals(BLACK,model.state.value.raster.pixel(100,100)) }
     }
 
+    @Test fun aboutLogoOpensDebugAndBackReturnsToPaint() {
+        compose.onNodeWithText("Help").performClick()
+        compose.onNodeWithText("About KD Paint").performClick()
+        compose.onNodeWithTag("about-paint-logo").performClick()
+
+        compose.onNodeWithTag("about-dialog").assertDoesNotExist()
+        compose.onNodeWithTag("paint-debug-screen").assertIsDisplayed()
+        compose.onNodeWithText("Debug").assertIsDisplayed()
+        compose.onNodeWithText("Components").assertIsDisplayed()
+        compose.onNodeWithTag("classic-ribbon").assertDoesNotExist()
+
+        compose.onNodeWithContentDescription("Back").performClick()
+        compose.onNodeWithTag("paint-debug-screen").assertDoesNotExist()
+        compose.onNodeWithTag("classic-ribbon").assertIsDisplayed()
+    }
+
     @Test fun operationControlsStayInTheHeaderAndStatusBarIsCompact() {
         compose.onNodeWithTag("paint-status-bar").assertHeightIsEqualTo(32.dp)
         compose.mainClock.autoAdvance = false

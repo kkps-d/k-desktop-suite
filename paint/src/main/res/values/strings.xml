@@ -22,6 +22,10 @@
     <string name="ui_source_code">Source code</string>
     <string name="ui_dismiss">Dismiss</string>
     <string name="ui_about_kd_paint">About KD Paint</string>
+    <string name="ui_open_debug">Open Debug</string>
+    <string name="ui_debug">Debug</string>
+    <string name="ui_components">Components</string>
+    <string name="ui_components_empty">New components can be tested here.</string>
     <string name="ui_file">File</string>
     <string name="ui_new_image_ctrl_n">New image</string>
     <string name="ui_open_image_ctrl_o">Open image…</string>

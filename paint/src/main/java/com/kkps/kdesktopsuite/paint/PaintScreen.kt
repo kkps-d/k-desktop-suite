@@ -75,16 +75,20 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
     var cursor by remember { mutableStateOf<Point?>(Point(0f,0f)) }
     var selectionDrag by remember { mutableStateOf<PixelRect?>(null) }
     var canvasResize by remember { mutableStateOf<PixelRect?>(null) }
+    var debugOpen by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(state.message) { state.message?.let { snackbar.showSnackbar(it); model.message(null) } }
     val imeVisible = WindowInsets.isImeVisible
-    BackHandler(!imeVisible && (state.settingsOpen || state.dialog != null || state.preview != null || state.selection != null || state.focusMode)) { model.back() }
+    BackHandler(!imeVisible && (debugOpen || state.settingsOpen || state.dialog != null || state.preview != null || state.selection != null || state.focusMode)) {
+        if (debugOpen) debugOpen = false else model.back()
+    }
     CompositionLocalProvider(LocalPaintBusyVisible provides showBusy) {
         Surface(Modifier.fillMaxSize()) {
             BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.union(WindowInsets.ime))) {
                 val width = maxWidth
                 val short = maxHeight < 480.dp
-                Column(Modifier.fillMaxSize().onKeyEvent { event -> if (state.settingsOpen) false else handlePaintKey(event,state,model) }) {
-                    if (state.settingsOpen) PaintSettingsScreen(state,model) else {
+                Column(Modifier.fillMaxSize().onKeyEvent { event -> if (state.settingsOpen || debugOpen) false else handlePaintKey(event,state,model) }) {
+                    if (debugOpen) PaintDebugScreen { debugOpen = false }
+                    else if (state.settingsOpen) PaintSettingsScreen(state,model) else {
                         if (!state.focusMode) {
                             PaintHeader(state,model,width.value,showBusy)
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -107,7 +111,10 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
                     }
                 }
                 SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter))
-                PaintDialogs(state,model)
+                if (!debugOpen) PaintDialogs(state,model) {
+                    model.dialog(null)
+                    debugOpen = true
+                }
             }
         }
     }

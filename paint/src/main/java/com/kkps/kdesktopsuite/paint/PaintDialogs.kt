@@ -1,6 +1,7 @@
 package com.kkps.kdesktopsuite.paint
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import com.kkps.kdesktopsuite.ui.AppAboutDialog
@@ -20,7 +22,7 @@ import com.kkps.kdesktopsuite.ui.AppDropdownMenu
 import com.kkps.kdesktopsuite.ui.AppMenuItem
 
 @Composable
-internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel) {
+internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenDebug: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     when (s.dialog) {
         null -> Unit
@@ -57,7 +59,11 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel) {
         PaintDialog.About -> AppAboutDialog(title = stringResource(R.string.ui_about_kd_paint),
             version = stringResource(R.string.ui_about_version,BuildConfig.VERSION_NAME),developer = stringResource(R.string.ui_about_developer),
             sourceLabel = stringResource(R.string.ui_source_code),dismissLabel = stringResource(R.string.ui_dismiss),
-            icon = { Image(painterResource(R.drawable.ic_paint),null,Modifier.size(48.dp)) },
+            icon = {
+                Image(painterResource(R.drawable.ic_paint),stringResource(R.string.ui_open_debug),
+                    Modifier.size(48.dp).testTag("about-paint-logo").clickable(
+                        interactionSource = remember { MutableInteractionSource() },indication = null,onClick = onOpenDebug))
+            },
             onSourceClick = { runCatching { uriHandler.openUri("https://github.com/kkps-d/k-desktop-suite") }
                 .onFailure { model.message("No browser is available to open the source repository.") } },
             onDismiss = { model.dialog(null) })
