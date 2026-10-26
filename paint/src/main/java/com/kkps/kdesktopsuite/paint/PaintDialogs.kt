@@ -52,6 +52,7 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel) {
         PaintDialog.Colors -> ColorsDialog(s,model)
         PaintDialog.Geometry -> GeometryDialog(s,model)
         PaintDialog.CanvasSize -> CanvasSizeDialog(s,model)
+        PaintDialog.ResizeSkew -> ResizeSkewDialog(s,model)
         PaintDialog.StrokeSize -> StrokeSizeDialog(s,model)
         PaintDialog.About -> AppAboutDialog(title = stringResource(R.string.ui_about_kd_paint),
             version = stringResource(R.string.ui_about_version,BuildConfig.VERSION_NAME),developer = stringResource(R.string.ui_about_developer),
@@ -150,6 +151,8 @@ private fun GeometryDialog(s: PaintUiState, model: PaintViewModel) {
     var x by remember { mutableStateOf(rect.x.toString()) }; var y by remember { mutableStateOf(rect.y.toString()) }
     var width by remember { mutableStateOf(rect.width.toString()) }; var height by remember { mutableStateOf(rect.height.toString()) }
     var locked by remember { mutableStateOf(false) }
+    val selection = s.preview?.payload != null || s.selection != null
+    var angle by remember { mutableStateOf((s.preview?.rotationDegrees ?: 0.0).toString()) }
     var error by remember { mutableStateOf<String?>(null) }
     AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text(if (s.preview?.tool == Tool.Text) "Text and geometry" else "Move / resize preview") },text = {
         Column(Modifier.verticalScroll(rememberScrollState())) {
@@ -157,6 +160,7 @@ private fun GeometryDialog(s: PaintUiState, model: PaintViewModel) {
             NumericField("Width (pixels)",width,{ width = it; if (locked) it.toIntOrNull()?.let { w -> height = maxOf(1,(w.toFloat()*rect.height/rect.width).roundToInt()).toString() } })
             NumericField("Height (pixels)",height,{ height = it; if (locked) it.toIntOrNull()?.let { h -> width = maxOf(1,(h.toFloat()*rect.width/rect.height).roundToInt()).toString() } })
             Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(locked,{ locked = it }); Text(stringResource(R.string.ui_maintain_aspect_ratio)) }
+            if (selection) NumericField(stringResource(R.string.ui_rotation_degrees),angle,{ angle = it })
             if (s.preview?.tool == Tool.Text) TextOptions(s,model)
             error?.let { Text(it,color = MaterialTheme.colorScheme.error) }
         }
@@ -164,7 +168,11 @@ private fun GeometryDialog(s: PaintUiState, model: PaintViewModel) {
         try {
             val bounds = PixelRect(requireNotNull(x.toIntOrNull()),requireNotNull(y.toIntOrNull()),requireNotNull(width.toIntOrNull()),requireNotNull(height.toIntOrNull()))
             require(bounds.x in -8192..8192 && bounds.y in -8192..8192) { "Position must be between −8192 and 8192." }
-            checkImageSize(bounds.width,bounds.height); model.movePreview(bounds); model.dialog(null)
+            val degrees = if (selection) requireNotNull(angle.toDoubleOrNull()) { "Enter a valid rotation angle." }.also {
+                require(it.isFinite()) { "Enter a valid rotation angle." }
+            } else null
+            checkImageSize(bounds.width,bounds.height)
+            if (model.updateGeometry(bounds,degrees)) model.dialog(null)
         } catch (invalid: Exception) { error = invalid.message ?: "Enter valid pixel dimensions." }
     }) { Text(stringResource(R.string.ui_update_preview)) } },dismissButton = { TextButton(onClick = { model.dialog(null) }) { Text(stringResource(R.string.ui_cancel)) } })
 }

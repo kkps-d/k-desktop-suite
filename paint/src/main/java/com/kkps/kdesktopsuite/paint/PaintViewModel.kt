@@ -11,7 +11,7 @@ import java.io.File
 import java.util.UUID
 import kotlin.math.*
 
-internal enum class PaintDialog { ReopenLastEdit, Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Geometry, CanvasSize, StrokeSize, About, Properties }
+internal enum class PaintDialog { ReopenLastEdit, Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Geometry, CanvasSize, ResizeSkew, StrokeSize, About, Properties }
 internal enum class PickerKind { Open, Insert, Save }
 internal data class PickerRequest(val id: String = UUID.randomUUID().toString(), val kind: PickerKind, val mime: String = "image/png", val launched: Boolean = false)
 internal data class PlatformRequest(val id: String = UUID.randomUUID().toString(), val action: String, val file: File? = null)
@@ -239,6 +239,7 @@ internal class PaintViewModel(
             else setPreview(preview.withShapePoint(point))
             return
         }
+        if (preview?.payload != null && !preview.containsSelection(point)) { applyPreview(); return }
         if (preview?.tool?.isShape == true && !preview.bounds.contains(x,y)) { applyPreview(); return }
         when (s.options.tool) {
             Tool.Fill -> operation({ it.fill(x, y, s.options.foreground, s.selection) })
@@ -298,7 +299,84 @@ internal class PaintViewModel(
                 bounds.y + (point.y-preview.bounds.y)*bounds.height/preview.bounds.height)
             setPreview(preview.copy(bounds = bounds, start = transform(preview.start), end = transform(preview.end),
                 points = preview.points.map(::transform)))
+        } else if (preview.payload != null) {
+            setPreview(preview.resizedSelection(bounds))
         } else setPreview(preview.copy(bounds = bounds))
+    }
+
+    fun floatingSelection(): EditPreview? {
+        val s = state.value
+        return s.preview?.takeIf { it.payload != null } ?: s.selection?.let {
+            EditPreview(Tool.Select,it,source = it,payload = s.raster.extract(it))
+        }
+    }
+
+    fun updateGeometry(bounds: PixelRect, angle: Double?): Boolean {
+        if (state.value.busy || state.value.loading) return false
+        return try {
+            checkImageSize(bounds.width,bounds.height)
+            if (angle == null) movePreview(bounds)
+            else {
+                require(angle.isFinite()) { "Enter a valid angle." }
+                val preview = floatingSelection()?.resizedSelection(bounds) ?: return false
+                setPreview(preview.rotatedSelection(angle-preview.rotationDegrees))
+            }
+            true
+        } catch (error: IllegalArgumentException) { message(error.message); false }
+    }
+
+    fun rotateSelection(degrees: Double, original: EditPreview? = null) {
+        if (state.value.busy || state.value.loading || state.value.saving || !degrees.isFinite()) return
+        try {
+            val preview = original ?: floatingSelection() ?: return
+            setPreview(preview.rotatedSelection(degrees))
+        } catch (error: IllegalArgumentException) { message(error.message) }
+        catch (_: OutOfMemoryError) { message("Not enough memory. The original image is unchanged.") }
+    }
+
+    fun rotate(degrees: Int) {
+        val s = state.value
+        if (s.busy || s.loading || s.saving) return
+        if (s.preview?.payload != null || s.selection != null) rotateSelection(degrees.toDouble())
+        else transformTarget { bounds ->
+            RasterTransform.around(Point(bounds.width/2f,bounds.height/2f),RasterTransform.rotation(degrees.toDouble()))
+        }
+    }
+
+    fun flip(horizontal: Boolean) = transformTarget { bounds ->
+        RasterTransform.around(Point(bounds.x+bounds.width/2f,bounds.y+bounds.height/2f),
+            RasterTransform.scale(if (horizontal) -1.0 else 1.0,if (horizontal) 1.0 else -1.0))
+    }
+
+    fun resizeImage(width: Int, height: Int, horizontalSkew: Int, verticalSkew: Int) = transformTarget { bounds ->
+        resizeSkewTransform(bounds,width,height,horizontalSkew,verticalSkew)
+    }
+
+    private fun transformTarget(makeTransform: (PixelRect) -> RasterTransform) {
+        val s = state.value
+        if (s.busy || s.loading || s.saving) return
+        try {
+            val selection = floatingSelection()
+            if (selection != null) {
+                val next = makeTransform(selection.bounds)
+                if (next != RasterTransform()) setPreview(selection.transformedSelection(next))
+            } else {
+                val bounds = PixelRect(0,0,s.raster.width,s.raster.height)
+                val requested = makeTransform(bounds)
+                val corners = requested.corners(bounds.width,bounds.height)
+                val transform = requested.then(RasterTransform.translation(-corners.minOf { it.x }.toDouble(),-corners.minOf { it.y }.toDouble()))
+                val output = transform.bounds(bounds.width,bounds.height)
+                checkImageSize(output.width,output.height)
+                if (transform == RasterTransform()) return
+                // Render pending text/shape into the same transaction as the image transform.
+                val preview = currentPreview()
+                operation({ source ->
+                    val composed = preview?.let { source.render(it,s.options,s.selection) } ?: source
+                    composed.transformed(transform,output).flatten(s.options.background)
+                },valid = { state.value.preview == s.preview && state.value.selection == s.selection && state.value.options == s.options }) { clearSelection() }
+            }
+        } catch (error: IllegalArgumentException) { message(error.message) }
+        catch (_: OutOfMemoryError) { message("Not enough memory. The original image is unchanged.") }
     }
     fun deleteSelection() {
         val s = state.value
@@ -494,11 +572,12 @@ internal class PaintViewModel(
     }
     fun copy(cut: Boolean = false) {
         val s = state.value; val rect = s.preview?.bounds ?: s.selection ?: return
-        val content = s.preview?.payload ?: s.raster.extract(rect)
         val source = s.preview?.let { if (it.payload != null) it.source else s.selection } ?: s.selection
         pendingCut = if (cut && source != null) PendingCut(source,history.revision,documentId) else null
         viewModelScope.launch {
-            try { val staged = images.stage(content,"image/png",100)
+            try {
+                val content = withContext(compute) { s.preview?.takeIf { it.payload != null }?.selectionPixels() ?: s.raster.extract(rect) }
+                val staged = images.stage(content,"image/png",100)
                 mutableState.update { it.copy(platform = PlatformRequest(action = if (cut) "cut" else "copy", file = staged.file)) }
             } catch (error: Exception) { message(error.message) }
         }

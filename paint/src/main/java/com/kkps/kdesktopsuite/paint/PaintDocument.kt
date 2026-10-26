@@ -51,8 +51,42 @@ internal data class EditPreview(
     val textSelectionStart: Int = 0, val textSelectionEnd: Int = 0,
     val textRaster: Raster? = null, val textLayoutKey: TextLayoutKey? = null,
     val points: List<Point> = emptyList(), val constructing: Boolean = false,
+    val transform: RasterTransform? = null, val rotationDegrees: Double = 0.0,
+    val rotationCenter: Point? = null,
 ) {
     val hasContent get() = payload != null || tool.isShape || text.isNotEmpty()
+
+    val selectionTransform get() = transform ?: RasterTransform.scale(
+        bounds.width.toDouble()/requireNotNull(payload).width,bounds.height.toDouble()/payload.height)
+        .then(RasterTransform.translation(bounds.x.toDouble(),bounds.y.toDouble()))
+    val selectionCenter get() = rotationCenter ?: Point(bounds.x+bounds.width/2f,bounds.y+bounds.height/2f)
+    fun selectionPixels(checkCancelled: () -> Unit = {}) = requireNotNull(payload).transformed(selectionTransform,bounds,checkCancelled)
+    fun resizedSelection(area: PixelRect): EditPreview = transformedSelection(
+        RasterTransform.translation(-bounds.x.toDouble(),-bounds.y.toDouble())
+            .then(RasterTransform.scale(area.width.toDouble()/bounds.width,area.height.toDouble()/bounds.height))
+            .then(RasterTransform.translation(area.x.toDouble(),area.y.toDouble())))
+    fun rotatedSelection(degrees: Double): EditPreview {
+        val center = selectionCenter
+        var next = RasterTransform.around(center,RasterTransform.rotation(degrees))
+        // Keep exact quarter turns pixel-aligned, retaining the pivot for subsequent turns.
+        if (abs(degrees % 90) < 1e-8 && abs(rotationDegrees % 90) < 1e-8) {
+            val corners = selectionTransform.then(next).corners(requireNotNull(payload).width,payload.height)
+            val left = corners.minOf { it.x }.toDouble(); val top = corners.minOf { it.y }.toDouble()
+            next = next.then(RasterTransform.translation(round(left)-left,round(top)-top))
+        }
+        return transformedSelection(next,(rotationDegrees+degrees)%360,center)
+    }
+    fun transformedSelection(next: RasterTransform, angle: Double = rotationDegrees, center: Point? = null): EditPreview {
+        val combined = selectionTransform.then(next)
+        val area = combined.bounds(requireNotNull(payload).width,payload.height)
+        checkImageSize(area.width,area.height)
+        return copy(bounds = area,transform = combined,rotationDegrees = angle,
+            rotationCenter = center ?: next.point(selectionCenter.x.toDouble(),selectionCenter.y.toDouble()))
+    }
+    fun containsSelection(point: Point): Boolean {
+        val source = selectionTransform.inverse().point(point.x.toDouble(),point.y.toDouble())
+        return source.x >= 0 && source.y >= 0 && source.x < requireNotNull(payload).width && source.y < payload.height
+    }
 
     companion object {
         fun between(tool: Tool, start: Point, end: Point, constrain: Boolean = false): EditPreview {
@@ -88,7 +122,7 @@ internal fun Raster.render(preview: EditPreview, options: ToolOptions, mask: Pix
     if (preview.tool == Tool.Select) {
         val cleared = preview.source?.let { clear(it, options.background) } ?: this
         return preview.payload?.let {
-            cleared.paste(it, preview.bounds, preview.outputWidth ?: width, preview.outputHeight ?: height, options.background)
+            cleared.paste(preview.selectionPixels(), preview.bounds, preview.outputWidth ?: width, preview.outputHeight ?: height, options.background)
         } ?: this
     }
     val bitmap = bitmap()

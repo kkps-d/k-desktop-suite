@@ -32,6 +32,8 @@ internal enum class PaintIcon(@DrawableRes private val resourceId: Int) {
     Zoom(R.drawable.ms_zoom_in),
     Pan(R.drawable.ms_pan_tool),
     Crop(R.drawable.ms_crop),
+    Resize(R.drawable.ms_resize),
+    Rotate(R.drawable.ms_rotate_90_degrees_cw),
     More(R.drawable.ms_more_vert),
     Swap(R.drawable.ms_swap_horiz),
     Plus(R.drawable.ms_add),

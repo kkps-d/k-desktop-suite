@@ -260,6 +260,10 @@ internal fun PaintRibbon(s: PaintUiState, model: PaintViewModel, width: Float) {
                     PaintButton(PaintIcon.Select,"Rectangular selection",selected = s.options.tool == Tool.Select) { model.tool(Tool.Select) }
                     Column { PaintButton(PaintIcon.Crop,"Crop to selection",s.selection != null || s.preview?.payload != null,action = model::crop)
                         TextButton(onClick = model::selectAll) { Text(stringResource(R.string.ui_all)) } }
+                    Column {
+                        PaintButton(PaintIcon.Resize,stringResource(R.string.ui_resize_and_skew),enabled = !s.loading && !s.saving,busy = s.busy) { model.dialog(PaintDialog.ResizeSkew) }
+                        RotationMenu(s,model)
+                    }
                 }
             }
             RibbonGroup("Tools") {
@@ -305,8 +309,29 @@ private fun ImageMenu(s: PaintUiState, model: PaintViewModel) {
             AppMenuItem({ Text(stringResource(R.string.ui_clear_selection)) },{ open = false; model.clearSelection() },enabled = s.selection != null)
             AppMenuItem({ Text(stringResource(R.string.ui_crop_to_selection)) },{ open = false; model.crop() },enabled = s.selection != null || s.preview?.payload != null)
             AppMenuItem({ Text(stringResource(R.string.ui_move_resize_selection)) },{ open = false; model.dialog(PaintDialog.Geometry) },enabled = s.selection != null || s.preview != null)
+            AppMenuItem({ Text(stringResource(R.string.ui_resize_and_skew)) },{ open = false; model.dialog(PaintDialog.ResizeSkew) },enabled = !s.busy && !s.loading && !s.saving)
+            TransformMenuItems(s,model) { open = false }
         }
     }
+}
+
+@Composable
+private fun RotationMenu(s: PaintUiState, model: PaintViewModel) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        PaintButton(PaintIcon.Rotate,stringResource(R.string.ui_rotate),enabled = !s.loading && !s.saving,busy = s.busy) { open = true }
+        AppDropdownMenu(open,{ open = false }) { TransformMenuItems(s,model) { open = false } }
+    }
+}
+
+@Composable
+private fun TransformMenuItems(s: PaintUiState, model: PaintViewModel, close: () -> Unit) {
+    val enabled = !s.busy && !s.loading && !s.saving
+    listOf(R.string.ui_rotate_right to 90,R.string.ui_rotate_left to -90,R.string.ui_rotate_180 to 180).forEach { (label,degrees) ->
+        AppMenuItem({ Text(stringResource(label)) },{ close(); model.rotate(degrees) },enabled = enabled)
+    }
+    AppMenuItem({ Text(stringResource(R.string.ui_flip_horizontal)) },{ close(); model.flip(true) },enabled = enabled)
+    AppMenuItem({ Text(stringResource(R.string.ui_flip_vertical)) },{ close(); model.flip(false) },enabled = enabled)
 }
 
 @Composable

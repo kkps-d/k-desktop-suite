@@ -111,4 +111,26 @@
     <string name="ui_cut_selection">Cut selection</string>
     <string name="ui_delete_selected_pixels">Delete selected pixels</string>
     <string name="ui_pan">Hand</string>
+    <string name="ui_resize_and_skew">Resize and Skew</string>
+    <string name="ui_skew">Skew</string>
+    <string name="ui_percentage">Percentage</string>
+    <string name="ui_pixels">Pixels</string>
+    <string name="ui_horizontal">Horizontal</string>
+    <string name="ui_vertical">Vertical</string>
+    <string name="ui_horizontal_degrees">Horizontal (degrees)</string>
+    <string name="ui_vertical_degrees">Vertical (degrees)</string>
+    <string name="ui_skew_range">Angles from −89° to 89°. Horizontal skew applies first.</string>
+    <string name="ui_target_selection">Target: Selection</string>
+    <string name="ui_target_image">Target: Image</string>
+    <string name="ui_transform_dimensions">Result: %1$d × %2$d px</string>
+    <string name="ui_ok">OK</string>
+    <string name="ui_rotate">Rotate</string>
+    <string name="ui_rotate_right">Rotate right 90°</string>
+    <string name="ui_rotate_left">Rotate left 90°</string>
+    <string name="ui_rotate_180">Rotate 180°</string>
+    <string name="ui_flip_horizontal">Flip horizontal</string>
+    <string name="ui_flip_vertical">Flip vertical</string>
+    <string name="ui_rotation_degrees">Rotation (degrees clockwise)</string>
+    <string name="ui_rotation_handle">Selection rotation handle</string>
+    <string name="ui_rotation_state">%1$.1f degrees clockwise</string>
 </resources>

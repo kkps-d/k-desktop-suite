@@ -21,6 +21,14 @@ The Shapes icon dropdown offers lines, curves, basic geometry, arrows, stars,
 callouts, a heart, and lightning. Drag to create a preview; for curves, place two
 bend points; for polygons, add vertices and choose Finish shape. Previews support
 move/resize, stroke width, outline/fill colors, Enter to apply, and Escape to cancel.
+Resize opens a dialog with separate Resize and Skew tabs. Percentage/pixel sizing
+starts with aspect lock enabled; OK applies sizing followed by horizontal/vertical
+skew together. Rotate offers quarter turns, 180°, and horizontal/vertical flips.
+These commands target a selection when present, otherwise the whole image.
+Selections also have a top-right rotation handle for free angles and a numeric
+angle in Move / resize. Transforms stay floating until Apply/Enter; Escape cancels
+them. Selection content outside the canvas is clipped when applied. Canvas size
+controls change the canvas bounds separately from image scaling.
 Modern desktop and the common mobile view remain deferred, as do the extended
 tools listed in the [Android specification](../docs/KD_PAINT_ANDROID_SPEC.md).
 

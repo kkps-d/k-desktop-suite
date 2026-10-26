@@ -240,6 +240,9 @@ private fun RecoverySnapshot.json(): JSONObject {
         .put("startX", p.start.x).put("startY", p.start.y).put("endX", p.end.x).put("endY", p.end.y)
         .put("points", JSONArray(p.points.map { JSONArray(listOf(it.x,it.y)) })).put("constructing", p.constructing)
         .put("source", p.source?.json()).put("payload", p.payload != null).put("text", p.text)
+        .put("transform", p.transform?.let { JSONArray(listOf(it.a,it.b,it.c,it.d,it.tx,it.ty)) })
+        .put("rotationDegrees", p.rotationDegrees)
+        .put("rotationCenter", p.rotationCenter?.let { JSONArray(listOf(it.x,it.y)) })
         .put("textSelectionStart", p.textSelectionStart).put("textSelectionEnd", p.textSelectionEnd)
         .put("textRaster", p.textRaster != null && p.textLayoutKey == textLayoutKey(p.text,p.bounds.width,options))
         .put("outputWidth", p.outputWidth).put("outputHeight", p.outputHeight)) }
@@ -264,7 +267,12 @@ private fun snapshotFromJson(json: JSONObject, raster: Raster, payload: Raster?,
         points = p.optJSONArray("points")?.let { points -> List(points.length()) { index ->
             val point = points.getJSONArray(index)
             Point(point.getDouble(0).toFloat(),point.getDouble(1).toFloat())
-        } } ?: emptyList(),constructing = p.optBoolean("constructing")) }
+        } } ?: emptyList(),constructing = p.optBoolean("constructing"),
+        transform = p.optJSONArray("transform")?.let { values ->
+            RasterTransform(values.getDouble(0),values.getDouble(1),values.getDouble(2),values.getDouble(3),values.getDouble(4),values.getDouble(5))
+                .also { it.inverse(); val area = it.bounds(requireNotNull(payload).width,payload.height); checkImageSize(area.width,area.height) }
+        },rotationDegrees = p.optDouble("rotationDegrees",0.0),
+        rotationCenter = p.optJSONArray("rotationCenter")?.let { Point(it.getDouble(0).toFloat(),it.getDouble(1).toFloat()) }) }
     return RecoverySnapshot(raster, options, preview, json.optJSONArray("selection")?.rect(),
         Viewport(imageWidth = raster.width, imageHeight = raster.height, scale = json.getDouble("scale").toFloat().coerceIn(0.1f,5f),
             center = Point(json.getDouble("cx").toFloat(), json.getDouble("cy").toFloat()), fit = json.getBoolean("fit")),

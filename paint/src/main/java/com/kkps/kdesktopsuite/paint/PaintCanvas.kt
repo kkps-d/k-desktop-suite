@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.ensureActive
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -75,6 +76,9 @@ internal fun PaintCanvas(
     var brushSession by remember { mutableStateOf<BrushStrokeSession?>(null) }
     var contextMenu by remember { mutableStateOf<Offset?>(null) }
     var canvasResize by remember { mutableStateOf<PixelRect?>(null) }
+    var rotatingSelection by remember { mutableStateOf(false) }
+    var rotationCancelGeneration by remember { mutableIntStateOf(0) }
+    var suppressRotationPointers by remember { mutableStateOf(false) }
     val raster = state.raster
     val image = remember(raster) { raster.bitmap().asImageBitmap() }
     var brushImage by remember(brushSession) { mutableStateOf<ImageBitmap?>(null) }
@@ -98,8 +102,13 @@ internal fun PaintCanvas(
             stroke.clear(); strokePending = false; brushSession = null; erasing = false
         }
     }
-    val payload = state.preview?.payload
-    val selectionImage = remember(payload) { payload?.bitmap()?.asImageBitmap() }
+    val selectionPreview = state.preview?.takeIf { it.payload != null }
+    val selectionImage by produceState<Pair<EditPreview,ImageBitmap>?>(null,selectionPreview) {
+        if (selectionPreview == null) value = null
+        else try {
+            value = withContext(Dispatchers.Default) { selectionPreview to selectionPreview.selectionPixels { ensureActive() }.bitmap().asImageBitmap() }
+        } catch (_: OutOfMemoryError) { model.message("Not enough memory to preview this selection.") }
+    }
     val dragPreview = remember(dragStart,dragEnd,dragConstrained,constructionPoint,state.preview,state.options) {
         if (state.preview?.constructing == true && constructionPoint != null) state.preview.withShapePoint(constructionPoint!!)
         else dragStart?.let { EditPreview.between(state.options.tool,it,dragEnd ?: it,state.options.constrain || dragConstrained) }
@@ -174,6 +183,21 @@ internal fun PaintCanvas(
     }
 
     Box(Modifier.fillMaxSize().clipToBounds().background(surface).testTag("paint-viewport")
+        .pointerInput(active) {
+            awaitPointerEventScope {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    if (rotatingSelection && event.changes.count { it.pressed } > 1) {
+                        suppressRotationPointers = true
+                        rotationCancelGeneration++
+                    }
+                    if (suppressRotationPointers) {
+                        event.changes.forEach { it.consume() }
+                        if (event.changes.none { it.pressed }) suppressRotationPointers = false
+                    }
+                }
+            }
+        }
         .onSizeChanged { size ->
             model.resizeViewport(size.width.toFloat(),size.height.toFloat(),with(density) { 24.dp.toPx() })
         }.pointerInput(density.density,active) {
@@ -220,6 +244,7 @@ internal fun PaintCanvas(
             .pointerInput(density.density,active) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
+                    if (rotatingSelection || suppressRotationPointers || down.isConsumed) { down.consume(); return@awaitEachGesture }
                     val initial = model.state.value
                     if (!active || initial.busy || initial.loading) return@awaitEachGesture
                     focus.requestFocus()
@@ -235,7 +260,8 @@ internal fun PaintCanvas(
                     val stylus = down.type == PointerType.Stylus || erasing
                     val existing = initial.preview?.bounds ?: initial.selection
                     val constructing = initial.preview?.constructing == true
-                    val hitExisting = !constructing && existing?.contains(imageStart.x.toInt(),imageStart.y.toInt()) == true &&
+                    val hitExisting = !constructing && (initial.preview?.takeIf { it.payload != null }?.containsSelection(imageStart)
+                        ?: (existing?.contains(imageStart.x.toInt(),imageStart.y.toInt()) == true)) &&
                         (tool.isShape || tool in listOf(Tool.Select,Tool.Text))
                     val bottomRight = existing?.let { initial.viewport.screenPoint(Point(it.right.toFloat(),it.bottom.toFloat())) }
                     val resize = !constructing && bottomRight != null && hypot(bottomRight.x-down.position.x,bottomRight.y-down.position.y) <= 14*density.density
@@ -319,9 +345,9 @@ internal fun PaintCanvas(
                         preview.source?.let { source ->
                             drawRect(Color(state.options.background or BLACK),Offset(source.x.toFloat(),source.y.toFloat()),Size(source.width.toFloat(),source.height.toFloat()))
                         }
-                        selectionImage?.let { selected ->
-                            drawImage(selected,dstOffset = IntOffset(preview.bounds.x,preview.bounds.y),
-                                dstSize = IntSize(preview.bounds.width,preview.bounds.height),filterQuality = FilterQuality.Low)
+                        selectionImage?.takeIf { it.first.id == preview.id }?.let { (rendered,selected) ->
+                            drawImage(selected,dstOffset = IntOffset(rendered.bounds.x,rendered.bounds.y),
+                                filterQuality = if (view.scale >= 1) FilterQuality.None else FilterQuality.Low)
                         }
                     }
                     // Draw geometry directly so dragging never waits for a full-image raster render.
@@ -351,7 +377,18 @@ internal fun PaintCanvas(
             bounds?.let { rect ->
                 val p = view.screenPoint(Point(rect.x.toFloat(),rect.y.toFloat()))
                 val size = Size(rect.width*view.scale,rect.height*view.scale)
-                drawRect(outline,Offset(p.x,p.y),size,style = Stroke(1.5f,pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f,4f))))
+                val selected = state.preview?.takeIf { it.payload != null && dragPreview == null }
+                val corners = selected?.selectionTransform?.corners(requireNotNull(selected.payload).width,selected.payload.height)
+                val border = Path().apply {
+                    if (corners != null) corners.forEachIndexed { index, point ->
+                        val screen = view.screenPoint(point)
+                        if (index == 0) moveTo(screen.x,screen.y) else lineTo(screen.x,screen.y)
+                    } else {
+                        moveTo(p.x,p.y); lineTo(p.x+size.width,p.y); lineTo(p.x+size.width,p.y+size.height); lineTo(p.x,p.y+size.height)
+                    }
+                    close()
+                }
+                drawPath(border,outline,style = Stroke(1.5f,pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f,4f))))
                 drawRect(Color.White,Offset(p.x+size.width-5,p.y+size.height-5),Size(10f,10f))
                 drawRect(outline,Offset(p.x+size.width-5,p.y+size.height-5),Size(10f,10f),style = Stroke(1f))
             }
@@ -374,7 +411,12 @@ internal fun PaintCanvas(
             }
         }
         state.preview?.takeIf { it.tool == Tool.Text }?.let { preview -> key(preview.id) { TextOverlay(state,preview,model) } }
-        if (state.options.tool != Tool.Pan) CanvasResizeHandles(state,model,canvasResize,active,onBoundsChange = { canvasResize = it })
+        if (state.options.tool != Tool.Pan) {
+            if (state.selection == null && state.preview?.payload == null)
+                CanvasResizeHandles(state,model,canvasResize,active,onBoundsChange = { canvasResize = it })
+            if (state.selection != null || state.preview?.payload != null)
+                SelectionRotationHandle(state,model,active,rotationCancelGeneration,onDraggingChange = { rotatingSelection = it })
+        }
         contextMenu?.let { position ->
             AppDropdownMenu(true,{ contextMenu = null },offset = with(density) { DpOffset(position.x.toDp(),position.y.toDp()) }) {
                 AppMenuItem({ Text(stringResource(R.string.ui_paste)) },{ contextMenu = null; model.paste() })
