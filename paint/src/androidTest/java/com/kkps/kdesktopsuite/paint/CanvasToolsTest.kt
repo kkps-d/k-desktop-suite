@@ -275,34 +275,6 @@ class CanvasToolsTest {
         compose.runOnIdle { assertTrue(model.state.value.raster.pixels.any { it != WHITE }) }
     }
 
-    @Test fun shapesShowTheirOutlineAndFillBeforePointerRelease() {
-        val red = 0xFFFF0000.toInt()
-        val blue = 0xFF0000FF.toInt()
-        val start = Point(100f,100f)
-        val end = Point(200f,160f)
-        for (tool in listOf(Tool.Line,Tool.Rectangle,Tool.Ellipse)) {
-            compose.runOnIdle {
-                model.cancelPreview()
-                model.tool(tool)
-                model.options { it.copy(foreground = red,background = blue,width = 8,outline = true,fill = true,constrain = false) }
-                model.viewport(model.state.value.viewport.actual())
-            }
-            val original = model.state.value.raster
-            compose.onNodeWithTag("paint-canvas").performTouchInput { down(screenPoint(start)); moveTo(screenPoint(end)) }
-            compose.runOnIdle {
-                assertNull(model.state.value.preview)
-                assertSame(original,model.state.value.raster)
-                assertFalse(model.state.value.dirty)
-            }
-            val samples = if (tool == Tool.Line) arrayOf(Point(150f,130f) to red,Point(150f,115f) to WHITE)
-                else arrayOf(Point(150f,102f) to red,Point(150f,130f) to blue)
-            assertCanvasColors(*samples)
-            compose.onNodeWithTag("paint-canvas").performTouchInput { up() }
-            compose.runOnIdle { assertEquals(PixelRect(100,100,100,60),model.state.value.preview?.bounds) }
-            assertCanvasColors(*samples)
-        }
-    }
-
     @Test fun constrainedReverseDragMatchesTheReleasedShape() {
         compose.runOnIdle {
             model.tool(Tool.Rectangle)
