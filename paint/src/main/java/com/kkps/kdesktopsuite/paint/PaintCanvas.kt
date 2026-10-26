@@ -90,7 +90,7 @@ internal fun PaintCanvas(
         val session = brushSession ?: return@LaunchedEffect
         // Collect sequentially: newer samples are conflated while the worker finishes a batch.
         snapshotFlow { stroke.toList() }.collect { points ->
-            if (state.options.tool == Tool.Brush && !erasing && points.isNotEmpty()) {
+            if ((erasing || state.options.tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) && points.isNotEmpty()) {
                 brushImage = withContext(Dispatchers.Default) {
                     session.render(points).bitmap().asImageBitmap()
                 }
@@ -169,6 +169,7 @@ internal fun PaintCanvas(
             model.options { it.copy(foreground = it.background,background = it.foreground) }; return true
         }
         if (event.key in listOf(Key.LeftBracket,Key.RightBracket)) {
+            if (state.options.tool == Tool.Pencil) return false
             val delta = if (event.key == Key.LeftBracket) -1 else 1
             model.options { if (it.tool == Tool.Eraser) it.copy(eraserWidth = (it.eraserWidth+delta).coerceIn(1,100)) else it.copy(width = (it.width+delta).coerceIn(1,100)) }; return true
         }
@@ -261,9 +262,9 @@ internal fun PaintCanvas(
                         contextMenu = down.position; down.consume(); return@awaitEachGesture
                     }
                     stroke.clear(); strokePending = false; keyboardDrawing = false; strokeSeed = kotlin.random.Random.nextInt()
-                    brushSession = BrushStrokeSession(initial.raster,initial.options,strokeSeed,initial.selection)
-                    val imageStart = initial.viewport.imagePoint(Point(down.position.x,down.position.y))
                     erasing = down.type == PointerType.Eraser
+                    brushSession = BrushStrokeSession(initial.raster,initial.options,strokeSeed,initial.selection,erasing)
+                    val imageStart = initial.viewport.imagePoint(Point(down.position.x,down.position.y))
                     val tool = if (erasing) Tool.Eraser else initial.options.tool
                     val stylus = down.type == PointerType.Stylus || erasing
                     val existing = initial.preview?.bounds ?: initial.selection
@@ -384,18 +385,6 @@ internal fun PaintCanvas(
                 }
             }
             drawRect(Color.Gray,Offset(canvasOrigin.x,canvasOrigin.y),canvasSize,style = Stroke(1f))
-            if (stroke.isNotEmpty() && brushSession?.source === displayedState.raster && (state.options.tool != Tool.Brush || erasing)) {
-                val path = Path()
-                stroke.forEachIndexed { index, point ->
-                    val p = view.screenPoint(point)
-                    if (index == 0) path.moveTo(p.x,p.y) else path.lineTo(p.x,p.y)
-                }
-                val color = Color(if (state.options.tool == Tool.Eraser || erasing) state.options.background else state.options.foreground)
-                val strokeWidth = if (erasing) state.options.eraserWidth else state.options.strokeWidth
-                val first = view.screenPoint(stroke.first())
-                if (stroke.size == 1) drawCircle(color,strokeWidth*view.scale/2,Offset(first.x,first.y))
-                else drawPath(path,color,style = Stroke(strokeWidth*view.scale,cap = StrokeCap.Round))
-            }
             val bounds = dragPreview?.bounds ?: state.preview?.bounds ?: state.selection
             bounds?.let { rect ->
                 val p = view.screenPoint(Point(rect.x.toFloat(),rect.y.toFloat()))
@@ -418,9 +407,27 @@ internal fun PaintCanvas(
             hovering?.let { point ->
                 val imagePoint = view.imagePoint(Point(point.x,point.y))
                 if (imagePoint.x in 0f..raster.width.toFloat() && imagePoint.y in 0f..raster.height.toFloat() && state.options.tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) {
-                    val radius = max(2f,state.options.strokeWidth*view.scale/2)
-                    drawCircle(Color.White,radius,point,style = Stroke(3f))
-                    drawCircle(Color.Black,radius,point,style = Stroke(1f))
+                    if (erasing || state.options.tool == Tool.Eraser) {
+                        val side = max(4f,state.options.eraserWidth*view.scale)
+                        val topLeft = Offset(point.x-side/2,point.y-side/2)
+                        drawRect(Color.White,topLeft,Size(side,side),style = Stroke(3f))
+                        drawRect(Color.Black,topLeft,Size(side,side),style = Stroke(1f))
+                    } else if (state.options.tool == Tool.Pencil) {
+                        val crosshair = Path().apply {
+                            moveTo(point.x-12f,point.y); lineTo(point.x-5f,point.y)
+                            moveTo(point.x+5f,point.y); lineTo(point.x+12f,point.y)
+                            moveTo(point.x,point.y-12f); lineTo(point.x,point.y-5f)
+                            moveTo(point.x,point.y+5f); lineTo(point.x,point.y+12f)
+                        }
+                        drawPath(crosshair,Color.White,style = Stroke(3f))
+                        drawPath(crosshair,Color.Black,style = Stroke(1f))
+                        drawCircle(Color.White,3f,point)
+                        drawCircle(Color.Black,1.5f,point)
+                    } else {
+                        val radius = max(2f,state.options.strokeWidth*view.scale/2)
+                        drawCircle(Color.White,radius,point,style = Stroke(3f))
+                        drawCircle(Color.Black,radius,point,style = Stroke(1f))
+                    }
                 }
             }
             if (keyboardInput && state.options.tool.isShape) {

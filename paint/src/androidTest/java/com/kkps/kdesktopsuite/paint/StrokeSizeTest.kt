@@ -73,7 +73,7 @@ class StrokeSizeTest {
     @Test fun presetsShowLinesAndSelectTheRightToolWidthWithoutChangingZoom() {
         for (width in listOf(1200.dp,360.dp)) {
             compose.runOnIdle { size = DpSize(width,800.dp) }
-            for (tool in listOf(Tool.Brush,Tool.Pencil,Tool.Line,Tool.Eraser)) {
+            for (tool in listOf(Tool.Brush,Tool.Line,Tool.Eraser)) {
                 compose.runOnIdle { model.tool(tool) }
                 openPicker()
                 val preset = if (tool == Tool.Eraser) 16 else 5
@@ -163,6 +163,19 @@ class StrokeSizeTest {
         }
         compose.runOnIdle { model.tool(Tool.Fill) }
         compose.onNodeWithTag("paint-size-picker").performScrollTo().assertIsNotEnabled()
+    }
+
+    @Test fun pencilSizeIsFixedAndDoesNotChangeTheBrushWidth() {
+        compose.runOnIdle { model.tool(Tool.Pencil) }
+        compose.onNodeWithTag("paint-size-picker").performScrollTo().assertIsNotEnabled()
+        compose.runOnIdle {
+            assertEquals(1,model.state.value.options.strokeWidth)
+            model.strokeWidth(24)
+            assertEquals(1,model.state.value.options.strokeWidth)
+            assertEquals(3,model.state.value.options.width)
+            model.tool(Tool.Brush)
+            assertEquals(3,model.state.value.options.strokeWidth)
+        }
     }
 }
 

@@ -17,13 +17,13 @@ class RasterTest {
 
     @Test fun onePixelPencilHasExactCoverage() {
         val original = Raster.blank(5,5)
-        val result = original.stroke(listOf(Point(2f,2f)),BLACK,1f,true,null)
+        val result = original.brushStroke(listOf(Point(2f,2f)),BLACK,1f,BrushStyle.Solid,42)
         assertEquals(1,result.pixels.count { it == BLACK })
         assertEquals(BLACK,result.pixel(2,2))
         assertTrue(original.pixels.all { it == WHITE })
     }
     @Test fun sparseSamplesInterpolateAndSelectionClips() {
-        val result = Raster.blank(12,3).stroke(listOf(Point(0f,1f),Point(11f,1f)),BLACK,1f,true,PixelRect(3,0,4,3))
+        val result = Raster.blank(12,3).brushStroke(listOf(Point(0f,1f),Point(11f,1f)),BLACK,1f,BrushStyle.Solid,42,PixelRect(3,0,4,3))
         assertEquals(4,result.pixels.count { it == BLACK })
         for (x in 3..6) assertEquals(BLACK,result.pixel(x,1))
     }
@@ -63,7 +63,7 @@ class RasterTest {
         val initial = Raster.blank(4,3)
         val history = RasterHistory(initial)
         assertFalse(history.commit(Raster.blank(4,3)))
-        history.commit(initial.stroke(listOf(Point(1f,1f)),BLACK,1f,true,null))
+        history.commit(initial.brushStroke(listOf(Point(1f,1f)),BLACK,1f,BrushStyle.Solid,42))
         history.savedRevision = history.revision
         val saved = history.raster.pixels.copyOf()
         history.commit(history.raster.extract(PixelRect(1,1,2,1)))

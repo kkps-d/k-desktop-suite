@@ -10,12 +10,21 @@ internal enum class BrushStyle(val label: String, val defaultWidth: Int = 8) {
     val widthPresets get() = if (this == Solid) listOf(1,3,5,8) else listOf(4,8,16,24)
 }
 
+internal data class StrokeBrush(val color: Int, val size: Float, val style: BrushStyle, val square: Boolean = false)
+
+internal fun ToolOptions.strokeBrush(erasing: Boolean = false) = when {
+    erasing || tool == Tool.Eraser -> StrokeBrush(background,eraserWidth.toFloat(),BrushStyle.Solid,square = true)
+    tool == Tool.Pencil -> StrokeBrush(foreground,1f,BrushStyle.Solid)
+    else -> StrokeBrush(foreground,width.toFloat(),brushStyle)
+}
+
 /** Seeded, distance-spaced dabs keep textures stable as pointer samples arrive. */
 internal fun Raster.brushStroke(
     points: List<Point>, color: Int, size: Float, style: BrushStyle, seed: Int, clip: PixelRect? = null,
+    square: Boolean = false,
 ): Raster {
     if (points.isEmpty()) return this
-    val renderer = BrushStrokeRenderer(this,color,size,style,seed,clip)
+    val renderer = BrushStrokeRenderer(this,color,size,style,seed,clip,square)
     points.forEach(renderer::append)
     return renderer.snapshot()
 }
@@ -23,16 +32,17 @@ internal fun Raster.brushStroke(
 /** Owned by one worker; appending never redraws an earlier segment. */
 internal class BrushStrokeRenderer(
     source: Raster, private val color: Int, size: Float, private val style: BrushStyle,
-    private val seed: Int, clip: PixelRect?,
+    private val seed: Int, clip: PixelRect?, private val square: Boolean = false,
 ) {
     private val width = source.width
     private val height = source.height
     private val output = source.pixels.copyOf()
-    private val round = if (style == BrushStyle.Solid) RoundStrokeDabs(width,height,output,color,size,false,clip) else null
+    private val round = if (style == BrushStyle.Solid && !square) RoundStrokeDabs(width,height,output,color,size,clip) else null
     private var previous: Point? = null
     private val radius = max(0.5f,size / 2)
     private val spacing = max(0.5f,size * 0.16f)
     private val area = clip?.clipped(width,height) ?: PixelRect(0,0,width,height)
+    private val squareSize = size.toInt().coerceAtLeast(1)
     private var dabIndex = 0
 
     private fun grain(x: Int, y: Int, layer: Int = 0): Float {
@@ -42,6 +52,19 @@ internal class BrushStrokeRenderer(
     }
 
     private fun dab(point: Point) {
+        if (square) {
+            val left = max(area.x,floor(point.x).toInt()-squareSize/2)
+            val right = min(area.right,floor(point.x).toInt()-squareSize/2+squareSize)
+            val top = max(area.y,floor(point.y).toInt()-squareSize/2)
+            val bottom = min(area.bottom,floor(point.y).toInt()-squareSize/2+squareSize)
+            if (left >= right || top >= bottom) return
+            for (y in top until bottom) {
+                val start = y*width+left
+                if (color ushr 24 == 255) output.fill(color,start,y*width+right)
+                else for (x in left until right) output[y*width+x] = composite(color,output[y*width+x])
+            }
+            return
+        }
         val cx = point.x + 0.5f
         val cy = point.y + 0.5f
         val left = max(area.x,floor(cx-radius-1).toInt())

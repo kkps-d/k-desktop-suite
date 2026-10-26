@@ -37,7 +37,7 @@ internal fun WidthPicker(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     val available = !s.loading &&
-        (s.options.tool.isShape || s.options.tool in listOf(Tool.Brush,Tool.Pencil,Tool.Eraser))
+        (s.options.tool.isShape || s.options.tool in listOf(Tool.Brush,Tool.Eraser))
     val presets = when (s.options.tool) {
         Tool.Eraser -> listOf(4,8,16,24)
         Tool.Brush -> s.options.brushStyle.widthPresets
@@ -135,7 +135,7 @@ internal fun StrokeSizePreview(options: ToolOptions, width: Int, zoom: Float, mo
         val points = listOf(start,end)
         val rendered = when (options.tool) {
             Tool.Brush -> raster.brushStroke(points,BLACK,width.toFloat(),options.brushStyle,42)
-            Tool.Pencil, Tool.Eraser -> raster.stroke(points,BLACK,width.toFloat(),true,null)
+            Tool.Eraser -> raster.brushStroke(points,BLACK,width.toFloat(),BrushStyle.Solid,42,square = true)
             else -> raster.render(EditPreview.between(Tool.Line,start,end),options.copy(width = width,foreground = BLACK))
         }
         rendered.bitmap().asImageBitmap()

@@ -192,6 +192,7 @@ internal class PaintViewModel(
     }
     fun strokeWidth(value: Int) {
         require(value in 1..100)
+        if (state.value.options.tool == Tool.Pencil) return
         options { if (it.tool == Tool.Eraser) it.copy(eraserWidth = value) else it.copy(width = value) }
     }
     fun brush(style: BrushStyle) {
@@ -222,15 +223,11 @@ internal class PaintViewModel(
     fun stroke(points: List<Point>, erasing: Boolean = false, seed: Int = kotlin.random.Random.nextInt(), session: BrushStrokeSession? = null) {
         val s = state.value; val o = s.options
         if (s.preview != null) { applyPreview { stroke(points,erasing,seed) }; return }
-        val size = (if (erasing) o.eraserWidth else o.strokeWidth).toFloat()
+        val tip = o.strokeBrush(erasing)
         operation({
-            if (o.tool == Tool.Brush && !erasing) {
-                if (session?.matches(it,o,seed,s.selection) == true) session.render(points)
-                else it.brushStroke(points,o.foreground,o.width.toFloat(),o.brushStyle,seed,s.selection)
-            }
-            else it.stroke(points,o.background.takeIf { o.tool == Tool.Eraser || erasing } ?: o.foreground,
-                size,true,s.selection)
-        },affectedArea = s.raster.strokeBounds(points,size))
+            if (session?.matches(it,o,seed,s.selection,erasing) == true) session.render(points)
+            else it.brushStroke(points,tip.color,tip.size,tip.style,seed,s.selection,tip.square)
+        },affectedArea = s.raster.strokeBounds(points,tip.size))
     }
     fun tap(point: Point) {
         val s = state.value; val x = floor(point.x).toInt(); val y = floor(point.y).toInt()

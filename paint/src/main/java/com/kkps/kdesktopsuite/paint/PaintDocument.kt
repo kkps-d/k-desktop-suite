@@ -39,7 +39,11 @@ internal data class ToolOptions(
     val brushStyle: BrushStyle = BrushStyle.Solid,
     val brushWidths: Map<BrushStyle,Int> = emptyMap(),
 ) {
-    val strokeWidth get() = if (tool == Tool.Eraser) eraserWidth else width
+    val strokeWidth get() = when (tool) {
+        Tool.Pencil -> 1
+        Tool.Eraser -> eraserWidth
+        else -> width
+    }
 }
 
 internal data class EditPreview(

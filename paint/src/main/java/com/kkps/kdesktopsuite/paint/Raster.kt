@@ -72,20 +72,6 @@ internal class Raster(val width: Int, val height: Int, internal val pixels: IntA
         for (y in area.y until area.bottom) result.fill(color or BLACK, y * width + area.x, y * width + area.right)
         return Raster(width, height, result)
     }
-    fun stroke(points: List<Point>, color: Int, size: Float, hard: Boolean, clip: PixelRect?): Raster {
-        if (points.isEmpty()) return this
-        val output = pixels.copyOf()
-        val dabs = RoundStrokeDabs(width,height,output,color,size,hard,clip)
-        dabs.dab(points.first())
-        points.zipWithNext { start, end ->
-            val steps = ceil(hypot(end.x - start.x, end.y - start.y) * 2).toInt().coerceIn(1, 32768)
-            for (step in 1..steps) {
-                val t = step.toFloat() / steps
-                dabs.dab(Point(start.x + (end.x - start.x) * t, start.y + (end.y - start.y) * t))
-            }
-        }
-        return Raster(width, height, output)
-    }
     fun fill(x: Int, y: Int, color: Int, clip: PixelRect?): Raster {
         if (x !in 0 until width || y !in 0 until height || clip?.contains(x, y) == false) return this
         val target = pixel(x, y)
@@ -224,7 +210,7 @@ internal class RasterHistory(initial: Raster, private val budget: Long = 64L * 1
 /** Reuses the pixel-aligned mask for all segments of a round stroke. */
 internal class RoundStrokeDabs(
     private val width: Int, height: Int, private val output: IntArray, private val color: Int,
-    size: Float, hard: Boolean, clip: PixelRect?,
+    size: Float, clip: PixelRect?,
 ) {
     private val radius = max(0.5f, size / 2)
     private val area = clip?.clipped(width,height) ?: PixelRect(0,0,width,height)
@@ -235,8 +221,7 @@ internal class RoundStrokeDabs(
     private val rows = (-extent..extent).mapNotNull { y ->
         val coverage = FloatArray(extent * 2 + 1) { index ->
             val distance = hypot((index-extent).toFloat(),y.toFloat())
-            if (hard) { if (distance <= radius) 1f else 0f }
-            else (radius + 0.5f - distance).coerceIn(0f,1f)
+            (radius + 0.5f - distance).coerceIn(0f,1f)
         }
         val left = coverage.indexOfFirst { it > 0f }
         if (left < 0) return@mapNotNull null

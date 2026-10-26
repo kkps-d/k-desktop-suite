@@ -60,6 +60,59 @@ class BrushStrokeSessionTest {
         assertFalse(session.matches(base,options.copy(width = 100),42,null))
         assertFalse(session.matches(base,options,43,null))
         assertFalse(session.matches(base,options,42,PixelRect(0,0,10,10)))
+        assertFalse(session.matches(base,options,42,null,erasing = true))
+    }
+
+    @Test fun pencilUsesOnePixelSolidBrushRegardlessOfSelectedBrushSize() = runBlocking {
+        val base = Raster.blank(12,8)
+        val options = ToolOptions(tool = Tool.Pencil,width = 100,brushStyle = BrushStyle.Marker)
+        val points = listOf(Point(2f,3f),Point(9f,3f))
+        val preview = BrushStrokeSession(base,options,42,null).render(points)
+        val tip = options.strokeBrush()
+
+        assertEquals(1,options.strokeWidth)
+        assertEquals(1f,tip.size)
+        assertArrayEquals(base.brushStroke(points,BLACK,1f,BrushStyle.Solid,42).pixels,preview.pixels)
+        assertEquals(8,preview.pixels.count { it == BLACK })
+        assertEquals(WHITE,preview.pixel(5,2))
+        assertEquals(WHITE,preview.pixel(5,4))
+    }
+
+    @Test fun eraserUsesOpaqueSquareBrushAndPreviewMatchesCommit() = runBlocking {
+        val red = 0xFFFF0000.toInt()
+        val base = Raster.blank(12,12,BLACK)
+        val options = ToolOptions(tool = Tool.Eraser,eraserWidth = 4,background = red)
+        val points = listOf(Point(5f,5f))
+        val preview = BrushStrokeSession(base,options,42,null).render(points)
+        val tip = options.strokeBrush()
+
+        assertArrayEquals(base.brushStroke(points,red,4f,BrushStyle.Solid,42,square = true).pixels,preview.pixels)
+        assertEquals(16,preview.pixels.count { it == red })
+        for (y in 3..6) for (x in 3..6) assertEquals(red,preview.pixel(x,y))
+        assertEquals(BLACK,preview.pixel(2,5))
+        assertEquals(BLACK,preview.pixel(7,5))
+        assertTrue(tip.square)
+    }
+
+    @Test fun stylusEraserUsesSquareBrushEvenWhenAnotherToolIsSelected() = runBlocking {
+        val base = Raster.blank(12,12,BLACK)
+        val options = ToolOptions(tool = Tool.Brush,eraserWidth = 3,background = WHITE)
+        val session = BrushStrokeSession(base,options,42,null,erasing = true)
+
+        assertTrue(session.matches(base,options,42,null,erasing = true))
+        assertEquals(9,session.render(listOf(Point(5f,5f))).pixels.count { it == WHITE })
+    }
+
+    @Test fun squareEraserClipsToTheImageAndSelection() {
+        val base = Raster.blank(10,10,BLACK)
+        val points = listOf(Point(-20f,-20f),Point(0f,0f),Point(20f,20f))
+        val clip = PixelRect(1,1,3,3)
+        val result = base.brushStroke(points,WHITE,4f,BrushStyle.Solid,42,clip,square = true)
+
+        assertTrue(result.pixels.any { it == WHITE })
+        for (y in 0 until 10) for (x in 0 until 10) {
+            if (!clip.contains(x,y)) assertEquals(BLACK,result.pixel(x,y))
+        }
     }
 
     @Test fun boundedHistoryIncludesEveryBrushPixelAndRestoresUndoExactly() {
