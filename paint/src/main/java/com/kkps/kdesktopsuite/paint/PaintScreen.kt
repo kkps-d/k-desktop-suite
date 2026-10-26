@@ -560,7 +560,7 @@ private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, 
                         Text("$zoom%",style = MaterialTheme.typography.labelMedium)
                         Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
                     }
-                    AppDropdownMenu(zoomMenu,{ zoomMenu = false }) {
+                    AppDropdownMenu(zoomMenu,{ zoomMenu = false },anchorPosition = MenuAnchorPosition.Above) {
                         listOf(10,25,50,100,200,300,400,500).forEach { percent ->
                             AppMenuItem({ Text("$percent%") },{ model.viewport(s.viewport.zoomed(percent / 100f)); zoomMenu = false },
                                 trailingIcon = { if (zoom == percent) Icon(PaintIcon.Apply.vector,null) })

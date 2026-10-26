@@ -18,6 +18,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
 object AppMenuDimensions {
@@ -63,12 +67,27 @@ fun AppMenuItem(
 @Composable
 fun AppDropdownMenu(
     expanded: Boolean, onDismissRequest: () -> Unit, offset: DpOffset = DpOffset.Zero,
+    anchorPosition: MenuAnchorPosition = MenuAnchorPosition.Below,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val density = LocalDensity.current
     val window = LocalWindowInfo.current.containerSize
+    val defaultPositionProvider = MenuDefaults.rememberDropdownMenuPopupPositionProvider(anchorPosition,offset)
+    val positionProvider = remember(defaultPositionProvider,anchorPosition,density) {
+        if (anchorPosition != MenuAnchorPosition.Above) defaultPositionProvider
+        else object : DropdownMenuPopupPositionProvider by defaultPositionProvider {
+            override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize,
+                layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
+                val fallback = defaultPositionProvider.calculatePosition(anchorBounds,windowSize,layoutDirection,popupContentSize)
+                val above = anchorBounds.top - popupContentSize.height + with(density) { offset.y.roundToPx() }
+                // Keep bottom-bar menus attached even inside Material's 48 dp window margin.
+                return if (above >= with(density) { AppMenuDimensions.verticalWindowMargin.roundToPx() }) fallback.copy(y = above)
+                    else fallback
+            }
+        }
+    }
     DropdownMenuPopup(expanded = expanded,onDismissRequest = onDismissRequest,
-        popupPositionProvider = MenuDefaults.rememberDropdownMenuPopupPositionProvider(MenuAnchorPosition.Below,offset),
+        popupPositionProvider = positionProvider,
         modifier = Modifier
             .widthIn(max = with(density) { window.width.toDp() - AppMenuDimensions.horizontalWindowMargin * 2 }.coerceAtLeast(0.dp))
             .heightIn(max = with(density) { window.height.toDp() - AppMenuDimensions.verticalWindowMargin * 2 }.coerceAtLeast(0.dp))

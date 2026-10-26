@@ -90,6 +90,14 @@ class PaintStatusTest {
         compose.runOnIdle { assertEquals(1f,model.state.value.viewport.scale,0f) }
     }
 
+    @Test fun zoomMenuOpensAgainstBottomBar() {
+        compose.onNodeWithTag("paint-zoom-menu").performScrollTo().performClick()
+        val button = compose.onNodeWithTag("paint-zoom-menu").fetchSemanticsNode()
+        val menu = compose.onNodeWithTag("dropdown-menu").fetchSemanticsNode()
+        val gap = button.positionOnScreen.y - menu.positionOnScreen.y - menu.size.height
+        assertTrue("Zoom menu is $gap px above its button",gap in 0f..8f)
+    }
+
     @Test fun selectionDimensionsUpdateBeforePointerRelease() {
         lateinit var start: Point
         lateinit var end: Point
