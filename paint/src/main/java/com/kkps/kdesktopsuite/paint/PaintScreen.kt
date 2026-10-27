@@ -82,6 +82,7 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
         Surface(Modifier.fillMaxSize()) {
             BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.union(WindowInsets.ime))) {
                 val width = maxWidth
+                val portrait = maxHeight > maxWidth
                 val short = maxHeight < 480.dp
                 Column(Modifier.fillMaxSize().onKeyEvent { event -> if (state.settingsOpen || debugOpen) false else handlePaintKey(event,state,model) }) {
                     if (debugOpen) PaintDebugScreen { debugOpen = false }
@@ -103,7 +104,7 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
                             PaintCanvas(state,model,onCursorChange = { cursor = it },onSelectionChange = { selectionDrag = it },
                                 onCanvasResizeChange = { canvasResize = it })
                         }
-                        if (state.showInformation && !state.focusMode) PaintStatus(state,model,cursor,selectionDrag,canvasResize)
+                        if (state.showInformation && !state.focusMode) PaintStatus(state,model,cursor,selectionDrag,canvasResize,portrait)
                     }
                 }
                 SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter))
@@ -239,8 +240,10 @@ private fun ViewMenu(s: PaintUiState, model: PaintViewModel) {
 }
 
 @Composable
-private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, selectionDrag: PixelRect?, canvasResize: PixelRect?) {
-    val fieldWidth = 144.dp * LocalDensity.current.fontScale
+@OptIn(ExperimentalLayoutApi::class)
+private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, selectionDrag: PixelRect?, canvasResize: PixelRect?, portrait: Boolean) {
+    val fontScale = LocalDensity.current.fontScale
+    val fieldWidth = 144.dp * fontScale
     val selection = if (s.options.tool == Tool.Select) selectionDrag ?: s.preview?.bounds ?: s.selection else null
     val position = cursor?.let { "${it.x.toInt()}, ${it.y.toInt()} px" }.orEmpty()
     val dimensions = if (s.options.tool == Tool.Select) "${selection?.width ?: 0} x ${selection?.height ?: 0} px" else ""
@@ -252,60 +255,70 @@ private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, 
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
         BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).testTag("paint-status-bar")) {
-            Row(Modifier.horizontalScroll(rememberScrollState()).widthIn(min = maxWidth).heightIn(min = 32.dp).padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                Text(position,Modifier.width(fieldWidth).padding(horizontal = 12.dp).testTag("paint-cursor-position")
-                    .semantics { contentDescription = "Cursor position: $position" },color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelMedium,maxLines = 1)
-                VerticalDivider(Modifier.height(20.dp))
-                Text(dimensions,Modifier.width(fieldWidth).padding(horizontal = 12.dp).testTag("paint-selection-dimensions")
-                    .semantics { contentDescription = "Selection dimensions: $dimensions" },color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelMedium,maxLines = 1)
-                VerticalDivider(Modifier.height(20.dp))
-                TextButton(onClick = { model.dialog(PaintDialog.CanvasSize) },enabled = !s.busy && !s.loading,
-                    modifier = Modifier.width(fieldWidth).heightIn(min = 28.dp).testTag("paint-canvas-dimensions")
-                        .semantics { contentDescription = "Resize canvas" },contentPadding = PaddingValues(horizontal = 12.dp,vertical = 2.dp)) {
-                    Row(Modifier.fillMaxWidth(),verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("${canvasResize?.width ?: s.raster.width} x ${canvasResize?.height ?: s.raster.height} px",
-                            Modifier.weight(1f,fill = false),style = MaterialTheme.typography.labelMedium,maxLines = 1)
-                        Icon(painterResource(R.drawable.ic_more_horiz),null,Modifier.size(16.dp))
-                    }
-                }
-                Spacer(Modifier.weight(1f))
-                TextButton({ model.viewport(s.viewport.fitted()) },modifier = Modifier.heightIn(min = 28.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp)) { Text(stringResource(R.string.ui_fit),style = MaterialTheme.typography.labelMedium) }
-                TextButton({ model.viewport(s.viewport.actual()) },modifier = Modifier.heightIn(min = 28.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp)) { Text(stringResource(R.string.ui_actual_size),style = MaterialTheme.typography.labelMedium) }
-                Box {
-                    TextButton({ zoomMenu = true },Modifier.heightIn(min = 28.dp).testTag("paint-zoom-menu").semantics { contentDescription = "Zoom level: $zoom%" },
-                        contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp)) {
-                        Text("$zoom%",style = MaterialTheme.typography.labelMedium)
-                        Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
-                    }
-                    AppDropdownMenu(zoomMenu,{ zoomMenu = false },anchorPosition = MenuAnchorPosition.Above) {
-                        listOf(10,25,50,100,200,300,400,500).forEach { percent ->
-                            AppMenuItem({ Text("$percent%") },{ model.viewport(s.viewport.zoomed(percent / 100f)); zoomMenu = false },
-                                trailingIcon = { if (zoom == percent) Icon(PaintIcon.Apply.vector,null) })
+            val stacked = portrait || maxWidth < fieldWidth * 3 + 400.dp * fontScale
+            val informationWidth = if (stacked) maxWidth else fieldWidth * 3 + 18.dp
+            val zoomWidth = if (stacked) maxWidth else maxWidth - informationWidth
+            FlowRow(Modifier.fillMaxWidth(),maxItemsInEachRow = if (stacked) 1 else 2) {
+                Row(Modifier.width(informationWidth).horizontalScroll(rememberScrollState())
+                    .widthIn(min = informationWidth.coerceAtLeast(360.dp * fontScale)).heightIn(min = 32.dp).padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text(dimensions,Modifier.weight(1f).padding(horizontal = 12.dp).testTag("paint-selection-dimensions")
+                        .semantics { contentDescription = "Selection dimensions: $dimensions" },color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelMedium,maxLines = 1)
+                    VerticalDivider(Modifier.height(20.dp))
+                    Text(position,Modifier.weight(1f).padding(horizontal = 12.dp).testTag("paint-cursor-position")
+                        .semantics { contentDescription = "Cursor position: $position" },color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelMedium,maxLines = 1)
+                    VerticalDivider(Modifier.height(20.dp))
+                    TextButton(onClick = { model.dialog(PaintDialog.CanvasSize) },enabled = !s.busy && !s.loading,
+                        modifier = Modifier.weight(1f).heightIn(min = 28.dp).testTag("paint-canvas-dimensions")
+                            .semantics { contentDescription = "Resize canvas" },contentPadding = PaddingValues(horizontal = 12.dp,vertical = 2.dp)) {
+                        Row(Modifier.fillMaxWidth(),verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("${canvasResize?.width ?: s.raster.width} x ${canvasResize?.height ?: s.raster.height} px",
+                                Modifier.weight(1f,fill = false),style = MaterialTheme.typography.labelMedium,maxLines = 1)
+                            Icon(painterResource(R.drawable.ic_more_horiz),null,Modifier.size(16.dp))
                         }
                     }
                 }
-                IconButton(onClick = { model.viewport(s.viewport.zoomed(s.viewport.scale - 0.1f)) },enabled = s.viewport.scale > 0.1f,modifier = Modifier.size(28.dp)) {
-                    Icon(painterResource(R.drawable.ic_zoom_out),stringResource(R.string.ui_zoom_out),Modifier.size(18.dp))
-                }
-                Slider(state = zoomSlider,onValueChange = { model.viewport(s.viewport.zoomed(it)) },
-                    interactionSource = zoomInteraction,
-                    modifier = Modifier.width(160.dp).heightIn(min = 32.dp).testTag("paint-zoom-slider")
-                        .semantics { contentDescription = "Zoom"; stateDescription = "$zoom%" },
-                    thumb = {
-                        Spacer(Modifier.size(16.dp).indication(zoomInteraction,ripple(bounded = false,radius = 20.dp))
-                            .background(MaterialTheme.colorScheme.primary,CircleShape))
-                    },
-                    track = { slider ->
-                        SliderDefaults.Track(sliderState = slider,modifier = Modifier.height(4.dp),
-                            drawStopIndicator = null,drawTick = { _, _ -> },thumbTrackGapSize = 0.dp)
-                    })
-                IconButton(onClick = { model.viewport(s.viewport.zoomed(s.viewport.scale + 0.1f)) },enabled = s.viewport.scale < 5f,modifier = Modifier.size(28.dp)) {
-                    Icon(painterResource(R.drawable.ic_zoom_in),stringResource(R.string.ui_zoom_in),Modifier.size(18.dp))
+                Row(Modifier.width(zoomWidth).horizontalScroll(rememberScrollState())
+                    .widthIn(min = zoomWidth.coerceAtLeast(360.dp * fontScale)).heightIn(min = 32.dp).padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.End) {
+                    if (!stacked) Spacer(Modifier.weight(1f))
+                    TextButton({ model.viewport(s.viewport.fitted()) },modifier = Modifier.heightIn(min = 28.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp)) { Text(stringResource(R.string.ui_fit),style = MaterialTheme.typography.labelMedium) }
+                    TextButton({ model.viewport(s.viewport.actual()) },modifier = Modifier.heightIn(min = 28.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp)) { Text(stringResource(R.string.ui_actual_size),style = MaterialTheme.typography.labelMedium) }
+                    Box {
+                        TextButton({ zoomMenu = true },Modifier.heightIn(min = 28.dp).testTag("paint-zoom-menu").semantics { contentDescription = "Zoom level: $zoom%" },
+                            contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp)) {
+                            Text("$zoom%",style = MaterialTheme.typography.labelMedium)
+                            Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
+                        }
+                        AppDropdownMenu(zoomMenu,{ zoomMenu = false },anchorPosition = MenuAnchorPosition.Above) {
+                            listOf(10,25,50,100,200,300,400,500).forEach { percent ->
+                                AppMenuItem({ Text("$percent%") },{ model.viewport(s.viewport.zoomed(percent / 100f)); zoomMenu = false },
+                                    trailingIcon = { if (zoom == percent) Icon(PaintIcon.Apply.vector,null) })
+                            }
+                        }
+                    }
+                    IconButton(onClick = { model.viewport(s.viewport.zoomed(s.viewport.scale - 0.1f)) },enabled = s.viewport.scale > 0.1f,modifier = Modifier.size(28.dp)) {
+                        Icon(painterResource(R.drawable.ic_zoom_out),stringResource(R.string.ui_zoom_out),Modifier.size(18.dp))
+                    }
+                    Slider(state = zoomSlider,onValueChange = { model.viewport(s.viewport.zoomed(it)) },
+                        interactionSource = zoomInteraction,
+                        modifier = (if (stacked) Modifier.weight(1f) else Modifier.width(160.dp)).heightIn(min = 32.dp).testTag("paint-zoom-slider")
+                            .semantics { contentDescription = "Zoom"; stateDescription = "$zoom%" },
+                        thumb = {
+                            Spacer(Modifier.size(16.dp).indication(zoomInteraction,ripple(bounded = false,radius = 20.dp))
+                                .background(MaterialTheme.colorScheme.primary,CircleShape))
+                        },
+                        track = { slider ->
+                            SliderDefaults.Track(sliderState = slider,modifier = Modifier.height(4.dp),
+                                drawStopIndicator = null,drawTick = { _, _ -> },thumbTrackGapSize = 0.dp)
+                        })
+                    IconButton(onClick = { model.viewport(s.viewport.zoomed(s.viewport.scale + 0.1f)) },enabled = s.viewport.scale < 5f,modifier = Modifier.size(28.dp)) {
+                        Icon(painterResource(R.drawable.ic_zoom_in),stringResource(R.string.ui_zoom_in),Modifier.size(18.dp))
+                    }
                 }
             }
         }

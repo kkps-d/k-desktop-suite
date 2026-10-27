@@ -163,6 +163,27 @@ class PaintStatusTest {
         compose.runOnIdle { assertEquals(0.25f,model.state.value.viewport.scale,0f) }
     }
 
+    @Test fun statusBarStacksInformationAboveZoomAndReturnsToOneRowWhenResized() {
+        for (window in listOf(DpSize(360.dp,640.dp),DpSize(700.dp,400.dp),DpSize(900.dp,1000.dp),DpSize(1200.dp,800.dp))) {
+            compose.runOnIdle { size = window }
+            val selection = compose.onNodeWithTag("paint-selection-dimensions").fetchSemanticsNode().boundsInRoot
+            val cursor = compose.onNodeWithTag("paint-cursor-position").fetchSemanticsNode().boundsInRoot
+            val canvas = compose.onNodeWithTag("paint-canvas-dimensions").fetchSemanticsNode().boundsInRoot
+            val zoom = compose.onNodeWithTag("paint-zoom-menu").fetchSemanticsNode().boundsInRoot
+            val slider = compose.onNodeWithTag("paint-zoom-slider").fetchSemanticsNode().boundsInRoot
+            assertEquals(selection.center.y,cursor.center.y,1f)
+            assertEquals(selection.center.y,canvas.center.y,1f)
+            assertTrue(selection.right <= cursor.left)
+            assertTrue(cursor.right <= canvas.left)
+            assertEquals(zoom.center.y,slider.center.y,1f)
+            if (window.width < 1200.dp) {
+                assertTrue("Information stays above zoom at $window",canvas.bottom <= zoom.top)
+            } else {
+                assertEquals(canvas.center.y,zoom.center.y,1f)
+            }
+        }
+    }
+
     @Test fun allEightHandlesResizeInImagePixelsAtDifferentZoomLevels() {
         for (scale in listOf(0.5f,0.75f)) {
             for (handle in CanvasResizeHandle.entries) {
