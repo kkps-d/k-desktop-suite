@@ -1023,8 +1023,8 @@ private fun StatusBar(doc: DocumentSession, zoom: Int, compact: Boolean, run: (N
         if (compact) {
             Column(Modifier.heightIn(min = 40.dp).padding(horizontal = NotepadSpacing.medium, vertical = 4.dp)) {
                 FlowRow(verticalArrangement = Arrangement.Center) {
-                    CursorStatus(cursor, doc.readOnly, disableReadOnly = { run(NotepadCommand.ReadOnly) })
-                    Text(" · ${stringResource(R.string.zoom_value, zoom)}", style = MaterialTheme.typography.labelMedium)
+                    CursorStatus(cursor, doc.readOnly, Modifier.align(Alignment.CenterVertically), disableReadOnly = { run(NotepadCommand.ReadOnly) })
+                    Text(" · ${stringResource(R.string.zoom_value, zoom)}", Modifier.align(Alignment.CenterVertically), style = MaterialTheme.typography.labelMedium)
                 }
                 Text(stringResource(status), style = MaterialTheme.typography.labelMedium)
             }
@@ -1046,9 +1046,9 @@ private fun StatusBar(doc: DocumentSession, zoom: Int, compact: Boolean, run: (N
 @Composable
 private fun CursorStatus(cursor: String, readOnly: Boolean, modifier: Modifier = Modifier, disableReadOnly: () -> Unit) {
     FlowRow(modifier, verticalArrangement = Arrangement.Center) {
-        Text(cursor, style = MaterialTheme.typography.labelMedium)
+        Text(cursor, Modifier.align(Alignment.CenterVertically), style = MaterialTheme.typography.labelMedium)
         if (readOnly) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.align(Alignment.CenterVertically), verticalAlignment = Alignment.CenterVertically) {
                 VerticalDivider(Modifier.padding(horizontal = NotepadSpacing.small).height(14.dp))
                 Text(
                     stringResource(R.string.read_only_enabled),
