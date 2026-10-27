@@ -52,6 +52,7 @@ internal data class DocumentSnapshot(
     val selectionEnd: Int = 0,
     val scroll: Int = 0,
     val horizontalScroll: Int = 0,
+    val readOnly: Boolean = false,
 )
 
 internal data class RecentFile(val uri: String, val name: String?)
@@ -81,10 +82,12 @@ internal class DocumentSession(snapshot: DocumentSnapshot) {
     var diskFingerprint by mutableStateOf(snapshot.diskFingerprint)
     var format by mutableStateOf(snapshot.format)
     var saving by mutableStateOf(false)
+    var readOnly by mutableStateOf(snapshot.readOnly)
     val dirty: Boolean get() = editor.text.toString() != savedText
 
     fun snapshot() = DocumentSnapshot(
         id, name, uri, editor.text.toString(), savedText, diskFingerprint, format,
         editor.selection.start, editor.selection.end, scroll.value, horizontalScroll.value,
+        readOnly,
     )
 }

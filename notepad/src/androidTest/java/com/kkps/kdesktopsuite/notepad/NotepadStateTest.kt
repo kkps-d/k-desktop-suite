@@ -234,6 +234,7 @@ class NotepadStateTest {
         val snapshot = withContext(Dispatchers.Main) {
             vm.active!!.editor.edit { append(" recovered"); selection = TextRange(2, 6) }
             vm.active!!.scroll.scrollTo(30)
+            vm.active!!.readOnly = true
             vm.newDocument()
             vm.active!!.editor.edit { append("untitled draft") }
             vm.changeZoom(140)
@@ -246,6 +247,8 @@ class NotepadStateTest {
         val recovered = create(repo, sessions)
         withContext(Dispatchers.Main) {
             assertEquals(snapshot, recovered.snapshot())
+            assertTrue(recovered.documents.first { it.uri == "file:one" }.readOnly)
+            assertFalse(recovered.documents.last().readOnly)
             assertTrue(recovered.active!!.dirty)
             assertEquals("original", repo.files.getValue("file:one").text)
             assertFalse(recovered.active!!.editor.undoState.canUndo)

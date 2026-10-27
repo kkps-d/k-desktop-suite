@@ -89,6 +89,7 @@ internal class SessionStore(file: File) {
                     put("selectionEnd", doc.selectionEnd)
                     put("scroll", doc.scroll)
                     put("horizontalScroll", doc.horizontalScroll)
+                    put("readOnly", doc.readOnly)
                 })
             }
         })
@@ -111,6 +112,7 @@ internal class SessionStore(file: File) {
                 selectionEnd = doc.getInt("selectionEnd"),
                 scroll = doc.getInt("scroll"),
                 horizontalScroll = doc.optInt("horizontalScroll", 0),
+                readOnly = doc.optBoolean("readOnly", false),
             )
         }
         require(documents.map { it.id }.distinct().size == documents.size)

@@ -1049,6 +1049,78 @@ class NotepadUiTest {
     }
 
     @Test
+    fun readOnlyBlocksEditsButAllowsSelectionCopyAndScrolling() {
+        showEditor()
+        val text = (1..150).joinToString("\n") { "Line $it" }
+        val editor = compose.onNodeWithTag("document-editor")
+        editor.performTextReplacement(text)
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Read-only").assertIsOff().performClick()
+        compose.onNodeWithText("Read-only enabled").assertIsDisplayed()
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Read-only").assertIsOn().performKeyInput { pressKey(Key.Escape) }
+
+        editor.performClick()
+        editor.performKeyInput {
+            pressKey(Key.Q)
+            pressKey(Key.Backspace)
+            pressKey(Key.Delete)
+            pressKey(Key.Enter)
+            keyDown(Key.CtrlLeft)
+            pressKey(Key.A)
+            keyUp(Key.CtrlLeft)
+        }
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals(androidx.compose.ui.text.TextRange(0, text.length), notepad.active!!.editor.selection)
+        }
+        compose.onNodeWithText("Edit").performClick()
+        listOf("Undo", "Redo", "Cut", "Paste").forEach { compose.onNodeWithText(it).assertIsNotEnabled() }
+        compose.onNodeWithText("Select all").assertIsEnabled()
+        compose.onNodeWithText("Copy").assertIsEnabled().performClick()
+        compose.runOnIdle {
+            val clipboard = InstrumentationRegistry.getInstrumentation().targetContext.getSystemService(android.content.ClipboardManager::class.java)
+            org.junit.Assert.assertEquals(text, clipboard.primaryClip?.getItemAt(0)?.text?.toString())
+        }
+        editor.performClick()
+        editor.performKeyInput {
+            keyDown(Key.CtrlLeft)
+            listOf(Key.X, Key.V, Key.Z, Key.Y).forEach { pressKey(it) }
+            keyUp(Key.CtrlLeft)
+        }
+        editor.assertTextEquals(text)
+        editor.performTouchInput { swipeUp() }
+        compose.runOnIdle { org.junit.Assert.assertTrue(notepad.active!!.scroll.value > 0) }
+
+        compose.onNodeWithContentDescription("New document").performClick()
+        compose.onNodeWithText("Read-only enabled").assertDoesNotExist()
+        editor.performTextInput("Editable tab")
+        tab(1).performClick()
+        compose.onNodeWithText("Read-only enabled").assertIsDisplayed()
+        editor.assertTextEquals(text)
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Read-only").performClick()
+        compose.onNodeWithText("Read-only enabled").assertDoesNotExist()
+        editor.performTextInput("!")
+        editor.assertTextContains("!", substring = true)
+        compose.onNodeWithContentDescription("Undo (Ctrl+Z)").assertIsEnabled()
+    }
+
+    @Test
+    fun compactCommandsToggleReadOnlyAndKeepItsStatusVisible() {
+        windowSize = DpSize(400.dp, 800.dp)
+        showEditor(largeFontRtl = true)
+        compose.onNodeWithTag("document-editor").performTextReplacement("مرحبا မြန်မာ 👋")
+        compose.onNodeWithText("Commands").performClick()
+        compose.onNodeWithText("Read-only").performScrollTo().performClick()
+        compose.onNodeWithText("Read-only enabled").assertIsDisplayed()
+        compose.onNodeWithText("Commands").performClick()
+        compose.onNodeWithText("Read-only").performScrollTo().assertIsOn().performClick()
+        compose.onNodeWithText("Read-only enabled").assertDoesNotExist()
+        compose.onNodeWithTag("document-editor").performTextInput("!")
+        compose.onNodeWithTag("document-editor").assertTextContains("!", substring = true)
+    }
+
+    @Test
     fun menuClipboardEditsParticipateInUndoAndRedo() {
         showEditor()
         compose.onNodeWithTag("document-editor").performTextReplacement("Copy me")

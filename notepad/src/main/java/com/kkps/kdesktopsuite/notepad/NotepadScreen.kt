@@ -114,7 +114,7 @@ internal enum class NotepadCommand(@StringRes val label: Int, val shortcut: Stri
     Undo(R.string.undo, "Ctrl+Z"), Redo(R.string.redo, "Ctrl+Y"),
     Cut(R.string.cut, "Ctrl+X"), Copy(R.string.copy, "Ctrl+C"), Paste(R.string.paste, "Ctrl+V"), SelectAll(R.string.select_all, "Ctrl+A"),
     ZoomIn(R.string.zoom_in, "Ctrl++"), ZoomOut(R.string.zoom_out, "Ctrl+−"), ZoomReset(R.string.zoom_reset, "Ctrl+0"),
-    WordWrap(R.string.word_wrap, ""), StatusBar(R.string.status_bar, ""),
+    WordWrap(R.string.word_wrap, ""), StatusBar(R.string.status_bar, ""), ReadOnly(R.string.read_only, ""),
 }
 
 @Composable
@@ -176,9 +176,11 @@ internal fun NotepadScreen(
             NotepadCommand.NewWindow -> activity != null
             NotepadCommand.Open -> !notepad.pickerPending
             NotepadCommand.Save, NotepadCommand.SaveAs, NotepadCommand.Close -> doc != null && !doc.saving && !notepad.pickerPending
-            NotepadCommand.Undo -> doc?.editor?.undoState?.canUndo == true
-            NotepadCommand.Redo -> doc?.editor?.undoState?.canRedo == true
-            NotepadCommand.Cut, NotepadCommand.Copy -> doc?.editor?.selection?.collapsed == false
+            NotepadCommand.Undo -> doc != null && !doc.readOnly && doc.editor.undoState.canUndo
+            NotepadCommand.Redo -> doc != null && !doc.readOnly && doc.editor.undoState.canRedo
+            NotepadCommand.Cut -> doc != null && !doc.readOnly && !doc.editor.selection.collapsed
+            NotepadCommand.Copy -> doc?.editor?.selection?.collapsed == false
+            NotepadCommand.Paste -> doc != null && !doc.readOnly
             NotepadCommand.ZoomIn -> doc != null && notepad.zoom < 300
             NotepadCommand.ZoomOut -> doc != null && notepad.zoom > 50
             else -> doc != null
@@ -217,12 +219,13 @@ internal fun NotepadScreen(
             NotepadCommand.ZoomReset -> notepad.changeZoom(100)
             NotepadCommand.WordWrap -> notepad.toggleWordWrap()
             NotepadCommand.StatusBar -> notepad.toggleStatusBar()
+            NotepadCommand.ReadOnly -> doc.readOnly = !doc.readOnly
             NotepadCommand.Cut, NotepadCommand.Copy, NotepadCommand.Paste -> scope.launch {
                 try {
                     if (command == NotepadCommand.Paste) {
                         val data = clipboard.getClipEntry()?.clipData
                         val text = if (data != null && data.itemCount > 0) data.getItemAt(0).text?.toString() else null
-                        if (text != null) doc.editor.edit {
+                        if (text != null && !doc.readOnly) doc.editor.edit {
                             val start = selection.min
                             replace(start, selection.max, text)
                             selection = TextRange(start + text.length)
@@ -231,7 +234,7 @@ internal fun NotepadScreen(
                         val selection = doc.editor.selection
                         val text = doc.editor.text.toString()
                         clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(null, text.substring(selection.min, selection.max))))
-                        if (command == NotepadCommand.Cut && doc.editor.text.toString() == text && doc.editor.selection == selection) {
+                        if (command == NotepadCommand.Cut && !doc.readOnly && doc.editor.text.toString() == text && doc.editor.selection == selection) {
                             doc.editor.edit {
                                 replace(selection.min, selection.max, "")
                                 this.selection = TextRange(selection.min)
@@ -360,6 +363,7 @@ internal fun NotepadScreen(
                             caption, region.translate(origin), tabs, notepad.errorDocumentId, notepad, activity,
                             moveToWindow = { moveDocumentId = it })
                         CommandBar(compact, ::enabled, ::run, notepad.wordWrap, notepad.showStatusBar,
+                            readOnly = active?.readOnly == true,
                             openSettings = {
                                 focusManager.clearFocus()
                                 notepad.showSettings(true)
@@ -882,13 +886,14 @@ private fun DocumentTabs(
 private fun CommandBar(
     compact: Boolean, enabled: (NotepadCommand) -> Boolean, run: (NotepadCommand) -> Unit,
     wordWrap: Boolean = true, showStatusBar: Boolean = true,
+    readOnly: Boolean = false,
     openSettings: () -> Unit = {},
     openAbout: () -> Unit = {},
 ) {
     var menu by remember { mutableStateOf<String?>(null) }
     val files = NotepadCommand.entries.filter { it in NotepadCommand.New..NotepadCommand.Close }
     val edits = NotepadCommand.entries.filter { it in NotepadCommand.Undo..NotepadCommand.SelectAll }
-    val views = NotepadCommand.entries.filter { it in NotepadCommand.ZoomIn..NotepadCommand.StatusBar }
+    val views = NotepadCommand.entries.filter { it in NotepadCommand.ZoomIn..NotepadCommand.ReadOnly }
     Surface(color = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface) {
         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("command-bar").padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -906,6 +911,7 @@ private fun CommandBar(
                             val checked = when (command) {
                                 NotepadCommand.WordWrap -> wordWrap
                                 NotepadCommand.StatusBar -> showStatusBar
+                                NotepadCommand.ReadOnly -> readOnly
                                 else -> null
                             }
                             AppMenuItem(
@@ -951,6 +957,7 @@ private fun DocumentEditor(
     val latestZoom by rememberUpdatedState(zoom)
     BasicTextField(
         state = doc.editor,
+        readOnly = doc.readOnly,
         scrollState = doc.scroll,
         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
         textStyle = MaterialTheme.typography.bodyLarge.copy(
@@ -1010,19 +1017,35 @@ private fun StatusBar(doc: DocumentSession, zoom: Int, compact: Boolean, run: (N
     Surface(color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth().testTag("status-bar")) {
         if (compact) {
             Column(Modifier.heightIn(min = 40.dp).padding(horizontal = NotepadSpacing.medium, vertical = 4.dp)) {
-                Text("$cursor · ${stringResource(R.string.zoom_value, zoom)}", style = MaterialTheme.typography.labelMedium)
+                FlowRow(verticalArrangement = Arrangement.Center) {
+                    CursorStatus(cursor, doc.readOnly)
+                    Text(" · ${stringResource(R.string.zoom_value, zoom)}", style = MaterialTheme.typography.labelMedium)
+                }
                 Text(stringResource(status), style = MaterialTheme.typography.labelMedium)
             }
         } else {
             val zoomLabel = stringResource(R.string.zoom_description, zoom)
             Row(Modifier.fillMaxWidth().heightIn(min = 28.dp).padding(horizontal = NotepadSpacing.medium, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(cursor, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
+                CursorStatus(cursor, doc.readOnly, Modifier.weight(1f))
                 Text(stringResource(status), Modifier.padding(horizontal = NotepadSpacing.small), style = MaterialTheme.typography.labelMedium)
                 Text(stringResource(R.string.zoom_value, zoom),
                     Modifier.semantics { contentDescription = zoomLabel }
                         .clip(MaterialTheme.shapes.small).clickable(role = Role.Button) { run(NotepadCommand.ZoomReset) }
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CursorStatus(cursor: String, readOnly: Boolean, modifier: Modifier = Modifier) {
+    FlowRow(modifier, verticalArrangement = Arrangement.Center) {
+        Text(cursor, style = MaterialTheme.typography.labelMedium)
+        if (readOnly) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                VerticalDivider(Modifier.padding(horizontal = NotepadSpacing.small).height(14.dp))
+                Text(stringResource(R.string.read_only_enabled), style = MaterialTheme.typography.labelMedium)
             }
         }
     }

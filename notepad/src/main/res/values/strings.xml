@@ -18,6 +18,8 @@
     <string name="source_code_url" translatable="false">https://github.com/kkps-d/k-desktop-suite</string>
     <string name="word_wrap">Word wrap</string>
     <string name="status_bar">Status bar</string>
+    <string name="read_only">Read-only</string>
+    <string name="read_only_enabled">Read-only enabled</string>
     <string name="commands">Commands</string>
     <string name="settings">Settings</string>
     <string name="back">Back</string>
