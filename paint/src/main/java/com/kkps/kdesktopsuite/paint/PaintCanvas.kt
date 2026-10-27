@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -571,7 +572,7 @@ private fun TextOverlay(state: PaintUiState, preview: EditPreview, model: PaintV
     CompositionLocalProvider(LocalDensity provides Density(1f,1f)) {
         BasicTextField(state = text,readOnly = state.busy,modifier = Modifier.offset { IntOffset(p.x.roundToInt(),p.y.roundToInt()) }
             .graphicsLayer { scaleX = state.viewport.scale; scaleY = state.viewport.scale; transformOrigin = TransformOrigin(0f,0f) }
-            .wrapContentSize(Alignment.TopStart,unbounded = true).width(preview.bounds.width.dp).heightIn(min = preview.bounds.height.dp)
+            .wrapContentSize(Alignment.TopStart,unbounded = true).width(preview.bounds.width.dp)
             .drawWithContent {
                 val area = state.selection ?: PixelRect(0,0,state.raster.width,state.raster.height)
                 val left = max(0f,(area.x-preview.bounds.x).toFloat())
@@ -590,6 +591,12 @@ private fun TextOverlay(state: PaintUiState, preview: EditPreview, model: PaintV
                     Key.U -> { model.options { it.copy(underline = !it.underline) }; true }
                     else -> false
                 }
+            }, decorator = { innerTextField ->
+                Box(Modifier.fillMaxWidth().heightIn(min = preview.bounds.height.dp),contentAlignment = when (o.verticalTextAlignment) {
+                    VerticalTextAlignment.Top -> Alignment.TopStart
+                    VerticalTextAlignment.Middle -> Alignment.CenterStart
+                    VerticalTextAlignment.Bottom -> Alignment.BottomStart
+                }) { innerTextField() }
             }, onTextLayout = { layoutResult ->
                 val layout = layoutResult()
                 if (layout != null) {
@@ -610,6 +617,11 @@ private fun TextOverlay(state: PaintUiState, preview: EditPreview, model: PaintV
                     }
                 }
             }, textStyle = TextStyle(color = Color(o.foreground),fontSize = o.fontSize.sp,
+                textAlign = when (o.textAlignment) {
+                    TextAlignment.Left -> TextAlign.Left
+                    TextAlignment.Center -> TextAlign.Center
+                    TextAlignment.Right -> TextAlign.Right
+                },
                 fontFamily = PaintFonts.family(o.font),
                 fontWeight = if (o.bold) FontWeight.Bold else FontWeight.Normal,
                 fontStyle = if (o.italic) FontStyle.Italic else FontStyle.Normal,

@@ -52,7 +52,13 @@ internal enum class PaintIcon(@DrawableRes private val resourceId: Int) {
     Bold(R.drawable.ic_format_bold),
     Italic(R.drawable.ic_format_italic),
     Underline(R.drawable.ic_format_underline),
-    Strike(R.drawable.ic_format_strike);
+    Strike(R.drawable.ic_format_strike),
+    AlignLeft(R.drawable.ic_format_align_left),
+    AlignCenter(R.drawable.ic_format_align_center),
+    AlignRight(R.drawable.ic_format_align_right),
+    AlignTop(R.drawable.ic_vertical_align_top),
+    AlignMiddle(R.drawable.ic_vertical_align_center),
+    AlignBottom(R.drawable.ic_vertical_align_bottom);
 
     val vector: ImageVector
         @Composable get() = ImageVector.vectorResource(resourceId)

@@ -301,6 +301,44 @@ private fun FontOptions(s: PaintUiState, model: PaintViewModel) {
     PaintButton(PaintIcon.Italic,"Italic",enabled,selected = s.options.italic) { model.options { it.copy(italic = !it.italic) } }
     PaintButton(PaintIcon.Underline,"Underline",enabled,selected = s.options.underline) { model.options { it.copy(underline = !it.underline) } }
     PaintButton(PaintIcon.Strike,"Strikethrough",enabled,selected = s.options.strike) { model.options { it.copy(strike = !it.strike) } }
+    ToolbarDivider()
+    AlignmentDropdown(stringResource(R.string.ui_horizontal_alignment),s.options.textAlignment,enabled,listOf(
+        Triple(TextAlignment.Left,PaintIcon.AlignLeft,R.string.ui_align_left),
+        Triple(TextAlignment.Center,PaintIcon.AlignCenter,R.string.ui_align_center),
+        Triple(TextAlignment.Right,PaintIcon.AlignRight,R.string.ui_align_right),
+    )) { value -> model.options { it.copy(textAlignment = value) } }
+    AlignmentDropdown(stringResource(R.string.ui_vertical_alignment),s.options.verticalTextAlignment,enabled,listOf(
+        Triple(VerticalTextAlignment.Top,PaintIcon.AlignTop,R.string.ui_align_top),
+        Triple(VerticalTextAlignment.Middle,PaintIcon.AlignMiddle,R.string.ui_align_middle),
+        Triple(VerticalTextAlignment.Bottom,PaintIcon.AlignBottom,R.string.ui_align_bottom),
+    )) { value -> model.options { it.copy(verticalTextAlignment = value) } }
+}
+
+@Composable
+private fun <T> AlignmentDropdown(label: String, selected: T, enabled: Boolean,
+    choices: List<Triple<T,PaintIcon,Int>>, onSelect: (T) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    val current = choices.first { it.first == selected }
+    val currentLabel = stringResource(current.third)
+    Box {
+        ToolbarTooltip("$label: $currentLabel") {
+            TextButton(onClick = { open = true },enabled = enabled,contentPadding = PaddingValues(8.dp),
+                modifier = Modifier.heightIn(min = 48.dp).semantics {
+                    contentDescription = label
+                    stateDescription = currentLabel
+                }) {
+                Icon(current.second.vector,null)
+                Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
+            }
+        }
+        AppDropdownMenu(open,{ open = false }) {
+            choices.forEach { (value,icon,text) ->
+                AppMenuItem(text = { Text(stringResource(text)) },onClick = { onSelect(value); open = false },
+                    enabled = enabled,checked = selected == value,leadingIcon = { Icon(icon.vector,null) },
+                    trailingIcon = if (selected == value) {{ Icon(PaintIcon.Apply.vector,null) }} else null)
+            }
+        }
+    }
 }
 
 @Composable

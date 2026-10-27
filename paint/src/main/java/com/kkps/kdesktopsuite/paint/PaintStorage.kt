@@ -232,6 +232,8 @@ private fun RecoverySnapshot.json(): JSONObject {
         .put("constrain", options.constrain).put("font", options.font).put("fontSize", options.fontSize).put("bold", options.bold)
         .put("italic", options.italic).put("underline", options.underline).put("strike", options.strike).put("opaqueText", options.opaqueText)
         .put("brushStyle", options.brushStyle.name)
+        .put("textAlignment", options.textAlignment.name)
+        .put("verticalTextAlignment", options.verticalTextAlignment.name)
         .put("brushWidths", JSONObject(options.brushWidths.mapKeys { it.key.name }))
     val json = JSONObject().put("options", opts).put("uri", uri).put("name", name).put("mime", mime)
         .put("fingerprint", fingerprint).put("dirty", dirty).put("selection", selection?.json())
@@ -260,13 +262,17 @@ private fun snapshotFromJson(json: JSONObject, raster: Raster, payload: Raster?,
         brushStyle = BrushStyle.entries.firstOrNull { it.name == o.optString("brushStyle") } ?: BrushStyle.Solid,
         brushWidths = BrushStyle.entries.mapNotNull { style ->
             o.optJSONObject("brushWidths")?.optInt(style.name,0)?.takeIf { it in 1..100 }?.let { style to it }
-        }.toMap())
+        }.toMap(),
+        textAlignment = TextAlignment.entries.firstOrNull { it.name == o.optString("textAlignment") } ?: TextAlignment.Left,
+        verticalTextAlignment = VerticalTextAlignment.entries.firstOrNull { it.name == o.optString("verticalTextAlignment") } ?: VerticalTextAlignment.Top)
+    // Older drafts cached direction-relative text; rebuild it with the recovered physical alignment.
+    val alignedTextRaster = textRaster?.takeIf { o.optString("textAlignment") == options.textAlignment.name }
     val preview = json.optJSONObject("preview")?.let { p -> EditPreview(recoveredTool(p.getString("tool")), p.getJSONArray("bounds").rect(),
         Point(p.getDouble("startX").toFloat(), p.getDouble("startY").toFloat()), Point(p.getDouble("endX").toFloat(), p.getDouble("endY").toFloat()),
         p.optJSONArray("source")?.rect(), payload, p.optString("text"),
         if (p.has("outputWidth")) p.getInt("outputWidth") else null, if (p.has("outputHeight")) p.getInt("outputHeight") else null,
         textSelectionStart = p.optInt("textSelectionStart"),textSelectionEnd = p.optInt("textSelectionEnd"),
-        textRaster = textRaster,textLayoutKey = textRaster?.let { textLayoutKey(p.optString("text"),p.getJSONArray("bounds").rect().width,options) },
+        textRaster = alignedTextRaster,textLayoutKey = alignedTextRaster?.let { textLayoutKey(p.optString("text"),p.getJSONArray("bounds").rect().width,options) },
         points = p.optJSONArray("points")?.let { points -> List(points.length()) { index ->
             val point = points.getJSONArray(index)
             Point(point.getDouble(0).toFloat(),point.getDouble(1).toFloat())

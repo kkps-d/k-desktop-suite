@@ -296,7 +296,11 @@ internal class PaintViewModel(
         } else setPreview(preview)
     }
     fun setPreview(preview: EditPreview?) {
-        mutableState.update { it.copy(preview = preview) }; checkpoint()
+        mutableState.update {
+            val newTextBox = preview?.tool == Tool.Text && preview.id != it.preview?.id
+            it.copy(preview = preview,options = if (newTextBox) it.options.copy(
+                textAlignment = TextAlignment.Left,verticalTextAlignment = VerticalTextAlignment.Top) else it.options)
+        }; checkpoint()
     }
     fun finishShape() {
         val preview = state.value.preview ?: return

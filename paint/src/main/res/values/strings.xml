@@ -137,4 +137,12 @@
     <string name="ui_rotation_handle">Selection rotation handle</string>
     <string name="ui_shape_rotation_handle">Shape rotation handle</string>
     <string name="ui_rotation_state">%1$.1f degrees clockwise</string>
+    <string name="ui_align_left">Align left</string>
+    <string name="ui_align_center">Align center</string>
+    <string name="ui_align_right">Align right</string>
+    <string name="ui_horizontal_alignment">Horizontal alignment</string>
+    <string name="ui_vertical_alignment">Vertical alignment</string>
+    <string name="ui_align_top">Align top</string>
+    <string name="ui_align_middle">Align middle</string>
+    <string name="ui_align_bottom">Align bottom</string>
 </resources>

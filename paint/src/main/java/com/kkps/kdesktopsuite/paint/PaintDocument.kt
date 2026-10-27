@@ -9,6 +9,10 @@ import android.graphics.PorterDuffColorFilter
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.TextDirectionHeuristics
+import android.text.style.AlignmentSpan
 import androidx.core.graphics.withTranslation
 import androidx.core.graphics.createBitmap
 import java.util.UUID
@@ -29,6 +33,20 @@ internal enum class Tool(val label: String, val isShape: Boolean = false) {
 }
 
 internal val shapeTools = Tool.entries.filter { it.isShape }
+internal enum class TextAlignment { Left, Center, Right }
+internal enum class VerticalTextAlignment {
+    Top, Middle, Bottom;
+
+    fun offset(boxHeight: Int, textHeight: Int): Int {
+        val space = (boxHeight - textHeight).coerceAtLeast(0)
+        return when (this) {
+            Top -> 0
+            Middle -> (space / 2f).roundToInt()
+            Bottom -> space
+        }
+    }
+}
+
 internal data class ToolOptions(
     val tool: Tool = Tool.Brush, val foreground: Int = BLACK, val background: Int = WHITE,
     val width: Int = 3, val eraserWidth: Int = 8, val outline: Boolean = true,
@@ -38,6 +56,8 @@ internal data class ToolOptions(
     val opaqueText: Boolean = false,
     val brushStyle: BrushStyle = BrushStyle.Solid,
     val brushWidths: Map<BrushStyle,Int> = emptyMap(),
+    val textAlignment: TextAlignment = TextAlignment.Left,
+    val verticalTextAlignment: VerticalTextAlignment = VerticalTextAlignment.Top,
 ) {
     val strokeWidth get() = when (tool) {
         Tool.Pencil -> 1
@@ -142,9 +162,10 @@ internal data class EditPreview(
 }
 
 internal data class TextLayoutKey(val text: String, val width: Int, val font: String, val size: Int,
-    val bold: Boolean, val italic: Boolean, val underline: Boolean, val strike: Boolean)
+    val bold: Boolean, val italic: Boolean, val underline: Boolean, val strike: Boolean,
+    val alignment: TextAlignment)
 internal fun textLayoutKey(text: String, width: Int, options: ToolOptions) = TextLayoutKey(text,width,
-    options.font,options.fontSize,options.bold,options.italic,options.underline,options.strike)
+    options.font,options.fontSize,options.bold,options.italic,options.underline,options.strike,options.textAlignment)
 
 internal fun Raster.bitmap(): Bitmap = createBitmap(width,height).apply { setPixels(pixels,0,width,0,0,width,height) }
 internal fun Bitmap.raster(): Raster = Raster(width, height, IntArray(width * height).also {
@@ -177,7 +198,8 @@ internal fun Raster.render(preview: EditPreview, options: ToolOptions, mask: Pix
             }
             paint.colorFilter = PorterDuffColorFilter(options.foreground,PorterDuff.Mode.SRC_IN)
             val glyphs = preview.textRaster.bitmap()
-            canvas.drawBitmap(glyphs,rect.x.toFloat(),rect.y.toFloat(),paint)
+            val top = rect.y + options.verticalTextAlignment.offset(rect.height,preview.textRaster.height)
+            canvas.drawBitmap(glyphs,rect.x.toFloat(),top.toFloat(),paint)
             glyphs.recycle()
             return bitmap.raster().also { bitmap.recycle() }
         }
@@ -192,14 +214,29 @@ internal fun Raster.render(preview: EditPreview, options: ToolOptions, mask: Pix
             typeface = Typeface.create(PaintFonts.typeface(options.font), style)
             isUnderlineText = options.underline; isStrikeThruText = options.strike
         }
-        val layout = StaticLayout.Builder.obtain(preview.text, 0, preview.text.length, textPaint, rect.width.coerceAtLeast(1))
+        val alignedText = SpannableString(preview.text)
+        var start = 0
+        // Android's normal/opposite alignments follow paragraph direction; the buttons use physical edges.
+        for (paragraph in preview.text.splitToSequence('\n')) {
+            val end = (start + paragraph.length + 1).coerceAtMost(alignedText.length)
+            val rtl = TextDirectionHeuristics.FIRSTSTRONG_LTR.isRtl(paragraph,0,paragraph.length)
+            val alignment = when {
+                options.textAlignment == TextAlignment.Center -> Layout.Alignment.ALIGN_CENTER
+                (options.textAlignment == TextAlignment.Right) != rtl -> Layout.Alignment.ALIGN_OPPOSITE
+                else -> Layout.Alignment.ALIGN_NORMAL
+            }
+            alignedText.setSpan(AlignmentSpan.Standard(alignment),start,end,Spanned.SPAN_PARAGRAPH)
+            start = end
+        }
+        val layout = StaticLayout.Builder.obtain(alignedText, 0, alignedText.length, textPaint, rect.width.coerceAtLeast(1))
             .setAlignment(Layout.Alignment.ALIGN_NORMAL).setIncludePad(false)
             .build()
         if (options.opaqueText) {
             paint.color = options.background
             canvas.drawRect(rect.x.toFloat(), rect.y.toFloat(), rect.right.toFloat(), rect.y + maxOf(rect.height, layout.height).toFloat(), paint)
         }
-        canvas.withTranslation(rect.x.toFloat(), rect.y.toFloat()) { layout.draw(this) }
+        val top = rect.y + options.verticalTextAlignment.offset(rect.height,layout.height)
+        canvas.withTranslation(rect.x.toFloat(),top.toFloat()) { layout.draw(this) }
     } else canvas.drawShapePreview(preview, options)
     return bitmap.raster().also { bitmap.recycle() }
 }
