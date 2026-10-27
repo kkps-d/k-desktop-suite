@@ -102,14 +102,13 @@ private fun ScrubTarget(label: String, value: Int, range: IntRange, onValueChang
     val currentValue by rememberUpdatedState(value)
     val currentOnValueChange by rememberUpdatedState(onValueChange)
     val interaction = modifier.pointerHoverIcon(cursor).pointerInput(range,stepPx) {
-        var startValue = 0
-        var draggedPx = 0f
+        var dragValue = 0f
         detectHorizontalDragGestures(onDragStart = {
-            startValue = currentValue
-            draggedPx = 0f
+            dragValue = currentValue.toFloat()
         },onHorizontalDrag = { change,distance ->
-            draggedPx += distance
-            currentOnValueChange((startValue + draggedPx / stepPx).roundToInt().coerceIn(range))
+            // Discard movement beyond the limits so reversing direction responds immediately.
+            dragValue = (dragValue + distance / stepPx).coerceIn(range.first.toFloat(),range.last.toFloat())
+            currentOnValueChange(dragValue.roundToInt())
             change.consume()
         })
     }.onKeyEvent { event ->
