@@ -10,6 +10,10 @@ selection and clipboard operations, all 23 classic Paint shapes, native multilin
 undo/redo, PNG/JPEG files, PNG sharing, settings, and durable private recovery.
 The Hand tool pans with one finger; pinch zoom and two-finger pan remain available
 with editing tools as well, including gestures that start in the gray area outside the image.
+Adding a second finger restores any selection or shape move/resize started by the first finger.
+Hold Space and drag to pan with a mouse; key repeats never draw. A Space tap activates
+once on release. Arrow keys position a visible keyboard cursor; Space starts/finishes
+strokes, shapes, and rectangular selections, and Escape cancels an unfinished keyboard edit.
 Single touches outside the image do not draw or select. Switching to a different drawing tool clears the selection and commits any
 pending move or paste. Returning to the active tool preserves pending edits.
 The primary toolbar groups clipboard commands, selection, drawing tools, and primary/secondary
@@ -34,6 +38,8 @@ Text supports System plus the same bundled Noto Sans, Serif,
 and Sans Mono fonts as Notepad, with formatting in the secondary toolbar.
 Drag an uncommitted text box by its outside frame to move it; the interior keeps native
 caret/character selection. Moving preserves text formatting and selection until Commit.
+A visible 48dp move grip provides a larger touch target; activate it to enter a position.
+Selection resize handles also accept a 48dp touch area.
 Move/resize/skew opens one dialog with Move, Resize, and Skew tabs; text offers only Move and Resize.
 Position, percentage/pixel sizing, aspect lock, rotation, and skew apply together on OK.
 Selections and pending shapes/text keep their edits floating; Move/Resize keeps text

@@ -1,12 +1,21 @@
 package com.kkps.kdesktopsuite.paint
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -16,7 +25,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
-/** Outside-edge targets leave the native editor's caret and character selection untouched. */
+/** A touch-sized grip supplements the precision edges around the native text editor. */
 @Composable
 internal fun TextMoveFrame(state: PaintUiState, preview: EditPreview, model: PaintViewModel, active: Boolean) {
     if (!active || state.busy || state.loading || state.saving) return
@@ -27,9 +36,14 @@ internal fun TextMoveFrame(state: PaintUiState, preview: EditPreview, model: Pai
     val width = preview.bounds.width * state.viewport.scale
     val height = preview.bounds.height * state.viewport.scale
     val edge = with(density) { 12.dp.toPx() }
+    val gripSize = with(density) { 48.dp.toPx() }
+    val gripLeft = (origin.x + width/2 - gripSize/2).coerceIn(0f,(state.viewport.width-gripSize).coerceAtLeast(0f))
+    val gripTop = (if (origin.y >= gripSize) origin.y-gripSize else origin.y+height)
+        .coerceIn(0f,(state.viewport.height-gripSize).coerceAtLeast(0f))
     // Leave the bottom-right resize target available to the canvas gesture handler.
-    val resizeGap = with(density) { 18.dp.toPx() }
+    val resizeGap = with(density) { 24.dp.toPx() }
     val targets = listOf(
+        Rect(gripLeft,gripTop,gripLeft+gripSize,gripTop+gripSize),
         Rect(origin.x,origin.y-edge,origin.x+width,origin.y),
         Rect(origin.x-edge,origin.y,origin.x,origin.y+height),
         Rect(origin.x,origin.y+height,origin.x+(width-resizeGap).coerceAtLeast(0f),origin.y+height+edge),
@@ -37,9 +51,16 @@ internal fun TextMoveFrame(state: PaintUiState, preview: EditPreview, model: Pai
     )
     targets.forEachIndexed { index,area ->
         if (area.width <= 0 || area.height <= 0) return@forEachIndexed
+        var focused by remember { mutableStateOf(false) }
         Box(Modifier.absoluteOffset { IntOffset(area.left.roundToInt(),area.top.roundToInt()) }
             .size(with(density) { area.width.toDp() },with(density) { area.height.toDp() })
             .testTag("paint-text-move-$index").pointerHoverIcon(cursor)
+            .onFocusChanged { focused = it.isFocused }.focusable(index == 0)
+            .onKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key in listOf(Key.Enter,Key.Spacebar)) {
+                    model.dialog(PaintDialog.Transform); true
+                } else false
+            }
             .semantics {
                 contentDescription = "Move text frame"
                 onClick("Enter text position") { model.dialog(PaintDialog.Transform); true }
@@ -67,12 +88,20 @@ internal fun TextMoveFrame(state: PaintUiState, preview: EditPreview, model: Pai
                                     y = original.y+(delta.y/initial.viewport.scale).roundToInt()))
                             }
                             change.consume()
-                            if (!change.pressed) { completed = true; break }
+                            if (!change.pressed) {
+                                completed = true
+                                if (index == 0 && !moved) model.dialog(PaintDialog.Transform)
+                                break
+                            }
                         }
                     } finally {
                         if (!completed && moved && model.state.value.preview?.id == preview.id) model.movePreview(original)
                     }
                 }
-            })
+            },contentAlignment = Alignment.Center) {
+            if (index == 0) Icon(PaintIcon.Pan.vector,null,Modifier.size(28.dp)
+                .background(if (focused) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,CircleShape)
+                .border(1.dp,MaterialTheme.colorScheme.primary,CircleShape).padding(4.dp),tint = MaterialTheme.colorScheme.primary)
+        }
     }
 }

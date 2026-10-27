@@ -60,6 +60,8 @@ internal fun PaintCanvas(
     val lifecycleState by lifecycle.currentStateFlow.collectAsState()
     val active = lifecycleState.isAtLeast(Lifecycle.State.RESUMED)
     var spacePressed by remember { mutableStateOf(false) }
+    var spaceUsedForPan by remember { mutableStateOf(false) }
+    var canvasFocused by remember { mutableStateOf(false) }
     var keyboardCursor by remember { mutableStateOf(Point(0f,0f)) }
     var keyboardDrawing by remember { mutableStateOf(false) }
     val stroke = remember { mutableStateListOf<Point>() }
@@ -131,13 +133,32 @@ internal fun PaintCanvas(
         onSelectionChange(dragPreview?.takeIf { it.tool == Tool.Select }?.bounds?.clipped(state.raster.width,state.raster.height))
     }
     LaunchedEffect(canvasResize) { onCanvasResizeChange(canvasResize) }
+    LaunchedEffect(canvasFocused,keyboardInput,keyboardCursor,state.viewport) {
+        if (!canvasFocused || !keyboardInput || state.options.tool == Tool.Pan) return@LaunchedEffect
+        val view = state.viewport
+        val point = view.screenPoint(keyboardCursor)
+        val margin = min(with(density) { 24.dp.toPx() },min(view.width,view.height)/2)
+        val delta = Point(point.x.coerceIn(margin,view.width-margin)-point.x,
+            point.y.coerceIn(margin,view.height-margin)-point.y)
+        if (abs(delta.x) > 0.5f || abs(delta.y) > 0.5f) {
+            val visible = view.panned(delta)
+            if (visible != view) model.viewport(visible)
+        }
+    }
 
     fun commandKey(event: KeyEvent): Boolean {
         if (event.key == Key.Spacebar) {
-            spacePressed = event.type == KeyEventType.KeyDown
-            if (event.type == KeyEventType.KeyDown && !event.isCtrlPressed && !event.isShiftPressed) {
+            if (event.type == KeyEventType.KeyDown) {
+                if (!spacePressed) spaceUsedForPan = false
+                spacePressed = true
+                return true
+            }
+            val activate = spacePressed && !spaceUsedForPan && !event.isCtrlPressed && !event.isShiftPressed && !event.isAltPressed
+            spacePressed = false
+            // Release activates once; holding Space is reserved for pointer panning.
+            if (event.type == KeyEventType.KeyUp && activate && !state.busy && !state.loading) {
+                keyboardInput = true
                 if (state.options.tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) {
-                    if (model.state.value.busy || model.state.value.loading) return true
                     keyboardDrawing = !keyboardDrawing
                     if (keyboardDrawing) {
                         stroke.clear(); strokePending = false; erasing = false
@@ -148,7 +169,7 @@ internal fun PaintCanvas(
                         strokePending = true
                         model.stroke(stroke.toList(),seed = strokeSeed,session = brushSession)
                     }
-                } else if (state.options.tool.isShape && state.preview == null) {
+                } else if ((state.options.tool.isShape || state.options.tool == Tool.Select) && state.preview == null) {
                     keyboardDrawing = !keyboardDrawing
                     if (keyboardDrawing) { dragStart = keyboardCursor; dragEnd = keyboardCursor }
                     else {
@@ -160,8 +181,10 @@ internal fun PaintCanvas(
             return true
         }
         if (event.type != KeyEventType.KeyDown) return false
-        if (event.key == Key.Escape && keyboardDrawing && state.options.tool.isShape) {
-            keyboardDrawing = false; dragStart = null; dragEnd = null; return true
+        if (event.key == Key.Escape && keyboardDrawing) {
+            keyboardDrawing = false; dragStart = null; dragEnd = null
+            stroke.clear(); brushSession = null
+            return true
         }
         if (event.key == Key.F10 && event.isShiftPressed) { contextMenu = Offset.Zero; return true }
         if (event.key == Key.Delete) { model.deleteSelection(); return true }
@@ -178,12 +201,12 @@ internal fun PaintCanvas(
         val dy = when (event.key) { Key.DirectionUp -> -step; Key.DirectionDown -> step; else -> 0 }
         if (dx != 0 || dy != 0) {
             val rect = state.preview?.bounds ?: state.selection
-            if (rect != null && state.preview?.constructing != true) model.movePreview(rect.copy(x = rect.x+dx,y = rect.y+dy))
+            if (rect != null && !keyboardDrawing && state.preview?.constructing != true) model.movePreview(rect.copy(x = rect.x+dx,y = rect.y+dy))
             else {
                 keyboardCursor = Point((keyboardCursor.x+dx).coerceIn(0f,state.raster.width-1f),(keyboardCursor.y+dy).coerceIn(0f,state.raster.height-1f))
                 keyboardInput = true
                 if (keyboardDrawing) {
-                    if (state.options.tool.isShape) dragEnd = keyboardCursor else stroke.add(keyboardCursor)
+                    if (state.options.tool.isShape || state.options.tool == Tool.Select) dragEnd = keyboardCursor else stroke.add(keyboardCursor)
                 }
             }
             return true
@@ -229,15 +252,18 @@ internal fun PaintCanvas(
             }
         }) {
         Canvas(Modifier.fillMaxSize().testTag("paint-canvas").focusRequester(focus)
-            .onFocusChanged { if (!it.hasFocus) {
-                if (!strokePending) stroke.clear()
-                spacePressed = false
-                if (keyboardDrawing) { keyboardDrawing = false; dragStart = null; dragEnd = null }
-            } }
+            .onFocusChanged {
+                canvasFocused = it.hasFocus
+                if (it.hasFocus) keyboardInput = true else {
+                    if (!strokePending) stroke.clear()
+                    spacePressed = false
+                    if (keyboardDrawing) { keyboardDrawing = false; dragStart = null; dragEnd = null }
+                }
+            }
             .focusable().onKeyEvent(::commandKey)
             .semantics {
                 contentDescription = "Image canvas, ${state.raster.width} by ${state.raster.height} pixels. ${state.options.tool.label} tool." +
-                    if (state.options.tool.isShape) " Use arrow keys to position, Space to place points, Enter to apply, Escape to cancel." else ""
+                    if (state.options.tool != Tool.Pan) " Use arrow keys to position, Space to place points, Enter to apply, Escape to cancel. Hold Space and drag to pan." else ""
                 customActions = listOf(
                     CustomAccessibilityAction("Select all image pixels") { model.selectAll(); true },
                     CustomAccessibilityAction("Apply current edit") { model.applyPreview(); true },
@@ -257,6 +283,7 @@ internal fun PaintCanvas(
                     val initial = model.state.value
                     if (!active || initial.busy || initial.loading) return@awaitEachGesture
                     focus.requestFocus()
+                    keyboardInput = false
                     val startEvent = currentEvent
                     if (startEvent.buttons.isSecondaryPressed) {
                         contextMenu = down.position; down.consume(); return@awaitEachGesture
@@ -273,8 +300,11 @@ internal fun PaintCanvas(
                         ?: (existing?.contains(imageStart.x.toInt(),imageStart.y.toInt()) == true)) &&
                         (tool.isShape || tool in listOf(Tool.Select,Tool.Text))
                     val bottomRight = existing?.let { initial.viewport.screenPoint(Point(it.right.toFloat(),it.bottom.toFloat())) }
-                    val resize = !constructing && bottomRight != null && hypot(bottomRight.x-down.position.x,bottomRight.y-down.position.y) <= 14*density.density
+                    val resizeRadius = (if (down.type == PointerType.Touch) 24 else 14)*density.density
+                    val resize = !constructing && bottomRight != null &&
+                        abs(bottomRight.x-down.position.x) <= resizeRadius && abs(bottomRight.y-down.position.y) <= resizeRadius
                     var navigation = tool == Tool.Pan || spacePressed || startEvent.buttons.isTertiaryPressed
+                    if (spacePressed) spaceUsedForPan = true
                     // Resize from the gesture's original pixels and transform, even after crossing an axis.
                     val resizingSelection = if (!navigation && resize && (initial.preview == null || initial.preview.payload != null))
                         model.floatingSelection() else null
@@ -299,7 +329,9 @@ internal fun PaintCanvas(
                             val pressed = event.changes.count { it.pressed && (!stylus || it.type == down.type) }
                             val touchNavigation = stylus && event.changes.count { it.pressed && it.type == PointerType.Touch } >= 2
                             if (pressed > 1 || touchNavigation) {
+                                if (!navigation && (hitExisting || resize)) model.setPreview(initial.preview)
                                 navigation = true; stroke.clear(); dragStart = null; dragEnd = null; constructionPoint = null
+                                movingSelection = false
                                 val pan = event.calculatePan(); val zoom = event.calculateZoom()
                                 val centroid = event.calculateCentroid(useCurrent = true)
                                 val view = model.state.value.viewport
@@ -313,7 +345,8 @@ internal fun PaintCanvas(
                                 else if (constructing) constructionPoint = point
                                 else if (resize) {
                                     requireNotNull(existing)
-                                    val dx = (point.x-existing.x).roundToInt(); val dy = (point.y-existing.y).roundToInt()
+                                    val dx = (existing.width+point.x-imageStart.x).roundToInt()
+                                    val dy = (existing.height+point.y-imageStart.y).roundToInt()
                                     val w = max(1,if (resizingSelection != null) abs(dx) else dx)
                                     val h = max(1,if (resizingSelection != null) abs(dy) else dy)
                                     if (w <= 8192 && h <= 8192 && w.toLong()*h <= MAX_PIXELS) {
@@ -411,10 +444,11 @@ internal fun PaintCanvas(
                 }
                 drawPath(border,outline,style = Stroke(2.dp.toPx(),
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(),4.dp.toPx()))))
-                drawRect(Color.White,Offset(p.x+size.width-5,p.y+size.height-5),Size(10f,10f))
-                drawRect(outline,Offset(p.x+size.width-5,p.y+size.height-5),Size(10f,10f),style = Stroke(1f))
+                val handle = Offset(p.x+size.width,p.y+size.height)
+                drawCircle(Color.White,8.dp.toPx(),handle)
+                drawCircle(outline,8.dp.toPx(),handle,style = Stroke(2.dp.toPx()))
             }
-            hovering?.let { point ->
+            hovering?.takeUnless { keyboardInput }?.let { point ->
                 val imagePoint = view.imagePoint(Point(point.x,point.y))
                 if (imagePoint.x in 0f..raster.width.toFloat() && imagePoint.y in 0f..raster.height.toFloat() && state.options.tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) {
                     if (erasing || state.options.tool == Tool.Eraser) {
@@ -440,14 +474,16 @@ internal fun PaintCanvas(
                     }
                 }
             }
-            if (keyboardInput && state.options.tool.isShape) {
+            if (canvasFocused && keyboardInput && state.options.tool != Tool.Pan) {
                 val p = view.screenPoint(keyboardCursor)
+                val arm = 10.dp.toPx()
                 val cursor = Path().apply {
-                    moveTo(p.x-8,p.y); lineTo(p.x+8,p.y)
-                    moveTo(p.x,p.y-8); lineTo(p.x,p.y+8)
+                    moveTo(p.x-arm,p.y); lineTo(p.x+arm,p.y)
+                    moveTo(p.x,p.y-arm); lineTo(p.x,p.y+arm)
                 }
-                drawPath(cursor,Color.White,style = Stroke(3f))
-                drawPath(cursor,outline,style = Stroke(1f))
+                drawPath(cursor,Color.White,style = Stroke(4.dp.toPx()))
+                drawPath(cursor,outline,style = Stroke(2.dp.toPx()))
+                drawRect(outline,style = Stroke(2.dp.toPx()))
             }
         }
         displayedState.preview?.takeIf { it.tool == Tool.Text }?.let { preview -> key(preview.id) {
