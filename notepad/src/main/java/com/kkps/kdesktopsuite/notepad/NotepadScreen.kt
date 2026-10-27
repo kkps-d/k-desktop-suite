@@ -168,17 +168,21 @@ internal fun NotepadScreen(
     val contextLabels = contextCommands.associateWith { stringResource(it.label) }
     val compact = !adaptive.windowSizeClass.isWidthAtLeastBreakpoint(600) || !adaptive.windowSizeClass.isHeightAtLeastBreakpoint(480)
 
-    fun enabled(command: NotepadCommand): Boolean = !notepad.loading && when (command) {
-        NotepadCommand.New -> true
-        NotepadCommand.NewWindow -> activity != null
-        NotepadCommand.Open -> !notepad.pickerPending
-        NotepadCommand.Save, NotepadCommand.SaveAs, NotepadCommand.Close -> active != null && !active.saving && !notepad.pickerPending
-        NotepadCommand.Undo -> active?.editor?.undoState?.canUndo == true
-        NotepadCommand.Redo -> active?.editor?.undoState?.canRedo == true
-        NotepadCommand.Cut, NotepadCommand.Copy -> active?.editor?.selection?.collapsed == false
-        NotepadCommand.ZoomIn -> active != null && notepad.zoom < 300
-        NotepadCommand.ZoomOut -> active != null && notepad.zoom > 50
-        else -> active != null
+    fun enabled(command: NotepadCommand): Boolean {
+        // Toolbar callbacks can survive a tab switch; resolve the current document when called.
+        val doc = notepad.active
+        return !notepad.loading && when (command) {
+            NotepadCommand.New -> true
+            NotepadCommand.NewWindow -> activity != null
+            NotepadCommand.Open -> !notepad.pickerPending
+            NotepadCommand.Save, NotepadCommand.SaveAs, NotepadCommand.Close -> doc != null && !doc.saving && !notepad.pickerPending
+            NotepadCommand.Undo -> doc?.editor?.undoState?.canUndo == true
+            NotepadCommand.Redo -> doc?.editor?.undoState?.canRedo == true
+            NotepadCommand.Cut, NotepadCommand.Copy -> doc?.editor?.selection?.collapsed == false
+            NotepadCommand.ZoomIn -> doc != null && notepad.zoom < 300
+            NotepadCommand.ZoomOut -> doc != null && notepad.zoom > 50
+            else -> doc != null
+        }
     }
 
     fun run(command: NotepadCommand) {
@@ -921,6 +925,14 @@ private fun CommandBar(
                             )
                         }
                     }
+                }
+            }
+            if (!compact) {
+                VerticalDivider(Modifier.padding(horizontal = 8.dp).height(20.dp))
+                listOf(NotepadCommand.Save to R.drawable.ms_save, NotepadCommand.Undo to R.drawable.ms_undo,
+                    NotepadCommand.Redo to R.drawable.ms_redo).forEach { (command, icon) ->
+                    TooltipAction("${stringResource(command.label)} (${command.shortcut})", icon, iconSize = 24.dp,
+                        enabled = enabled(command), onClick = { run(command) })
                 }
             }
             Spacer(Modifier.weight(1f))

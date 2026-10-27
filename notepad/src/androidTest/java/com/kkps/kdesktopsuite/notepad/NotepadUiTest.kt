@@ -1023,6 +1023,32 @@ class NotepadUiTest {
     }
 
     @Test
+    fun toolbarActionsSaveAndFollowTheActiveDocumentUndoHistory() {
+        showEditor(startWithDocument = false)
+        val save = compose.onNodeWithContentDescription("Save (Ctrl+S)")
+        val undo = compose.onNodeWithContentDescription("Undo (Ctrl+Z)")
+        val redo = compose.onNodeWithContentDescription("Redo (Ctrl+Y)")
+        save.assertIsNotEnabled()
+        undo.assertIsNotEnabled()
+        redo.assertIsNotEnabled()
+        compose.onNodeWithTag("welcome-new").performClick()
+        save.assertIsEnabled()
+        compose.onNodeWithTag("document-editor").performTextInput("Toolbar draft")
+        undo.assertIsEnabled().assertIsDisplayed().performClick()
+        compose.onNodeWithTag("document-editor").assertTextEquals("").assertIsFocused()
+        redo.assertIsEnabled().performClick()
+        compose.onNodeWithTag("document-editor").assertTextEquals("Toolbar draft").assertIsFocused()
+        save.performClick()
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals(PickerKind.SaveAs, notepad.pickerRequest?.kind)
+            notepad.pickerResult(null)
+        }
+        compose.onNodeWithContentDescription("New document").performClick()
+        undo.assertIsNotEnabled()
+        redo.assertIsNotEnabled()
+    }
+
+    @Test
     fun menuClipboardEditsParticipateInUndoAndRedo() {
         showEditor()
         compose.onNodeWithTag("document-editor").performTextReplacement("Copy me")
