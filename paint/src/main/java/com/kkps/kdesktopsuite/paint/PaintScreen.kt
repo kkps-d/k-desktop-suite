@@ -20,9 +20,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import com.kkps.kdesktopsuite.ui.AppDropdownMenu
@@ -189,9 +191,22 @@ private fun FileMenu(s: PaintUiState, model: PaintViewModel) {
             AppMenuItem({ Text(stringResource(R.string.ui_save_as_ctrl_shift_s)) },{ close { model.save(true) } },enabled = !s.busy,shortcut = "Ctrl+Shift+S")
             if (s.preferences.recent.isNotEmpty()) {
                 HorizontalDivider()
-                s.preferences.recent.forEachIndexed { index, uri ->
-                    AppMenuItem({ Text("Recent ${index+1}: ${android.net.Uri.decode(uri.substringAfterLast('/')).takeLast(44)}",maxLines = 2) },
-                        { close { model.openRecent(uri) } })
+                Box {
+                    var recentOpen by remember { mutableStateOf(false) }
+                    AppMenuItem({ Text(stringResource(R.string.ui_recent)) },{ recentOpen = true },
+                        enabled = !s.busy,trailingIcon = { Text(if (LocalLayoutDirection.current == LayoutDirection.Rtl) "‹" else "›") })
+                    AppDropdownMenu(recentOpen,{ recentOpen = false },anchorPosition = MenuAnchorPosition.End) {
+                        s.preferences.recent.forEachIndexed { index, uri ->
+                            AppMenuItem({ Text("${index+1}: ${android.net.Uri.decode(uri.substringAfterLast('/')).takeLast(44)}",maxLines = 2) },
+                                { recentOpen = false; close { model.openRecent(uri) } },enabled = !s.busy,
+                                modifier = Modifier.onPreviewKeyEvent {
+                                    if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) {
+                                        recentOpen = false
+                                        true
+                                    } else false
+                                })
+                        }
+                    }
                 }
                 HorizontalDivider()
             }
