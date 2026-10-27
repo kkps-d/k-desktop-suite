@@ -35,6 +35,12 @@ private val commonShapes = listOf(Tool.Line,Tool.Rectangle,Tool.Ellipse,Tool.Rou
     Tool.Triangle,Tool.RightArrow,Tool.Diamond,Tool.Polygon,Tool.Curve,Tool.FivePointStar)
 
 @Composable
+private fun toolbarTextButtonColors(): ButtonColors = ButtonDefaults.textButtonColors(
+    contentColor = MaterialTheme.colorScheme.onSurface,
+    disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+)
+
+@Composable
 internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float) {
     val availableWidth = width / LocalDensity.current.fontScale
     val labels = availableWidth >= 840
@@ -90,7 +96,7 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
                         ToolbarCheck("Transparent",false,false,"Available in a future update") { }
                         ToolbarAction(PaintIcon.Crop,stringResource(R.string.ui_crop_to_selection),labels,enabled && !s.busy && selected,model::crop)
                         GeometryAction(s,model,labels)
-                        TextButton(onClick = model::selectAll,enabled = enabled && !s.busy,modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Select All" }) {
+                        TextButton(onClick = model::selectAll,enabled = enabled && !s.busy,colors = toolbarTextButtonColors(),modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Select All" }) {
                             Icon(PaintIcon.SelectAll.vector,null)
                             Spacer(Modifier.width(6.dp))
                             Text(stringResource(R.string.ui_select_all),maxLines = 1)
@@ -139,7 +145,7 @@ private fun TransformControls(s: PaintUiState, model: PaintViewModel) {
     var flipOpen by remember { mutableStateOf(false) }
     Box {
         ToolbarTooltip("Flip") {
-            TextButton(onClick = { flipOpen = true },enabled = enabled,colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+            TextButton(onClick = { flipOpen = true },enabled = enabled,colors = toolbarTextButtonColors(),
                 modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Flip" },contentPadding = PaddingValues(8.dp)) {
                 Icon(PaintIcon.FlipHorizontal.vector,null)
                 Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
@@ -179,7 +185,7 @@ private fun ToolbarDivider() {
 @Composable
 private fun ToolbarAction(icon: PaintIcon, label: String, showLabel: Boolean, enabled: Boolean, action: () -> Unit) {
     if (!showLabel) PaintButton(icon,label,enabled,action = action)
-    else TextButton(onClick = action,enabled = enabled,modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = label }) {
+    else TextButton(onClick = action,enabled = enabled,colors = toolbarTextButtonColors(),modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = label }) {
         Icon(icon.vector,null)
         Spacer(Modifier.width(6.dp))
         Text(label,maxLines = 1)
@@ -259,7 +265,7 @@ private fun FontOptions(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     val enabled = !s.busy && !s.loading
     Box {
-        TextButton(onClick = { open = true },enabled = enabled,modifier = Modifier.heightIn(min = 48.dp).testTag("paint-font-picker").semantics { contentDescription = "Font family" }) {
+        TextButton(onClick = { open = true },enabled = enabled,colors = toolbarTextButtonColors(),modifier = Modifier.heightIn(min = 48.dp).testTag("paint-font-picker").semantics { contentDescription = "Font family" }) {
             Text(s.options.font,maxLines = 1)
             Icon(PaintIcon.Chevron.vector,null)
         }
@@ -322,7 +328,7 @@ private fun <T> AlignmentDropdown(label: String, selected: T, enabled: Boolean,
     val currentLabel = stringResource(current.third)
     Box {
         ToolbarTooltip("$label: $currentLabel") {
-            TextButton(onClick = { open = true },enabled = enabled,contentPadding = PaddingValues(8.dp),
+            TextButton(onClick = { open = true },enabled = enabled,colors = toolbarTextButtonColors(),contentPadding = PaddingValues(8.dp),
                 modifier = Modifier.heightIn(min = 48.dp).semantics {
                     contentDescription = label
                     stateDescription = currentLabel
@@ -346,7 +352,7 @@ private fun BrushPicker(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     val style = s.options.brushStyle
-    val colors = ButtonDefaults.textButtonColors()
+    val colors = toolbarTextButtonColors()
     val preserveEnabled = s.busy && !s.loading && !LocalPaintBusyVisible.current
     Box {
         TextButton(onClick = { open = true },enabled = !s.busy && !s.loading,
@@ -400,7 +406,8 @@ private fun ShapePicker(s: PaintUiState, model: PaintViewModel, shape: Tool) {
         TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
             tooltip = { PlainTooltip { Text("More shapes") } },state = rememberTooltipState()) {
             IconButton(onClick = { open = true },enabled = !s.busy && !s.loading,
-                colors = IconButtonDefaults.iconButtonColors().let { colors ->
+                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onSurface,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)).let { colors ->
                     if (s.busy && !s.loading && !LocalPaintBusyVisible.current) colors.copy(disabledContentColor = colors.contentColor) else colors
                 },
                 modifier = Modifier.size(width = 64.dp,height = 48.dp).testTag("paint-shape-picker")

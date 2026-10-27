@@ -48,7 +48,8 @@ internal fun WidthPicker(s: PaintUiState, model: PaintViewModel) {
         TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
             tooltip = { PlainTooltip { Text(label) } },state = rememberTooltipState()) {
             IconButton(onClick = { open = true },enabled = available && !s.busy,
-                colors = IconButtonDefaults.iconButtonColors().let { colors ->
+                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onSurface,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)).let { colors ->
                     if (available && s.busy && !LocalPaintBusyVisible.current) colors.copy(disabledContentColor = colors.contentColor) else colors
                 },
                 modifier = Modifier.size(64.dp,48.dp).testTag("paint-size-picker").semantics { contentDescription = label }) {
