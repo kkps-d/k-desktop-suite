@@ -1,9 +1,11 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 
 package com.kkps.kdesktopsuite.paint
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
@@ -22,6 +24,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.ui.unit.dp
 import com.kkps.kdesktopsuite.ui.AppDropdownMenu
 import com.kkps.kdesktopsuite.ui.AppMenuItem
@@ -36,8 +41,9 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
     val enabled = !s.loading
     val selected = s.selection != null || s.preview?.payload != null
     val shape = s.options.tool.takeIf { it.isShape } ?: s.lastShape
+    val primaryScroll = rememberScrollState()
     Column(Modifier.testTag("classic-ribbon")) {
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+        if (!s.ribbonCollapsed) Row(Modifier.fillMaxWidth().horizontalScroll(primaryScroll)
             .background(MaterialTheme.colorScheme.surfaceContainerLow).testTag("paint-primary-toolbar"),
             verticalAlignment = Alignment.CenterVertically) {
             PaintButton(PaintIcon.Copy,"${stringResource(R.string.ui_copy)} (Ctrl+C)",enabled && selected,busy = s.busy) { model.copy() }
@@ -45,6 +51,7 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
             PaintButton(PaintIcon.Paste,"${stringResource(R.string.ui_paste)} (Ctrl+V)",enabled,busy = s.busy,action = model::paste)
             ToolbarDivider()
             PaintButton(Tool.Select.icon,"Select",enabled = enabled,busy = s.busy,selected = s.options.tool == Tool.Select) { model.tool(Tool.Select) }
+            TransformControls(s,model)
             ToolbarDivider()
             listOf(Tool.Pan,Tool.Pencil,Tool.Brush,Tool.Eraser,Tool.Fill,Tool.Text,Tool.Eyedropper).forEach { tool ->
                 PaintButton(tool.icon,tool.label,enabled = enabled,busy = s.busy,selected = s.options.tool == tool) { model.tool(tool) }
@@ -55,11 +62,11 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
             ToolbarColor(s.options.foreground,stringResource(R.string.ui_foreground),!s.colorBackground,enabled && !s.busy) { model.selectColor(false) }
             ToolbarColor(s.options.background,stringResource(R.string.ui_background),s.colorBackground,enabled && !s.busy) { model.selectColor(true) }
         }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        if (!s.ribbonCollapsed) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         key(if (s.colorOptions) "colors" else if (s.options.tool.isShape) "shapes" else s.options.tool.name) {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
                 .background(MaterialTheme.colorScheme.surfaceContainer).testTag("paint-secondary-toolbar")
-                .heightIn(min = 56.dp),verticalAlignment = Alignment.CenterVertically) {
+                .heightIn(min = 48.dp),verticalAlignment = Alignment.CenterVertically) {
                 if (availableWidth >= 600) {
                     val name = if (s.colorOptions) {
                         if (s.colorBackground) stringResource(R.string.ui_background) else stringResource(R.string.ui_foreground)
@@ -71,17 +78,16 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
                 else when {
                     s.options.tool == Tool.Select -> {
                         PreviewActions(s,model)
-                        ToolbarCheck("Transparent selection",false,false,"Available in a future update") { }
+                        ToolbarCheck("Transparent",false,false,"Available in a future update") { }
                         ToolbarAction(PaintIcon.Crop,stringResource(R.string.ui_crop_to_selection),labels,enabled && !s.busy && selected,model::crop)
-                        ToolbarAction(PaintIcon.Resize,stringResource(R.string.ui_resize_and_skew),labels,enabled && !s.busy && !s.saving) { model.dialog(PaintDialog.ResizeSkew) }
-                        TextButton(onClick = model::selectAll,enabled = enabled && !s.busy,modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.ui_select_all),maxLines = 1) }
                         GeometryAction(s,model,labels)
+                        TextButton(onClick = model::selectAll,enabled = enabled && !s.busy,modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Select All" }) {
+                            Icon(PaintIcon.SelectAll.vector,null)
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.ui_select_all),maxLines = 1)
+                        }
                         ToolbarAction(PaintIcon.Delete,stringResource(R.string.ui_delete_pixels),labels,enabled && !s.busy && selected,model::deleteSelection)
-                        ToolbarAction(PaintIcon.RotateLeft,stringResource(R.string.ui_rotate_left),labels,enabled && !s.busy && !s.saving) { model.rotate(-90) }
-                        ToolbarAction(PaintIcon.Rotate,stringResource(R.string.ui_rotate_right),labels,enabled && !s.busy && !s.saving) { model.rotate(90) }
-                        ToolbarAction(PaintIcon.CustomRotate,"Custom rotate",labels,enabled && !s.busy && !s.saving) { model.dialog(PaintDialog.Rotation) }
-                        ToolbarAction(PaintIcon.FlipHorizontal,stringResource(R.string.ui_flip_horizontal),labels,enabled && !s.busy && !s.saving) { model.flip(true) }
-                        ToolbarAction(PaintIcon.FlipVertical,stringResource(R.string.ui_flip_vertical),labels,enabled && !s.busy && !s.saving) { model.flip(false) }
+
                     }
                     s.options.tool == Tool.Brush -> { BrushPicker(s,model); WidthPicker(s,model) }
                     s.options.tool == Tool.Eraser -> WidthPicker(s,model)
@@ -106,9 +112,54 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
                         GeometryAction(s,model,labels)
                     }
                 }
+                if (s.options.tool == Tool.Text) TextButton(onClick = model::toggleRibbon,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("paint-text-toolbar-toggle")) {
+                    Text(stringResource(if (s.ribbonCollapsed) R.string.ui_show_toolbar else R.string.ui_hide_toolbar),maxLines = 1)
+                }
             }
         }
     }
+}
+
+@Composable
+private fun TransformControls(s: PaintUiState, model: PaintViewModel) {
+    val enabled = !s.busy && !s.loading && !s.saving
+    PaintButton(PaintIcon.RotateLeft,stringResource(R.string.ui_rotate_left),!s.loading && !s.saving,busy = s.busy) { model.rotate(-90) }
+    PaintButton(PaintIcon.Rotate,stringResource(R.string.ui_rotate_right),!s.loading && !s.saving,busy = s.busy) { model.rotate(90) }
+    PaintButton(PaintIcon.CustomRotate,"Custom rotate",!s.loading && !s.saving,busy = s.busy) { model.dialog(PaintDialog.Rotation) }
+    var flipOpen by remember { mutableStateOf(false) }
+    Box {
+        ToolbarTooltip("Flip") {
+            TextButton(onClick = { flipOpen = true },enabled = enabled,colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+                modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Flip" },contentPadding = PaddingValues(8.dp)) {
+                Icon(PaintIcon.FlipHorizontal.vector,null)
+                Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
+            }
+        }
+        TransformMenu(flipOpen,{ flipOpen = false }) { initialFocus ->
+            AppMenuItem({ Text(stringResource(R.string.ui_flip_vertical)) },{ flipOpen = false; model.flip(false) },
+                leadingIcon = { Icon(PaintIcon.FlipVertical.vector,null) },modifier = initialFocus)
+            AppMenuItem({ Text(stringResource(R.string.ui_flip_horizontal)) },{ flipOpen = false; model.flip(true) },
+                leadingIcon = { Icon(PaintIcon.FlipHorizontal.vector,null) })
+        }
+    }
+}
+
+@Composable
+private fun TransformMenu(open: Boolean, dismiss: () -> Unit, content: @Composable ColumnScope.(Modifier) -> Unit) {
+    val focus = remember { FocusRequester() }
+    AppDropdownMenu(open,dismiss) {
+        Column(Modifier.onPreviewKeyEvent {
+            if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) { dismiss(); true } else false
+        }) { content(Modifier.focusRequester(focus)) }
+        LaunchedEffect(open) { if (open) { withFrameNanos { }; focus.requestFocus() } }
+    }
+}
+
+@Composable
+private fun ToolbarTooltip(label: String, content: @Composable () -> Unit) {
+    TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+        tooltip = { PlainTooltip { Text(label) } },state = rememberTooltipState(),content = content)
 }
 
 @Composable
@@ -148,7 +199,9 @@ private fun PreviewActions(s: PaintUiState, model: PaintViewModel) {
 
 @Composable
 private fun GeometryAction(s: PaintUiState, model: PaintViewModel, labels: Boolean) {
-    ToolbarAction(PaintIcon.Geometry,stringResource(R.string.ui_move_resize),labels,!s.busy && !s.loading && (s.selection != null || s.preview != null)) { model.dialog(PaintDialog.Geometry) }
+    val label = stringResource(if (s.options.tool == Tool.Text) R.string.ui_move_resize else R.string.ui_move_resize_skew)
+    val hasTarget = s.options.tool == Tool.Select || s.selection != null || s.preview != null
+    ToolbarAction(PaintIcon.Geometry,label,labels,hasTarget && !s.busy && !s.loading && !s.saving) { model.dialog(PaintDialog.Transform) }
 }
 
 @Composable
@@ -208,13 +261,33 @@ private fun FontOptions(s: PaintUiState, model: PaintViewModel) {
             }
         }
     }
-    var size by remember(s.options.fontSize) { mutableStateOf(s.options.fontSize.toString()) }
-    OutlinedTextField(size,{ value ->
-        size = value.filter(Char::isDigit).take(3)
-        size.toIntOrNull()?.takeIf { it in 1..512 }?.let { number -> model.options { it.copy(fontSize = number) } }
-    },enabled = enabled,singleLine = true,modifier = Modifier.width(112.dp).padding(horizontal = 4.dp).semantics { contentDescription = "Font size (image pixels)" },
-        label = { Text("Size (px)",maxLines = 1) },isError = size.toIntOrNull() !in 1..512,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+    val size = rememberTextFieldState(s.options.fontSize.toString())
+    LaunchedEffect(s.options.fontSize) {
+        if (size.text.toString().toIntOrNull() != s.options.fontSize) size.edit { replace(0,length,s.options.fontSize.toString()) }
+    }
+    LaunchedEffect(size) {
+        snapshotFlow { size.text.toString() }.collect { value ->
+            value.toIntOrNull()?.takeIf { it in 1..512 }?.let { number -> model.options { it.copy(fontSize = number) } }
+        }
+    }
+    val sizeFocus = remember { FocusRequester() }
+    // The smaller outline keeps a 48dp tap area, including the space above and below it.
+    Box(Modifier.width((56 + 36 * LocalDensity.current.fontScale).dp).heightIn(min = 48.dp)
+        .pointerInput(enabled) { detectTapGestures { if (enabled) sizeFocus.requestFocus() } }
+        .padding(horizontal = 4.dp,vertical = 6.dp),contentAlignment = Alignment.Center) {
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+            OutlinedTextField(state = size,enabled = enabled,lineLimits = TextFieldLineLimits.SingleLine,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp).focusRequester(sizeFocus)
+                    .testTag("paint-font-size").semantics { contentDescription = "Font size (image pixels)" },
+                textStyle = MaterialTheme.typography.bodyMedium,
+                trailingIcon = { Text("px",Modifier.padding(end = 6.dp),style = MaterialTheme.typography.labelMedium) },
+                contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp),
+                isError = size.text.toString().toIntOrNull() !in 1..512,
+                inputTransformation = InputTransformation {
+                    if (length > 3 || !asCharSequence().all(Char::isDigit)) revertAllChanges()
+                },keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+        }
+    }
     PaintButton(PaintIcon.Bold,"Bold",enabled,selected = s.options.bold) { model.options { it.copy(bold = !it.bold) } }
     PaintButton(PaintIcon.Italic,"Italic",enabled,selected = s.options.italic) { model.options { it.copy(italic = !it.italic) } }
     PaintButton(PaintIcon.Underline,"Underline",enabled,selected = s.options.underline) { model.options { it.copy(underline = !it.underline) } }
@@ -226,16 +299,15 @@ private fun BrushPicker(s: PaintUiState, model: PaintViewModel) {
     var open by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     val style = s.options.brushStyle
-    val colors = ButtonDefaults.filledTonalButtonColors(containerColor =
-        if (s.options.tool == Tool.Brush) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+    val colors = ButtonDefaults.textButtonColors()
     val preserveEnabled = s.busy && !s.loading && !LocalPaintBusyVisible.current
     Box {
-        FilledTonalButton(onClick = { open = true },enabled = !s.busy && !s.loading,
+        TextButton(onClick = { open = true },enabled = !s.busy && !s.loading,
             colors = if (preserveEnabled) colors.copy(disabledContainerColor = colors.containerColor,
                 disabledContentColor = colors.contentColor) else colors,
             contentPadding = PaddingValues(8.dp),
             modifier = Modifier.heightIn(min = 48.dp).testTag("paint-brush-picker")
-                .semantics { contentDescription = "Choose brush: ${style.label}"; selected = s.options.tool == Tool.Brush }) {
+                .semantics { contentDescription = "Choose brush: ${style.label}" }) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 BrushPreview(style,Modifier.size(72.dp,28.dp))
                 Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
@@ -280,11 +352,12 @@ private fun ShapePicker(s: PaintUiState, model: PaintViewModel, shape: Tool) {
     Box {
         TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
             tooltip = { PlainTooltip { Text("More shapes") } },state = rememberTooltipState()) {
-            FilledTonalIconButton(onClick = { open = true },enabled = !s.busy && !s.loading,
-                colors = paintTonalIconColors(s.busy && !s.loading && !LocalPaintBusyVisible.current,container =
-                    if (s.options.tool.isShape) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent),
+            IconButton(onClick = { open = true },enabled = !s.busy && !s.loading,
+                colors = IconButtonDefaults.iconButtonColors().let { colors ->
+                    if (s.busy && !s.loading && !LocalPaintBusyVisible.current) colors.copy(disabledContentColor = colors.contentColor) else colors
+                },
                 modifier = Modifier.size(width = 64.dp,height = 48.dp).testTag("paint-shape-picker")
-                    .semantics { contentDescription = "More shapes"; selected = s.options.tool.isShape }) {
+                    .semantics { contentDescription = "More shapes" }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(PaintIcon.More.vector,null)
                     Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))

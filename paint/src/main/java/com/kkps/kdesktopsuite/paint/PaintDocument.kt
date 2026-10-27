@@ -60,6 +60,15 @@ internal data class EditPreview(
 ) {
     val hasContent get() = payload != null || tool.isShape || text.isNotEmpty()
 
+    fun withBounds(area: PixelRect): EditPreview {
+        if (tool.isShape) {
+            fun transform(point: Point) = Point(area.x + (point.x-bounds.x)*area.width/bounds.width,
+                area.y + (point.y-bounds.y)*area.height/bounds.height)
+            return copy(bounds = area,start = transform(start),end = transform(end),points = points.map(::transform))
+        }
+        return if (payload != null) resizedSelection(area) else copy(bounds = area)
+    }
+
     val selectionTransform get() = transform ?: RasterTransform.scale(
         bounds.width.toDouble()/requireNotNull(payload).width,bounds.height.toDouble()/payload.height)
         .then(RasterTransform.translation(bounds.x.toDouble(),bounds.y.toDouble()))

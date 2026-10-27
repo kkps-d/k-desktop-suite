@@ -63,11 +63,13 @@ class DualToolbarTest {
         }
         compose.onNodeWithTag("paint-shape-shortcut-RoundedRectangle").assertDoesNotExist()
         compose.onNodeWithText("Shape").assertDoesNotExist()
-        compose.onNodeWithContentDescription("Move / resize").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Move/resize/skew").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("Copy (Ctrl+C)").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("Select").performScrollTo().performClick()
-        compose.onNodeWithText("Transparent selection").performScrollTo().assertIsNotEnabled().assertIsOff()
-        compose.onNodeWithContentDescription("Flip vertical").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Transparent").performScrollTo().assertIsNotEnabled().assertIsOff()
+        compose.onNodeWithContentDescription("Flip").performScrollTo().performClick()
+        compose.onNodeWithText("Flip vertical").assertIsDisplayed()
+        compose.onNodeWithTag("dropdown-menu").performKeyInput { pressKey(androidx.compose.ui.input.key.Key.Escape) }
         compose.onNodeWithContentDescription("Commit").performScrollTo().assertIsNotEnabled()
         compose.onNode(hasContentDescription("Zoom") and hasAnyAncestor(hasTestTag("paint-primary-toolbar"))).assertDoesNotExist()
         compose.onNodeWithTag("paint-canvas").assertIsDisplayed()
@@ -113,7 +115,7 @@ class DualToolbarTest {
         compose.runOnIdle { assertFalse(model.state.value.colorOptions); assertEquals(before.preview,model.state.value.preview) }
         compose.onNodeWithText("Outline").performScrollTo().assertIsOn()
         compose.onNodeWithText("Fill").performScrollTo().performClick().assertIsOn()
-        compose.onNodeWithText("Move / resize").performScrollTo().assertIsEnabled()
+        compose.onNodeWithText("Move/resize/skew").performScrollTo().assertIsEnabled()
         compose.onNodeWithContentDescription("Commit").performScrollTo().performClick()
         compose.waitUntil(15000) { !model.state.value.busy && model.state.value.preview == null }
         compose.runOnIdle { assertEquals(BLACK,model.state.value.raster.pixel(30,30)); model.undo(); assertEquals(WHITE,model.state.value.raster.pixel(30,30)) }
@@ -160,9 +162,9 @@ class DualToolbarTest {
     @Test fun customRotateFocusesAngleAndPreservesFloatingSelection() {
         compose.runOnIdle { model.insert(Raster.blank(80,40,BLACK)) }
         val before = model.state.value.raster
-        compose.onNodeWithText("Custom rotate").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Custom rotate").performScrollTo().performClick()
         compose.onNodeWithText("Rotation (degrees clockwise)").performScrollTo().assertIsFocused().performTextReplacement("33")
-        compose.onNodeWithText("Update preview").performClick()
+        compose.onNodeWithText("Apply").performClick()
         compose.runOnIdle {
             assertSame(before,model.state.value.raster)
             assertEquals(33.0,requireNotNull(model.state.value.preview).rotationDegrees,0.001)
@@ -184,6 +186,49 @@ class DualToolbarTest {
         }
     }
 
+    @Test fun primaryTransformsAreAvailableWithoutChangingToolsAndTextSizeIsCompact() {
+        compose.onNodeWithContentDescription("Brush").assertIsSelected()
+        compose.onNodeWithTag("paint-brush-picker").assert(SemanticsMatcher.keyNotDefined(androidx.compose.ui.semantics.SemanticsProperties.Selected))
+        compose.onNode(hasContentDescription("Rotate right 90\u00b0") and hasAnyAncestor(hasTestTag("paint-primary-toolbar"))).performScrollTo().assertIsEnabled()
+        compose.onNodeWithContentDescription("Text").performScrollTo().performClick()
+        compose.onNodeWithTag("paint-font-size").performScrollTo().assertHeightIsEqualTo(36.dp).performTextReplacement("512")
+        compose.waitUntil(5000) { model.state.value.options.fontSize == 512 }
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        File(context.getExternalFilesDir(null),"font-size-max.png").outputStream().use {
+            compose.onNodeWithTag("paint-secondary-toolbar").captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
+        }
+        compose.onNodeWithTag("paint-font-size").performTextReplacement("36")
+        compose.waitUntil(5000) { model.state.value.options.fontSize == 36 }
+        compose.onNodeWithTag("paint-font-size").performTouchInput { click(androidx.compose.ui.geometry.Offset(center.x,-3f)) }
+        compose.onNodeWithTag("paint-font-size").assertIsFocused()
+        compose.onNodeWithText("px").assertIsDisplayed()
+        compose.onNodeWithText("Move/resize").performScrollTo().assertIsNotEnabled()
+        compose.runOnIdle { model.tap(Point(20f,20f)) }
+        compose.onNodeWithText("Move/resize").assertIsEnabled()
+    }
+
+    @Test fun textToolbarToggleHidesOnlyPrimaryAndKeepsEditingState() {
+        compose.runOnIdle { size = DpSize(1200.dp,400.dp); model.tool(Tool.Text); model.tap(Point(20f,20f)) }
+        compose.onNodeWithTag("paint-text-overlay").performTextInput("Keep editing")
+        compose.onNode(hasText("Hide toolbar") and hasAnyAncestor(hasTestTag("paint-secondary-toolbar"))).performScrollTo().performClick()
+        compose.onNodeWithTag("paint-primary-toolbar").assertDoesNotExist()
+        compose.onNodeWithTag("paint-secondary-toolbar").assertIsDisplayed()
+        compose.onNodeWithTag("paint-text-overlay").assertExists()
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        File(context.getExternalFilesDir(null),"text-primary-hidden.png").outputStream().use {
+            compose.onRoot().captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
+        }
+        compose.onNodeWithText("Show toolbar").performScrollTo().performClick()
+        compose.onNodeWithTag("paint-primary-toolbar").assertIsDisplayed()
+        compose.runOnIdle { assertEquals("Keep editing",model.state.value.preview?.text); assertFalse(model.state.value.dirty) }
+    }
+
+    @Test fun shapeOptionPickersAreCommandsWithoutSelectedStyling() {
+        compose.runOnIdle { model.tool(Tool.Rectangle) }
+        compose.onNodeWithTag("paint-shape-picker").assert(SemanticsMatcher.keyNotDefined(androidx.compose.ui.semantics.SemanticsProperties.Selected))
+        compose.onNodeWithTag("paint-size-picker").assert(SemanticsMatcher.keyNotDefined(androidx.compose.ui.semantics.SemanticsProperties.Selected))
+    }
+
     @Test fun captureWideAndCompactToolbarLayouts() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         for ((width,height,tool) in listOf(Triple(1200,700,Tool.Rectangle),Triple(360,640,Tool.Text))) {
@@ -201,10 +246,22 @@ class DualToolbarTest {
         compose.onNodeWithContentDescription("Edit colors").performScrollTo().performClick()
         compose.onNodeWithText("Foreground").assertDoesNotExist()
         compose.onNodeWithText("Background").assertDoesNotExist()
+        compose.onNodeWithText("Swap foreground and background").assertDoesNotExist()
+        val presetRows = compose.onAllNodesWithContentDescription("Choose color ",substring = true).fetchSemanticsNodes()
+            .groupBy { it.positionInRoot.y }.values.map { it.size }
+        assertEquals(listOf(10,10),presetRows)
+        val customRows = compose.onAllNodes(hasContentDescription("Custom color ",substring = true) and
+            hasAnyAncestor(hasTestTag("paint-dialog-custom-colors"))).fetchSemanticsNodes()
+            .groupBy { it.positionInRoot.y }.values.map { it.size }
+        assertEquals(listOf(10),customRows)
         presetColors.forEach { color ->
             compose.onNodeWithContentDescription("Choose color #${"%06X".format(color and 0xFFFFFF)}").assertExists()
         }
         compose.onNodeWithContentDescription("Custom color 10 #FFFFFF").performScrollTo().assertExists()
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        File(context.getExternalFilesDir(null),"paint-colors-dialog.png").outputStream().use {
+            compose.onNodeWithTag("paint-colors-dialog").captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
+        }
         compose.onNodeWithContentDescription("Choose color #3366CC").performScrollTo().performClick()
         compose.onNodeWithText("Apply").performClick()
         compose.runOnIdle { assertEquals(0xFF3366CC.toInt(),model.state.value.options.background); assertEquals(BLACK,model.state.value.options.foreground) }

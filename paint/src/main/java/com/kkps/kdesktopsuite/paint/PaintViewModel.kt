@@ -11,7 +11,7 @@ import java.io.File
 import java.util.UUID
 import kotlin.math.*
 
-internal enum class PaintDialog { ReopenLastEdit, Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Geometry, Rotation, CanvasSize, ResizeSkew, StrokeSize, About, Properties }
+internal enum class PaintDialog { ReopenLastEdit, Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Transform, Rotation, CanvasSize, StrokeSize, About, Properties }
 internal enum class PickerKind { Open, Insert, Save }
 internal data class PickerRequest(val id: String = UUID.randomUUID().toString(), val kind: PickerKind, val mime: String = "image/png", val launched: Boolean = false)
 internal data class PlatformRequest(val id: String = UUID.randomUUID().toString(), val action: String, val file: File? = null)
@@ -323,14 +323,7 @@ internal class PaintViewModel(
         if (s.busy) return
         checkImageSize(bounds.width, bounds.height)
         val preview = s.preview ?: s.selection?.let { EditPreview(Tool.Select, it, source = it, payload = s.raster.extract(it)) } ?: return
-        if (preview.tool.isShape) {
-            fun transform(point: Point) = Point(bounds.x + (point.x-preview.bounds.x)*bounds.width/preview.bounds.width,
-                bounds.y + (point.y-preview.bounds.y)*bounds.height/preview.bounds.height)
-            setPreview(preview.copy(bounds = bounds, start = transform(preview.start), end = transform(preview.end),
-                points = preview.points.map(::transform)))
-        } else if (preview.payload != null) {
-            setPreview(preview.resizedSelection(bounds))
-        } else setPreview(preview.copy(bounds = bounds))
+        setPreview(preview.withBounds(bounds))
     }
 
     fun floatingSelection(): EditPreview? {
@@ -340,18 +333,50 @@ internal class PaintViewModel(
         }
     }
 
-    fun updateGeometry(bounds: PixelRect, angle: Double?): Boolean {
-        if (state.value.busy || state.value.loading) return false
+    fun updateTransform(bounds: PixelRect, horizontalSkew: Int, verticalSkew: Int, angle: Double?): Boolean {
+        val s = state.value
+        if (s.busy || s.loading || s.saving) return false
         return try {
-            checkImageSize(bounds.width,bounds.height)
-            if (angle == null) movePreview(bounds)
-            else {
-                require(angle.isFinite()) { "Enter a valid angle." }
-                val preview = floatingSelection()?.resizedSelection(bounds) ?: return false
-                setPreview(preview.rotatedSelection(angle-preview.rotationDegrees))
+            require(bounds.x in -8192..8192 && bounds.y in -8192..8192) { "Position must be between -8192 and 8192." }
+            val skew = resizeSkewTransform(bounds,bounds.width,bounds.height,horizontalSkew,verticalSkew)
+            val selection = floatingSelection()
+            val preview = currentPreview()
+            when {
+                selection != null -> {
+                    var next = selection.withBounds(bounds)
+                    if (angle != null) {
+                        require(angle.isFinite()) { "Enter a valid rotation angle." }
+                        next = next.rotatedSelection(angle-next.rotationDegrees)
+                    }
+                    setPreview(next.transformedSelection(resizeSkewTransform(next.bounds,next.bounds.width,next.bounds.height,horizontalSkew,verticalSkew)))
+                }
+                preview != null && horizontalSkew == 0 && verticalSkew == 0 -> movePreview(bounds)
+                preview != null -> {
+                    require(!preview.tool.isClosedShape || s.options.outline || s.options.fill) { "Choose an outline or fill before applying this shape." }
+                    // Skew needs pixels; keep the raster unchanged until the floating edit is committed.
+                    var converted: EditPreview? = null
+                    operation({ raster ->
+                        val context = currentCoroutineContext()
+                        val padding = if (preview.tool.isShape) ceil(s.options.width/2.0).toInt()+1 else 0
+                        val local = preview.withBounds(PixelRect(padding,padding,bounds.width,bounds.height)).copy(constructing = false)
+                        val pixels = Raster.blank(bounds.width+padding*2,bounds.height+padding*2,0)
+                            .render(local,s.options,checkCancelled = { context.ensureActive() })
+                        converted = EditPreview(Tool.Select,PixelRect(bounds.x-padding,bounds.y-padding,pixels.width,pixels.height),payload = pixels)
+                            .transformedSelection(skew)
+                        raster
+                    },valid = { state.value.preview?.id == preview.id && state.value.options == s.options }) {
+                        textEditor = null
+                        savedState["colorOptions"] = false
+                        mutableState.update { it.copy(preview = converted,selection = null,
+                            options = it.options.copy(tool = Tool.Select),colorOptions = false) }
+                        checkpoint()
+                    }
+                }
+                else -> resizeImage(bounds.width,bounds.height,horizontalSkew,verticalSkew)
             }
             true
         } catch (error: IllegalArgumentException) { message(error.message); false }
+        catch (_: OutOfMemoryError) { message("Not enough memory. The original image is unchanged."); false }
     }
 
     fun rotateSelection(degrees: Double, original: EditPreview? = null) {

@@ -62,12 +62,12 @@ internal fun SelectionRotationHandle(state: PaintUiState, model: PaintViewModel,
         .semantics {
             contentDescription = label; stateDescription = description; role = Role.Button
             if (!enabled) disabled()
-            onClick("Enter selection rotation") { if (enabled) model.dialog(PaintDialog.Geometry); enabled }
+            onClick("Enter selection rotation") { if (enabled) model.dialog(PaintDialog.Rotation); enabled }
         }.onPreviewKeyEvent { event ->
             if (event.type != KeyEventType.KeyDown || !enabled) false
             else when (event.key) {
                 Key.Escape -> if (dragging) { cancel(); true } else false
-                Key.Enter, Key.Spacebar -> { model.dialog(PaintDialog.Geometry); true }
+                Key.Enter, Key.Spacebar -> { model.dialog(PaintDialog.Rotation); true }
                 Key.DirectionLeft, Key.DirectionRight -> {
                     model.rotateSelection((if (event.key == Key.DirectionLeft) -1.0 else 1.0)*(if (event.isShiftPressed) 15 else 1)); true
                 }

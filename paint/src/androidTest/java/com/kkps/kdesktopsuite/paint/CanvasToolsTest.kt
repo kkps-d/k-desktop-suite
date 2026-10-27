@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.*
@@ -414,6 +415,90 @@ class CanvasToolsTest {
                 assertNull(model.state.value.preview)
                 assertNull(model.state.value.selection)
             }
+        }
+    }
+
+    @Test fun twoFingerNavigationCanStartOutsideImageWithoutOneFingerEdits() {
+        for (tool in listOf(Tool.Pencil,Tool.Select,Tool.Text)) {
+            lateinit var before: PaintUiState
+            compose.runOnIdle {
+                model.tool(tool)
+                model.viewport(model.state.value.viewport.zoomed(2f).copy(margin = 80f,center = Point(0f,0f)).clamped())
+                before = model.state.value
+                assertTrue(before.viewport.origin.x > 8f)
+            }
+            compose.onNodeWithTag("paint-canvas").performTouchInput { swipe(Offset(8f,100f),Offset(8f,180f)) }
+            compose.runOnIdle {
+                assertEquals(before.viewport,model.state.value.viewport)
+                assertNull(model.state.value.preview)
+                assertNull(model.state.value.selection)
+            }
+            compose.onNodeWithTag("paint-canvas").performTouchInput {
+                down(0,Offset(18f,100f)); down(1,Offset(18f,200f))
+                updatePointerTo(0,Offset(8f,80f)); updatePointerTo(1,Offset(8f,180f)); move()
+                up(0); up(1)
+            }
+            compose.runOnIdle {
+                assertEquals(before.viewport.center.x+5f,model.state.value.viewport.center.x,0.1f)
+                assertEquals(before.viewport.center.y+10f,model.state.value.viewport.center.y,0.1f)
+            }
+            compose.onNodeWithTag("paint-canvas").performTouchInput {
+                down(0,Offset(8f,100f)); down(1,Offset(8f,200f))
+                updatePointerTo(0,Offset(8f,50f)); updatePointerTo(1,Offset(8f,250f)); move()
+                up(0); up(1)
+            }
+            compose.runOnIdle {
+                assertEquals(4f,model.state.value.viewport.scale,0.01f)
+                assertSame(before.raster,model.state.value.raster)
+                assertFalse(model.state.value.dirty)
+                assertNull(model.state.value.preview)
+                assertNull(model.state.value.selection)
+            }
+        }
+    }
+
+    @Test fun pendingTextMovesFromItsFrameAtDifferentZoomsAndStaysEditable() {
+        for (zoom in listOf(0.5f,2f)) {
+            compose.runOnIdle {
+                model.clearSelection(); model.tool(Tool.Text)
+                model.viewport(model.state.value.viewport.zoomed(zoom))
+                model.tap(Point(350f,300f))
+            }
+            compose.onNodeWithTag("paint-text-overlay").performTextInput("Drag me")
+            compose.runOnIdle { model.textEditor(requireNotNull(model.state.value.preview)).edit { selection = TextRange(1,4) } }
+            val before = requireNotNull(model.state.value.preview)
+            val raster = model.state.value.raster
+            compose.onNodeWithTag("paint-text-move-0").performTouchInput { swipe(center,center+Offset(40f,30f),200) }
+            compose.runOnIdle {
+                val after = requireNotNull(model.state.value.preview)
+                assertEquals(before.id,after.id)
+                assertEquals(before.bounds.x+(40f/zoom).roundToInt(),after.bounds.x)
+                assertEquals(before.bounds.y+(30f/zoom).roundToInt(),after.bounds.y)
+                assertEquals(Tool.Text,after.tool)
+                assertEquals("Drag me",after.text)
+                assertEquals(TextRange(1,4),model.textEditor(after).selection)
+                assertSame(raster,model.state.value.raster)
+                assertFalse(model.state.value.dirty)
+            }
+            compose.onNodeWithTag("paint-text-overlay").performTextInput("X")
+            compose.waitUntil(5000) { model.state.value.preview?.text == "DX me" }
+        }
+        compose.onNodeWithContentDescription("Commit").performScrollTo().performClick()
+        compose.waitUntil(15000) { !model.state.value.busy && model.state.value.preview == null }
+        compose.runOnIdle { assertTrue(model.state.value.dirty); model.undo(); assertTrue(model.state.value.raster.pixels.all { it == WHITE }) }
+    }
+
+    @Test fun cancelledTextFrameDragRestoresPositionWithoutDiscardingText() {
+        compose.runOnIdle { model.tool(Tool.Text); model.viewport(model.state.value.viewport.actual()); model.tap(Point(350f,300f)) }
+        compose.onNodeWithTag("paint-text-overlay").performTextInput("Keep text")
+        val before = requireNotNull(model.state.value.preview)
+        compose.onNodeWithTag("paint-text-move-0").performTouchInput { down(center); moveBy(Offset(60f,30f)) }
+        compose.runOnIdle { assertNotEquals(before.bounds,model.state.value.preview?.bounds) }
+        compose.onNodeWithTag("paint-text-move-0").performTouchInput { cancel() }
+        compose.runOnIdle {
+            assertEquals(before.bounds,model.state.value.preview?.bounds)
+            assertEquals("Keep text",model.state.value.preview?.text)
+            assertFalse(model.state.value.dirty)
         }
     }
 

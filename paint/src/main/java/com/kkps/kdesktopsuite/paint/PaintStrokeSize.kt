@@ -47,8 +47,10 @@ internal fun WidthPicker(s: PaintUiState, model: PaintViewModel) {
     Box {
         TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
             tooltip = { PlainTooltip { Text(label) } },state = rememberTooltipState()) {
-            FilledTonalIconButton(onClick = { open = true },enabled = available && !s.busy,
-                colors = paintTonalIconColors(available && s.busy && !LocalPaintBusyVisible.current),
+            IconButton(onClick = { open = true },enabled = available && !s.busy,
+                colors = IconButtonDefaults.iconButtonColors().let { colors ->
+                    if (available && s.busy && !LocalPaintBusyVisible.current) colors.copy(disabledContentColor = colors.contentColor) else colors
+                },
                 modifier = Modifier.size(64.dp,48.dp).testTag("paint-size-picker").semantics { contentDescription = label }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val color = LocalContentColor.current

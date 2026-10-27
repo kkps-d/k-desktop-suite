@@ -52,10 +52,12 @@ internal fun PaintButton(icon: ImageVector, label: String, modifier: Modifier = 
     TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
         tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState()) {
         IconButton(onClick = action, enabled = enabled && !busy, modifier = modifier.size(48.dp)
-            .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent, RoundedCornerShape(12.dp))
             .semantics { this.selected = selected; if (selected) stateDescription = "Selected" }) {
-            Icon(icon, label, tint = if (!enabled || (busy && LocalPaintBusyVisible.current)) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                else if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface)
+            Box(Modifier.size(40.dp).background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+                RoundedCornerShape(12.dp)),contentAlignment = Alignment.Center) {
+                Icon(icon, label, tint = if (!enabled || (busy && LocalPaintBusyVisible.current)) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    else if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface)
+            }
         }
     }
 }
@@ -83,22 +85,17 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
             BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.union(WindowInsets.ime))) {
                 val width = maxWidth
                 val portrait = maxHeight > maxWidth
-                val short = maxHeight < 480.dp
                 Column(Modifier.fillMaxSize().onKeyEvent { event -> if (state.settingsOpen || debugOpen) false else handlePaintKey(event,state,model) }) {
                     if (debugOpen) PaintDebugScreen { debugOpen = false }
                     else if (state.settingsOpen) PaintSettingsScreen(state,model) else {
                         if (!state.focusMode) {
                             PaintHeader(state,model,width.value,showBusy)
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                            if (!state.ribbonCollapsed) PaintToolbars(state,model,width.value)
-                            else TextButton(onClick = model::toggleRibbon) { Text(stringResource(R.string.ui_show_drawing_tools)) }
+                            PaintToolbars(state,model,width.value)
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         } else Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.End) {
                             PaintOperationProgress(state,model,showBusy)
                             TextButton(onClick = model::toggleFocus) { Text(stringResource(R.string.ui_exit_focus_mode)) }
-                        }
-                        if (short && !state.ribbonCollapsed && !state.focusMode) {
-                            TextButton(onClick = model::toggleRibbon,modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.ui_hide_drawing_tools)) }
                         }
                         Box(Modifier.weight(1f).fillMaxWidth()) {
                             PaintCanvas(state,model,onCursorChange = { cursor = it },onSelectionChange = { selectionDrag = it },
@@ -230,7 +227,7 @@ private fun ViewMenu(s: PaintUiState, model: PaintViewModel) {
             AppMenuItem({ Text(stringResource(R.string.ui_actual_size_ctrl_0)) },{ model.viewport(s.viewport.actual()); open = false },shortcut = "Ctrl+0")
             AppMenuItem({ Text(stringResource(R.string.ui_fit_image)) },{ model.viewport(s.viewport.fitted()); open = false })
             AppMenuItem({ Text(stringResource(R.string.ui_pan_tool)) },{ model.tool(Tool.Pan); open = false })
-            AppMenuItem({ Text(stringResource(if (s.ribbonCollapsed) R.string.ui_show_drawing_tools else R.string.ui_hide_drawing_tools)) },{ model.toggleRibbon(); open = false })
+            AppMenuItem({ Text(stringResource(if (s.ribbonCollapsed) R.string.ui_show_toolbar else R.string.ui_hide_toolbar)) },{ model.toggleRibbon(); open = false })
             AppMenuItem({ Text(stringResource(R.string.ui_status_bar)) },{ model.toggleInformation(); open = false },
                 trailingIcon = { Text(if (s.showInformation) "✓" else "",Modifier.width(24.dp)) },
                 checked = s.showInformation)

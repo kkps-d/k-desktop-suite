@@ -47,8 +47,10 @@ class ClassicAdaptationTest {
         compose.onNodeWithContentDescription("Pencil").performScrollTo().performClick()
         compose.onNodeWithTag("paint-canvas").assertIsDisplayed()
         compose.runOnIdle { assertEquals(BLACK,model.state.value.raster.pixel(20,20)); size = DpSize(1200.dp,400.dp); largeText = false }
-        compose.onNodeWithText("Hide drawing tools").performClick()
-        compose.onNodeWithText("Show drawing tools").assertIsDisplayed()
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Hide toolbar").performClick()
+        compose.onNodeWithTag("paint-primary-toolbar").assertDoesNotExist()
+        compose.onNodeWithTag("paint-secondary-toolbar").assertIsDisplayed()
         compose.onNodeWithTag("paint-canvas").assertIsDisplayed()
     }
 }

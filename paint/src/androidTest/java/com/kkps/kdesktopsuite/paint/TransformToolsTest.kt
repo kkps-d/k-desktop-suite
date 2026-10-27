@@ -71,20 +71,20 @@ class TransformToolsTest {
     @Test fun resizeAndSkewTabsApplyTogetherAndUndoRestoresDimensions() {
         compose.runOnIdle { model.resizeCanvas(100,50) }; waitForEdit()
         compose.onNodeWithContentDescription("Select").performScrollTo().performClick()
-        compose.onNodeWithContentDescription("Resize and Skew").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Move/resize/skew").performScrollTo().performClick()
         compose.onNodeWithText("Target: Image").assertIsDisplayed()
         compose.onNodeWithTag("resize-horizontal").performTextReplacement("200")
         compose.onNodeWithTag("resize-vertical").assertTextContains("200")
         compose.onNodeWithText("Skew",useUnmergedTree = true).performClick()
         compose.onNodeWithTag("skew-horizontal").performTextReplacement("10")
         File(context.cacheDir,"skew-dialog.png").outputStream().use {
-            compose.onNodeWithTag("resize-skew-dialog").captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
+            compose.onNodeWithTag("transform-dialog").captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
         }
         compose.onNodeWithText("Resize",useUnmergedTree = true).performClick()
         compose.onNodeWithTag("resize-horizontal").assertTextContains("200")
         compose.onNodeWithTag("transform-dimensions").assertTextEquals("Result: 218 × 100 px")
         File(context.cacheDir,"resize-dialog.png").outputStream().use {
-            compose.onNodeWithTag("resize-skew-dialog").captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
+            compose.onNodeWithTag("transform-dialog").captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
         }
         compose.onNodeWithText("OK").performClick(); waitForEdit()
         compose.runOnIdle {
@@ -96,8 +96,9 @@ class TransformToolsTest {
     @Test fun invalidDialogAndCancelLeaveSelectionUntouched() {
         insertSelection()
         val before = model.state.value
-        compose.onNodeWithContentDescription("Resize and Skew").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Move/resize/skew").performScrollTo().performClick()
         compose.onNodeWithText("Target: Selection").assertExists()
+        compose.onNodeWithText("Resize",useUnmergedTree = true).performScrollTo().performClick()
         compose.onNodeWithTag("resize-horizontal").performTextReplacement("0")
         compose.onNodeWithText("OK").performClick()
         compose.onNodeWithText("Dimensions must be greater than zero.").assertExists()
@@ -114,7 +115,7 @@ class TransformToolsTest {
     }
 
     @Test fun narrowLargeTextDialogKeepsBothTabsAndActionsReachable() {
-        compose.runOnIdle { size = DpSize(360.dp,640.dp); fontScale = 2f; model.dialog(PaintDialog.ResizeSkew) }
+        compose.runOnIdle { size = DpSize(360.dp,640.dp); fontScale = 2f; model.dialog(PaintDialog.Transform) }
         compose.onNodeWithTag("resize-horizontal").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("resize-vertical").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Skew",useUnmergedTree = true).performScrollTo().performClick()
@@ -138,16 +139,19 @@ class TransformToolsTest {
         compose.runOnIdle { assertEquals(before,model.state.value.preview) }
         handle.performKeyInput { pressKey(Key.Enter) }
         compose.onNodeWithText("Rotation (degrees clockwise)").performScrollTo().performTextReplacement("45")
-        compose.onNodeWithText("Update preview").performClick()
+        compose.onNodeWithText("Apply").performClick()
         compose.runOnIdle { assertEquals(45.0,requireNotNull(model.state.value.preview).rotationDegrees,0.001) }
     }
 
     @Test fun compactSelectionToolbarProvidesResizeRotateAndBothFlips() {
         compose.runOnIdle { size = DpSize(360.dp,640.dp) }
         compose.onNodeWithContentDescription("Select").performScrollTo().performClick()
-        listOf("Resize and Skew","Rotate right 90\u00b0","Rotate left 90\u00b0","Custom rotate","Flip horizontal","Flip vertical").forEach {
-            compose.onNodeWithContentDescription(it).performScrollTo().assertIsDisplayed()
-        }
+        compose.onNodeWithContentDescription("Move/resize/skew").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Custom rotate").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Flip").performScrollTo().performClick()
+        compose.onNodeWithText("Flip horizontal").assertIsDisplayed()
+        compose.onNodeWithText("Flip vertical").assertIsDisplayed()
+        compose.onNodeWithTag("dropdown-menu").performKeyInput { pressKey(Key.Escape) }
         compose.onNodeWithContentDescription("Rotate right 90\u00b0").performScrollTo().performClick(); waitForEdit()
         compose.runOnIdle {
             assertEquals(600,model.state.value.raster.width); assertEquals(800,model.state.value.raster.height)
@@ -158,7 +162,7 @@ class TransformToolsTest {
     @Test fun toolbarTransformsSelectionWithoutChangingCanvasUntilApply() {
         insertSelection()
         val before = model.state.value.raster
-        compose.onNodeWithText("Rotate right 90\u00b0").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Rotate right 90\u00b0").performScrollTo().performClick()
         compose.runOnIdle {
             assertSame(before,model.state.value.raster); assertFalse(model.state.value.dirty)
             assertEquals(40,model.state.value.preview?.bounds?.width); assertEquals(80,model.state.value.preview?.bounds?.height)
@@ -172,6 +176,60 @@ class TransformToolsTest {
             assertNull(model.state.value.preview)
             model.undo(); assertArrayEquals(before.pixels,model.state.value.raster.pixels)
             model.redo(); assertTrue(model.state.value.dirty)
+        }
+    }
+
+    @Test fun moveResizeAndSkewApplyTogetherWithoutChangingTheRasterUntilCommit() {
+        insertSelection()
+        val before = model.state.value.raster
+        compose.onNodeWithContentDescription("Move/resize/skew").performScrollTo().performClick()
+        compose.onNodeWithTag("move-x").performTextReplacement("100")
+        compose.onNodeWithTag("move-y").performTextReplacement("120")
+        compose.onNodeWithText("Resize",useUnmergedTree = true).performScrollTo().performClick()
+        compose.onNodeWithTag("resize-horizontal").performTextReplacement("200")
+        compose.onNodeWithText("Skew",useUnmergedTree = true).performScrollTo().performClick()
+        compose.onNodeWithTag("skew-horizontal").performTextReplacement("10")
+        compose.onNodeWithText("Move",useUnmergedTree = true).performScrollTo().performClick()
+        compose.onNodeWithTag("move-x").assertTextContains("100")
+        compose.onNodeWithText("OK").performClick()
+        compose.runOnIdle {
+            val preview = requireNotNull(model.state.value.preview)
+            assertSame(before,model.state.value.raster)
+            assertEquals(PixelRect(100,120,175,80),preview.bounds)
+            assertFalse(model.state.value.canUndo)
+            model.applyPreview()
+        }
+        waitForEdit()
+        compose.runOnIdle { model.undo(); assertArrayEquals(before.pixels,model.state.value.raster.pixels); assertFalse(model.state.value.canUndo) }
+    }
+
+    @Test fun nativeTextMoveResizeStaysEditableAndSkewRemainsCancellable() {
+        compose.runOnIdle { model.tool(Tool.Text); model.tap(Point(40f,40f)) }
+        compose.onNodeWithTag("paint-text-overlay").performTextInput("Editable text")
+        val raster = model.state.value.raster
+        compose.onNodeWithText("Move/resize").performScrollTo().performClick()
+        compose.onNodeWithText("Skew",useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("move-x").performTextReplacement("80")
+        compose.onNodeWithText("Resize",useUnmergedTree = true).performScrollTo().performClick()
+        compose.onNodeWithTag("resize-horizontal").performTextReplacement("150")
+        compose.onNodeWithText("OK").performClick()
+        compose.onNodeWithTag("paint-text-overlay").assertExists().performTextInput(" more")
+        compose.runOnIdle {
+            val preview = requireNotNull(model.state.value.preview)
+            assertEquals(Tool.Text,preview.tool)
+            assertEquals(80,preview.bounds.x)
+            assertEquals("Editable text more",preview.text)
+            assertSame(raster,model.state.value.raster)
+            assertTrue(model.updateTransform(preview.bounds,10,0,null))
+        }
+        waitForEdit()
+        compose.runOnIdle {
+            assertEquals(Tool.Select,model.state.value.preview?.tool)
+            assertNotNull(model.state.value.preview?.payload)
+            assertSame(raster,model.state.value.raster)
+            model.cancelPreview()
+            assertSame(raster,model.state.value.raster)
+            assertFalse(model.state.value.canUndo)
         }
     }
 

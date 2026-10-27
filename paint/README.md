@@ -9,14 +9,17 @@ The core supports Pencil, nine brush styles, Fill, Eraser, Eyedropper, rectangul
 selection and clipboard operations, all 23 classic Paint shapes, native multiline text,
 undo/redo, PNG/JPEG files, PNG sharing, settings, and durable private recovery.
 The Hand tool pans with one finger; pinch zoom and two-finger pan remain available
-with editing tools as well. Switching to a different drawing tool clears the selection and commits any
+with editing tools as well, including gestures that start in the gray area outside the image.
+Single touches outside the image do not draw or select. Switching to a different drawing tool clears the selection and commits any
 pending move or paste. Returning to the active tool preserves pending edits.
 The primary toolbar groups clipboard commands, selection, drawing tools, and primary/secondary
 color targets. The secondary toolbar shows options for the active tool or selected color.
+Show toolbar / Hide toolbar toggles only the primary row. Text keeps this control in
+its secondary row, including while editing and choosing colors.
 Tool names hide below 600dp and optional labels below 840dp, adjusted for font scale.
 Shape shortcuts adapt from three to ten; all 23 remain in More shapes. Controls never wrap. Color selection
 is independent of drawing-tool selection and preserves floating shapes, text, and images.
-Transparent selection is visible but disabled until its raster behavior is implemented.
+The Transparent checkbox is visible but disabled until its raster behavior is implemented.
 The Brushes dropdown shows actual stroke previews for Solid, Calligraphy left/right,
 Airbrush, Oil, Crayon, Marker, Graphite, and Watercolor. Each style remembers its width;
 seeded textures match the live preview and remain unchanged through undo/redo.
@@ -29,13 +32,20 @@ bend points; for polygons, add vertices and choose Commit to finish and apply in
 move/resize, stroke width, outline/fill colors, Enter to apply, and Escape to cancel.
 Text supports System plus the same bundled Noto Sans, Serif,
 and Sans Mono fonts as Notepad, with formatting in the secondary toolbar.
-Resize opens a dialog with separate Resize and Skew tabs. Percentage/pixel sizing
-starts with aspect lock enabled; OK applies sizing followed by horizontal/vertical
-skew together. Selection options offer left/right quarter turns, custom angles, and horizontal/vertical flips.
-These commands target a selection when present, otherwise the whole image.
-Selections also have a top-right rotation handle for free angles and a numeric
-angle in Move / resize. Transforms stay floating until Apply/Enter; Escape cancels
-them. Selection content outside the canvas is clipped when applied. Canvas size
+Drag an uncommitted text box by its outside frame to move it; the interior keeps native
+caret/character selection. Moving preserves text formatting and selection until Commit.
+Move/resize/skew opens one dialog with Move, Resize, and Skew tabs; text offers only Move and Resize.
+Position, percentage/pixel sizing, aspect lock, rotation, and skew apply together on OK.
+Selections and pending shapes/text keep their edits floating; Move/Resize keeps text
+editable, while Skew converts native shapes to a floating image. Cancel preserves
+the original preview, and committing remains one undoable edit.
+Rotation and flip controls live beside Select in the primary toolbar. Left/right
+buttons turn by 90 degrees; a separate button opens custom rotation, and
+the Flip dropdown offers vertical/horizontal flips. They target a selection when
+present, otherwise the image. Selections retain free-angle rotation handles.
+The color dialog shows ten presets or custom slots per row, scrolling horizontally
+in narrow windows. Swap colors stays in the color toolbar.
+Selection content outside the canvas is clipped when applied. Canvas size
 controls change the canvas bounds separately from image scaling.
 Modern desktop and the common mobile view remain deferred, as do the extended
 tools listed in the [Android specification](../docs/KD_PAINT_ANDROID_SPEC.md).

@@ -243,7 +243,7 @@ internal fun PaintCanvas(
                     CustomAccessibilityAction("Apply current edit") { model.applyPreview(); true },
                     CustomAccessibilityAction("Cancel current edit") { model.cancelPreview(); true },
                     CustomAccessibilityAction("Finish and commit shape") { model.applyPreview(); true },
-                    CustomAccessibilityAction("Move or resize selection") { model.dialog(PaintDialog.Geometry); true },
+                    CustomAccessibilityAction("Move or resize selection") { model.dialog(PaintDialog.Transform); true },
                     CustomAccessibilityAction("Resize canvas") { model.dialog(PaintDialog.CanvasSize); true },
                     CustomAccessibilityAction("Create text in the image") { model.tool(Tool.Text); model.tap(Point(16f,16f)); true },
                     CustomAccessibilityAction("Announce cursor coordinates") { model.message("Cursor ${keyboardCursor.x.toInt()}, ${keyboardCursor.y.toInt()} pixels"); true },
@@ -278,15 +278,13 @@ internal fun PaintCanvas(
                     // Resize from the gesture's original pixels and transform, even after crossing an axis.
                     val resizingSelection = if (!navigation && resize && (initial.preview == null || initial.preview.payload != null))
                         model.floatingSelection() else null
-                    if (!navigation && !hitExisting && !resize &&
-                        (imageStart.x !in 0f..initial.raster.width.toFloat() || imageStart.y !in 0f..initial.raster.height.toFloat())) {
-                        down.consume()
-                        return@awaitEachGesture
-                    }
+                    // An outside touch can still become two-finger navigation; it must not draw or select.
+                    val canEdit = hitExisting || resize ||
+                        (imageStart.x in 0f..initial.raster.width.toFloat() && imageStart.y in 0f..initial.raster.height.toFloat())
                     var moved = false
-                    if (!navigation && tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) stroke.add(imageStart)
-                    else if (!navigation && constructing) constructionPoint = imageStart
-                    else if (!navigation && !hitExisting && !resize && (tool.isShape || tool in listOf(Tool.Select,Tool.Text))) {
+                    if (!navigation && canEdit && tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) stroke.add(imageStart)
+                    else if (!navigation && canEdit && constructing) constructionPoint = imageStart
+                    else if (!navigation && canEdit && !hitExisting && !resize && (tool.isShape || tool in listOf(Tool.Select,Tool.Text))) {
                         dragStart = imageStart; dragEnd = imageStart; dragConstrained = startEvent.keyboardModifiers.isShiftPressed
                     }
                     down.consume()
@@ -311,6 +309,7 @@ internal fun PaintCanvas(
                                 if ((pointer.position-down.position).getDistance() > viewConfiguration.touchSlop) moved = true
                                 val point = model.state.value.viewport.imagePoint(Point(pointer.position.x,pointer.position.y))
                                 if (navigation) model.viewport(model.state.value.viewport.panned(Point(delta.x,delta.y)))
+                                else if (!canEdit) Unit
                                 else if (constructing) constructionPoint = point
                                 else if (resize) {
                                     requireNotNull(existing)
@@ -331,7 +330,7 @@ internal fun PaintCanvas(
                             }
                             event.changes.forEach { it.consume() }
                         } while (if (navigation) event.changes.any { it.pressed } else event.changes.any { it.id == down.id && it.pressed })
-                        if (!navigation) {
+                        if (!navigation && canEdit) {
                             when {
                                 constructing -> model.tap(constructionPoint ?: imageStart)
                                 stroke.isNotEmpty() -> {
@@ -452,7 +451,9 @@ internal fun PaintCanvas(
             }
         }
         displayedState.preview?.takeIf { it.tool == Tool.Text }?.let { preview -> key(preview.id) {
-            TextOverlay(displayedState.copy(viewport = state.viewport,busy = state.busy || image?.raster !== raster),preview,model)
+            val textState = displayedState.copy(viewport = state.viewport,busy = state.busy || image?.raster !== raster)
+            TextOverlay(textState,preview,model)
+            TextMoveFrame(textState,preview,model,active)
         } }
         if (state.options.tool != Tool.Pan) {
             if (state.selection == null && state.preview?.payload == null)

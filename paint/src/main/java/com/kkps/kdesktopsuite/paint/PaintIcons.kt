@@ -26,6 +26,7 @@ internal enum class PaintIcon(@DrawableRes private val resourceId: Int) {
     Text(R.drawable.ms_text_fields),
     Eyedropper(R.drawable.ms_colorize),
     Select(R.drawable.ms_select),
+    SelectAll(R.drawable.ic_select_all),
     Line(R.drawable.ic_line),
     Rectangle(R.drawable.ms_rectangle),
     Ellipse(R.drawable.ic_ellipse),
