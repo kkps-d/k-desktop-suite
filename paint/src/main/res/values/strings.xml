@@ -104,7 +104,9 @@
     <string name="ui_">#</string>
     <string name="ui_preset_colors">Preset colors</string>
     <string name="ui_custom_colors">Custom colors</string>
-    <string name="ui_save_current_color_to_custom_slot">Save current color to custom slot…</string>
+    <string name="ui_assign_to_custom_color">Assign to custom color</string>
+    <string name="ui_save_custom_color">Save custom color</string>
+    <string name="ui_select_a_slot_above">Select a slot above</string>
     <string name="ui_swap_foreground_and_background">Swap foreground and background</string>
     <string name="ui_apply">Apply</string>
     <string name="ui_maintain_aspect_ratio">Maintain aspect ratio</string>

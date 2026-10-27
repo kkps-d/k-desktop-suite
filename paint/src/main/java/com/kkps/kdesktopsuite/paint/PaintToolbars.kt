@@ -76,6 +76,15 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
                 }
                 if (s.colorOptions) PaletteOptions(s,model,availableWidth)
                 else when {
+                    s.options.tool == Tool.Eyedropper -> {
+                        ToggleButton(checked = s.assignCustomColor,onCheckedChange = model::assignCustomColor,
+                            enabled = enabled && !s.busy,modifier = Modifier.padding(horizontal = 6.dp)) {
+                            Text(stringResource(R.string.ui_assign_to_custom_color),maxLines = 1)
+                        }
+                        if (s.assignCustomColor) s.preferences.customColors.forEachIndexed { index,color ->
+                            ColorSwatch(color,"Custom color ${index+1}",s.eyedropperSlot == index,enabled && !s.busy) { model.eyedropperSlot(index) }
+                        }
+                    }
                     s.options.tool == Tool.Select -> {
                         PreviewActions(s,model)
                         ToolbarCheck("Transparent",false,false,"Available in a future update") { }
@@ -217,14 +226,14 @@ private fun ToolbarColor(color: Int, label: String, selected: Boolean, enabled: 
 }
 
 @Composable
-internal fun ColorSwatch(color: Int, label: String, selected: Boolean = false, enabled: Boolean = true, action: () -> Unit) {
+internal fun ColorSwatch(color: Int, label: String, selected: Boolean = false, enabled: Boolean = true, saving: Boolean = false, action: () -> Unit) {
     val description = "$label #${"%06X".format(color and 0xFFFFFF)}"
     TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
         tooltip = { PlainTooltip { Text(description) } },state = rememberTooltipState()) {
         Box(Modifier.size(48.dp).clickable(enabled = enabled,role = Role.Button,onClick = action)
             .semantics { contentDescription = description; this.selected = selected }
-            .padding(6.dp).border(if (selected) 2.dp else 1.dp,
-                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,RoundedCornerShape(6.dp))
+            .padding(6.dp).border(if (saving) 3.dp else if (selected) 2.dp else 1.dp,
+                if (saving || selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,RoundedCornerShape(6.dp))
             .background(Color(color),RoundedCornerShape(6.dp)))
     }
 }

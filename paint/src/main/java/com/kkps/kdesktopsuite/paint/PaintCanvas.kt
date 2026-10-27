@@ -70,6 +70,8 @@ internal fun PaintCanvas(
     var dragConstrained by remember { mutableStateOf(false) }
     var constructionPoint by remember { mutableStateOf<Point?>(null) }
     var hovering by remember { mutableStateOf<Offset?>(null) }
+    var eyedropperPosition by remember { mutableStateOf<Offset?>(null) }
+    var eyedropperPreviewSize by remember { mutableStateOf(IntSize.Zero) }
     var keyboardInput by remember { mutableStateOf(false) }
     var erasing by remember { mutableStateOf(false) }
     var strokeSeed by remember { mutableIntStateOf(0) }
@@ -276,7 +278,7 @@ internal fun PaintCanvas(
                 )
             }
             .pointerHoverIcon(if (state.options.tool == Tool.Pan) handCursor else PointerIcon.Crosshair)
-            .pointerInput(density.density,active) {
+            .pointerInput(density.density,active,state.options.tool) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     if (rotatingSelection || suppressRotationPointers || down.isConsumed) { down.consume(); return@awaitEachGesture }
@@ -312,6 +314,7 @@ internal fun PaintCanvas(
                     val canEdit = hitExisting || resize ||
                         (imageStart.x in 0f..initial.raster.width.toFloat() && imageStart.y in 0f..initial.raster.height.toFloat())
                     var moved = false
+                    if (!navigation && canEdit && tool == Tool.Eyedropper) eyedropperPosition = down.position
                     if (!navigation && canEdit && tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) stroke.add(imageStart)
                     else if (!navigation && canEdit && constructing) constructionPoint = imageStart
                     else if (!navigation && canEdit && !hitExisting && !resize && (tool.isShape || tool in listOf(Tool.Select,Tool.Text))) {
@@ -331,11 +334,15 @@ internal fun PaintCanvas(
                             if (pressed > 1 || touchNavigation) {
                                 if (!navigation && (hitExisting || resize)) model.setPreview(initial.preview)
                                 navigation = true; stroke.clear(); dragStart = null; dragEnd = null; constructionPoint = null
+                                eyedropperPosition = null
                                 movingSelection = false
                                 val pan = event.calculatePan(); val zoom = event.calculateZoom()
                                 val centroid = event.calculateCentroid(useCurrent = true)
                                 val view = model.state.value.viewport
                                 model.viewport(view.zoomed(view.scale*zoom,Point(centroid.x,centroid.y)).panned(Point(pan.x,pan.y)))
+                            } else if (!navigation && canEdit && tool == Tool.Eyedropper) {
+                                // Android sends a consumed release when a touch is cancelled.
+                                eyedropperPosition = pointer.position.takeUnless { !pointer.pressed && !pointer.changedToUp() }
                             } else if (pointer.pressed || navigation) {
                                 val delta = pointer.position - pointer.previousPosition
                                 if ((pointer.position-down.position).getDistance() > viewConfiguration.touchSlop) moved = true
@@ -365,6 +372,9 @@ internal fun PaintCanvas(
                         } while (if (navigation) event.changes.any { it.pressed } else event.changes.any { it.id == down.id && it.pressed })
                         if (!navigation && canEdit) {
                             when {
+                                tool == Tool.Eyedropper -> eyedropperPosition?.let { position ->
+                                    model.tap(model.state.value.viewport.imagePoint(Point(position.x,position.y)))
+                                }
                                 constructing -> model.tap(constructionPoint ?: imageStart)
                                 stroke.isNotEmpty() -> {
                                     strokePending = true
@@ -376,6 +386,7 @@ internal fun PaintCanvas(
                         }
                     } catch (cancelled: CancellationException) { throw cancelled }
                     finally {
+                        eyedropperPosition = null
                         movingSelection = false
                         if (!strokePending) { stroke.clear(); brushSession = null; erasing = false }
                         dragStart = null; dragEnd = null; constructionPoint = null; dragConstrained = false
@@ -484,6 +495,30 @@ internal fun PaintCanvas(
                 drawPath(cursor,Color.White,style = Stroke(4.dp.toPx()))
                 drawPath(cursor,outline,style = Stroke(2.dp.toPx()))
                 drawRect(outline,style = Stroke(2.dp.toPx()))
+            }
+        }
+        eyedropperPosition?.takeIf { active && state.options.tool == Tool.Eyedropper }?.let { position ->
+            val point = state.viewport.imagePoint(Point(position.x,position.y))
+            val x = floor(point.x).toInt()
+            val y = floor(point.y).toInt()
+            if (x in 0 until raster.width && y in 0 until raster.height) {
+                val color = raster.pixel(x,y)
+                val hex = "#%06X".format(color and 0xFFFFFF)
+                Surface(shape = MaterialTheme.shapes.small,shadowElevation = 4.dp,
+                    modifier = Modifier.offset {
+                        val gap = with(density) { 24.dp.roundToPx() }
+                        val left = (position.x+gap).roundToInt().coerceIn(0,max(0,state.viewport.width.roundToInt()-eyedropperPreviewSize.width))
+                        val above = position.y.roundToInt()-gap-eyedropperPreviewSize.height
+                        val top = (if (above >= 0) above else position.y.roundToInt()+gap)
+                            .coerceIn(0,max(0,state.viewport.height.roundToInt()-eyedropperPreviewSize.height))
+                        IntOffset(left,top)
+                    }.onSizeChanged { eyedropperPreviewSize = it }.testTag("paint-eyedropper-preview")
+                        .semantics(mergeDescendants = true) { contentDescription = "Picked color $hex" }) {
+                    Row(Modifier.padding(8.dp),verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(Modifier.size(40.dp).background(Color(color)).border(1.dp,MaterialTheme.colorScheme.outline))
+                        Text(hex,style = MaterialTheme.typography.labelLarge)
+                    }
+                }
             }
         }
         displayedState.preview?.takeIf { it.tool == Tool.Text }?.let { preview -> key(preview.id) {

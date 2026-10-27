@@ -18,6 +18,11 @@ Single touches outside the image do not draw or select. Switching to a different
 pending move or paste. Returning to the active tool preserves pending edits.
 The primary toolbar groups clipboard commands, selection, drawing tools, and primary/secondary
 color targets. The secondary toolbar shows options for the active tool or selected color.
+Eyedropper shows a live color preview while a pointer is held on the canvas and picks
+the release position. It stays active and updates the selected primary or secondary color.
+Assign to custom color is off by default; turning it on shows ten custom slots in the
+secondary toolbar and also writes each pick to the selected slot. In Edit colors, Save custom color highlights
+the custom slots; select a slot to replace it or Cancel to leave the slots unchanged.
 Show toolbar / Hide toolbar toggles only the primary row. Text keeps this control in
 its secondary row, including while editing and choosing colors.
 Tool names hide below 600dp and optional labels below 840dp, adjusted for font scale.

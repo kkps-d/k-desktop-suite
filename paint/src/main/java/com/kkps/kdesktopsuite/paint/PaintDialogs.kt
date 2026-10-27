@@ -21,8 +21,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import com.kkps.kdesktopsuite.ui.AppAboutDialog
-import com.kkps.kdesktopsuite.ui.AppDropdownMenu
-import com.kkps.kdesktopsuite.ui.AppMenuItem
 
 @Composable
 internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenDebug: () -> Unit) {
@@ -114,7 +112,7 @@ private fun CanvasSizeDialog(s: PaintUiState, model: PaintViewModel) {
 private fun ColorsDialog(s: PaintUiState, model: PaintViewModel) {
     val background = s.colorBackground
     var hex by remember { mutableStateOf("%06X".format((if (s.colorBackground) s.options.background else s.options.foreground) and 0xFFFFFF)) }
-    var customMenu by remember { mutableStateOf(false) }
+    var savingCustomColor by remember { mutableStateOf(false) }
     val parsed = hex.takeIf { it.length == 6 }?.toLongOrNull(16)?.toInt()?.or(BLACK)
     fun choose(color: Int) { hex = "%06X".format(color and 0xFFFFFF) }
     AlertDialog(onDismissRequest = { model.dialog(null) },modifier = Modifier.testTag("paint-colors-dialog"),title = { Text(if (background) "Edit secondary color" else "Edit primary color") },text = {
@@ -146,16 +144,23 @@ private fun ColorsDialog(s: PaintUiState, model: PaintViewModel) {
             Text(stringResource(R.string.ui_custom_colors),style = MaterialTheme.typography.labelLarge)
             Column(Modifier.horizontalScroll(rememberScrollState()).testTag("paint-dialog-custom-colors")) {
                 s.preferences.customColors.chunked(10).forEachIndexed { rowIndex,row -> Row { row.forEachIndexed { index,color ->
-                    ColorSwatch(color,"Custom color ${rowIndex*10+index+1}") { choose(color) }
+                    ColorSwatch(color,"Custom color ${rowIndex*10+index+1}",enabled = !savingCustomColor || parsed != null,saving = savingCustomColor) {
+                        if (savingCustomColor) {
+                            parsed?.let { chosen ->
+                                model.preferences { it.copy(customColors = it.customColors.toMutableList().also { colors -> colors[rowIndex*10+index] = chosen }) }
+                            }
+                            savingCustomColor = false
+                        } else choose(color)
+                    }
                 } } }
             }
-            Box {
-                TextButton(onClick = { customMenu = true },enabled = parsed != null) { Text(stringResource(R.string.ui_save_current_color_to_custom_slot)) }
-                AppDropdownMenu(customMenu,{ customMenu = false }) { (0..9).forEach { index ->
-                    AppMenuItem({ Text("Slot ${index+1}") },{ parsed?.let { color ->
-                        model.preferences { it.copy(customColors = it.customColors.toMutableList().also { colors -> colors[index] = color }) }
-                    }; customMenu = false })
-                } }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (savingCustomColor) {
+                    Text(stringResource(R.string.ui_select_a_slot_above),Modifier.weight(1f),style = MaterialTheme.typography.labelLarge)
+                    TextButton(onClick = { savingCustomColor = false }) { Text(stringResource(R.string.ui_cancel)) }
+                } else TextButton(onClick = { savingCustomColor = true },enabled = parsed != null) {
+                    Text(stringResource(R.string.ui_save_custom_color))
+                }
             }
         }
     },confirmButton = { TextButton(onClick = { parsed?.let { color -> model.options { if (background) it.copy(background = color) else it.copy(foreground = color) }; model.dialog(null) } },enabled = parsed != null) { Text(stringResource(R.string.ui_apply)) } },

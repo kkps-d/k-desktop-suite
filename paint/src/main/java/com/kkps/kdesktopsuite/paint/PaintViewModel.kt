@@ -26,6 +26,8 @@ internal data class PaintUiState(
     val ribbonCollapsed: Boolean = false, val showInformation: Boolean = true, val colorBackground: Boolean = false,
     val settingsOpen: Boolean = false, val colorOptions: Boolean = false,
     val lastShape: Tool = Tool.Rectangle,
+    val eyedropperSlot: Int = 0,
+    val assignCustomColor: Boolean = false,
 )
 
 internal class PaintViewModel(
@@ -35,6 +37,7 @@ internal class PaintViewModel(
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(PaintUiState(
         colorOptions = savedState["colorOptions"] ?: false, colorBackground = savedState["colorBackground"] ?: false,
+        assignCustomColor = savedState["assignCustomColor"] ?: false,
         lastShape = savedState.get<String>("lastShape")?.let { name -> shapeTools.firstOrNull { it.name == name } } ?: Tool.Rectangle))
     val state = mutableState.asStateFlow()
     private var history = RasterHistory(mutableState.value.raster)
@@ -52,7 +55,6 @@ internal class PaintViewModel(
     private var pendingCut: PendingCut? = null
     private var documentId = UUID.randomUUID().toString()
     private var operationId = 0L
-    private var previousDrawingTool = Tool.Brush
     private var layoutInitialized = false
     private var textEditor: Pair<String, TextFieldState>? = null
     fun textEditor(preview: EditPreview): TextFieldState {
@@ -146,6 +148,15 @@ internal class PaintViewModel(
         mutableState.update { it.copy(colorOptions = true,colorBackground = background) }
     }
     fun colors(background: Boolean = state.value.colorBackground) { mutableState.update { it.copy(dialog = PaintDialog.Colors,colorBackground = background) } }
+    fun assignCustomColor(enabled: Boolean) {
+        if (state.value.busy || state.value.loading) return
+        savedState["assignCustomColor"] = enabled
+        mutableState.update { it.copy(assignCustomColor = enabled) }
+    }
+    fun eyedropperSlot(index: Int) {
+        if (state.value.busy || state.value.loading || index !in state.value.preferences.customColors.indices) return
+        mutableState.update { it.copy(eyedropperSlot = index) }
+    }
     private fun sync() {
         mutableState.update { it.copy(raster = history.raster, dirty = history.dirty,
             viewport = it.viewport.resized(it.viewport.width,it.viewport.height,history.raster.width,history.raster.height),
@@ -226,7 +237,6 @@ internal class PaintViewModel(
         // Returning from color options must leave a floating edit intact.
         if (tool == state.value.options.tool) return
         applyPreview {
-            if (tool == Tool.Eyedropper && state.value.options.tool != Tool.Eyedropper) previousDrawingTool = state.value.options.tool
             mutableState.update {
                 val o = it.options
                 val widths = if (o.tool == Tool.Brush) o.brushWidths + (o.brushStyle to o.width) else o.brushWidths
@@ -261,7 +271,13 @@ internal class PaintViewModel(
         if (preview?.tool?.isShape == true && !preview.bounds.contains(x,y)) { applyPreview(); return }
         when (s.options.tool) {
             Tool.Fill -> operation({ it.fill(x, y, s.options.foreground, s.selection) })
-            Tool.Eyedropper -> { options { it.copy(foreground = s.raster.pixel(x, y)) }; tool(previousDrawingTool) }
+            Tool.Eyedropper -> {
+                val color = s.raster.pixel(x,y)
+                options { if (s.colorBackground) it.copy(background = color) else it.copy(foreground = color) }
+                if (s.assignCustomColor) preferences {
+                    it.copy(customColors = it.customColors.toMutableList().also { colors -> colors[s.eyedropperSlot] = color })
+                }
+            }
             Tool.Text -> if (s.preview == null) setPreview(EditPreview(Tool.Text, PixelRect(x, y, min(240, s.raster.width - x).coerceAtLeast(1), 80)))
             else -> Unit
         }
