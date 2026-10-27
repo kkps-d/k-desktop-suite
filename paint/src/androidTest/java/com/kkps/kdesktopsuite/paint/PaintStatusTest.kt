@@ -298,14 +298,18 @@ class PaintStatusTest {
     @Test fun briefCommitsBlockToolbarInputWithoutFlashingItsColors() {
         val controls = listOf(compose.onNodeWithContentDescription("Save (Ctrl+S)"),
             compose.onNodeWithContentDescription("Pencil"),compose.onNodeWithTag("paint-brush-picker"),
-            compose.onNodeWithTag("paint-shape-picker"),compose.onNodeWithTag("paint-size-picker"))
+            compose.onNodeWithTag("paint-shape-tool"),compose.onNodeWithTag("paint-size-picker"))
         fun pixels(node: SemanticsNodeInteraction): IntArray {
+            if (node !== controls.first()) node.performScrollTo()
             val image = node.captureToImage().asAndroidBitmap()
             return IntArray(image.width * image.height).also {
                 image.getPixels(it,0,image.width,0,0,image.width,image.height)
             }
         }
-        controls.forEach { it.assertIsEnabled() }
+        controls.forEachIndexed { index,node ->
+            if (index > 0) node.performScrollTo()
+            node.assertIsEnabled()
+        }
         val before = controls.map(::pixels)
         compose.mainClock.autoAdvance = false
         repeat(3) {

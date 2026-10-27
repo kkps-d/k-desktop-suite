@@ -20,6 +20,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.*
 
 internal class PaintApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        PaintFonts.load(this)
+    }
+
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val recovery by lazy { PaintRecovery(java.io.File(noBackupFilesDir, "paint-recovery")) }
     val settings by lazy { PaintSettings(this) }

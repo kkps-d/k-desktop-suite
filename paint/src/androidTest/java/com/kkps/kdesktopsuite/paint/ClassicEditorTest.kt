@@ -25,8 +25,9 @@ class ClassicEditorTest {
     }
     private fun modelAvailable() = runCatching { compose.activity.paintModel }.isSuccess
 
-    @Test fun classicHasMenusAndRibbonButNoTabs() {
-        compose.onNodeWithTag("classic-ribbon").assertExists()
+    @Test fun classicHasMenusAndTwoToolbarsButNoTabs() {
+        compose.onNodeWithTag("paint-primary-toolbar").assertExists()
+        compose.onNodeWithTag("paint-secondary-toolbar").assertExists()
         compose.onNodeWithText("File").performClick()
         compose.onNodeWithText("Open image…",substring = true).assertIsDisplayed()
         compose.runOnIdle { model.dialog(null) }
@@ -64,30 +65,37 @@ class ClassicEditorTest {
         }
     }
 
-    @Test fun textInputIsMultilineAndRasterizesOnlyOnApply() {
-        compose.runOnIdle { model.tool(Tool.Text); model.tap(Point(10f,10f)) }
-        compose.onNodeWithTag("paint-text-overlay").performTextInput("One\nTwo café")
-        compose.waitUntil(10000) {
-            model.state.value.preview?.let { it.text == "One\nTwo café" && it.textLayoutKey?.text == it.text && it.textRaster != null } == true
-        }
-        lateinit var glyphs: Raster
-        lateinit var textBounds: PixelRect
-        compose.runOnIdle {
-            assertTrue(model.state.value.raster.pixels.all { it == WHITE })
-            val preview = requireNotNull(model.state.value.preview)
-            glyphs = requireNotNull(preview.textRaster)
-            textBounds = preview.bounds
-            model.applyPreview()
-        }
-        compose.waitUntil(15000) { !model.state.value.busy && model.state.value.preview == null }
-        compose.runOnIdle {
-            val raster = model.state.value.raster
-            assertTrue(raster.pixels.any { it != WHITE })
-            for (y in 0 until minOf(glyphs.height,raster.height-textBounds.y)) {
-                for (x in 0 until minOf(glyphs.width,raster.width-textBounds.x)) {
-                    assertEquals("Preview glyph coverage at $x,$y",composite(glyphs.pixel(x,y),WHITE),raster.pixel(textBounds.x+x,textBounds.y+y))
+    @Test fun textInputAndCommittedPixelsMatchForEveryFontAndStyle() {
+        for (font in PaintFonts.names) for ((bold,italic) in listOf(false to false,true to false,false to true,true to true)) {
+            compose.runOnIdle {
+                model.tool(Tool.Text)
+                model.options { it.copy(font = font,bold = bold,italic = italic,underline = bold,strike = italic) }
+                model.tap(Point(10f,10f))
+            }
+            compose.onNodeWithTag("paint-text-overlay").performTextInput("One\nTwo café")
+            compose.waitUntil(10000) {
+                model.state.value.preview?.let { it.text == "One\nTwo café" && it.textLayoutKey?.text == it.text && it.textRaster != null } == true
+            }
+            lateinit var glyphs: Raster
+            lateinit var textBounds: PixelRect
+            compose.runOnIdle {
+                assertTrue(model.state.value.raster.pixels.all { it == WHITE })
+                val preview = requireNotNull(model.state.value.preview)
+                glyphs = requireNotNull(preview.textRaster)
+                textBounds = preview.bounds
+                model.applyPreview()
+            }
+            compose.waitUntil(15000) { !model.state.value.busy && model.state.value.preview == null }
+            compose.runOnIdle {
+                val raster = model.state.value.raster
+                assertTrue(raster.pixels.any { it != WHITE })
+                for (y in 0 until minOf(glyphs.height,raster.height-textBounds.y)) {
+                    for (x in 0 until minOf(glyphs.width,raster.width-textBounds.x)) {
+                        assertEquals("Preview glyph coverage at $x,$y",composite(glyphs.pixel(x,y),WHITE),raster.pixel(textBounds.x+x,textBounds.y+y))
+                    }
                 }
             }
+            compose.runOnIdle { model.undo() }
         }
     }
 
@@ -108,9 +116,17 @@ class ClassicEditorTest {
         compose.waitUntil(10000) { model.state.value.preview?.text == "Native selection" }
         compose.runOnIdle { model.textEditor(requireNotNull(model.state.value.preview)).edit { selection = TextRange(2,7) } }
         compose.waitUntil(10000) { model.state.value.preview?.textSelectionStart == 2 && model.state.value.preview?.textSelectionEnd == 7 }
+        compose.onNodeWithContentDescription("Secondary color").performScrollTo().performClick()
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("paint-text-overlay").assertExists()
-        compose.runOnIdle { assertEquals(TextRange(2,7),model.textEditor(requireNotNull(model.state.value.preview)).selection) }
+        compose.runOnIdle {
+            assertTrue(model.state.value.colorOptions)
+            assertTrue(model.state.value.colorBackground)
+            assertEquals(Tool.Text,model.state.value.options.tool)
+            assertEquals(TextRange(2,7),model.textEditor(requireNotNull(model.state.value.preview)).selection)
+        }
+        compose.onNodeWithContentDescription("Text").performScrollTo().performClick()
+        compose.runOnIdle { assertNotNull(model.state.value.preview); assertFalse(model.state.value.colorOptions) }
     }
 
     @Test fun twoFingerNavigationRollsBackUnfinishedDrawing() {

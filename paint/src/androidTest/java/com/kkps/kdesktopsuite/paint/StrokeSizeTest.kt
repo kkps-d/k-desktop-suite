@@ -162,12 +162,12 @@ class StrokeSizeTest {
             assertEquals(3,model.state.value.options.width)
         }
         compose.runOnIdle { model.tool(Tool.Fill) }
-        compose.onNodeWithTag("paint-size-picker").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("paint-size-picker").assertDoesNotExist()
     }
 
     @Test fun pencilSizeIsFixedAndDoesNotChangeTheBrushWidth() {
         compose.runOnIdle { model.tool(Tool.Pencil) }
-        compose.onNodeWithTag("paint-size-picker").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("paint-size-picker").assertDoesNotExist()
         compose.runOnIdle {
             assertEquals(1,model.state.value.options.strokeWidth)
             model.strokeWidth(24)

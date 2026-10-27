@@ -70,6 +70,7 @@ class TransformToolsTest {
 
     @Test fun resizeAndSkewTabsApplyTogetherAndUndoRestoresDimensions() {
         compose.runOnIdle { model.resizeCanvas(100,50) }; waitForEdit()
+        compose.onNodeWithContentDescription("Select").performScrollTo().performClick()
         compose.onNodeWithContentDescription("Resize and Skew").performScrollTo().performClick()
         compose.onNodeWithText("Target: Image").assertIsDisplayed()
         compose.onNodeWithTag("resize-horizontal").performTextReplacement("200")
@@ -141,13 +142,13 @@ class TransformToolsTest {
         compose.runOnIdle { assertEquals(45.0,requireNotNull(model.state.value.preview).rotationDegrees,0.001) }
     }
 
-    @Test fun compactImageMenuProvidesResizeRotateAndBothFlips() {
+    @Test fun compactSelectionToolbarProvidesResizeRotateAndBothFlips() {
         compose.runOnIdle { size = DpSize(360.dp,640.dp) }
-        compose.onNodeWithContentDescription("Selection and image commands").performClick()
-        listOf("Resize and Skew","Rotate right 90°","Rotate left 90°","Rotate 180°","Flip horizontal","Flip vertical").forEach {
-            compose.onNodeWithText(it).assertExists()
+        compose.onNodeWithContentDescription("Select").performScrollTo().performClick()
+        listOf("Resize and Skew","Rotate right 90\u00b0","Rotate left 90\u00b0","Custom rotate","Flip horizontal","Flip vertical").forEach {
+            compose.onNodeWithContentDescription(it).performScrollTo().assertIsDisplayed()
         }
-        compose.onNodeWithText("Rotate right 90°").performScrollTo().performClick(); waitForEdit()
+        compose.onNodeWithContentDescription("Rotate right 90\u00b0").performScrollTo().performClick(); waitForEdit()
         compose.runOnIdle {
             assertEquals(600,model.state.value.raster.width); assertEquals(800,model.state.value.raster.height)
             model.undo(); assertEquals(800,model.state.value.raster.width)
@@ -157,8 +158,7 @@ class TransformToolsTest {
     @Test fun toolbarTransformsSelectionWithoutChangingCanvasUntilApply() {
         insertSelection()
         val before = model.state.value.raster
-        compose.onNodeWithContentDescription("Rotate").performScrollTo().performClick()
-        compose.onNodeWithText("Rotate right 90°").performClick()
+        compose.onNodeWithText("Rotate right 90\u00b0").performScrollTo().performClick()
         compose.runOnIdle {
             assertSame(before,model.state.value.raster); assertFalse(model.state.value.dirty)
             assertEquals(40,model.state.value.preview?.bounds?.width); assertEquals(80,model.state.value.preview?.bounds?.height)

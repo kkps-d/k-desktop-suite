@@ -31,9 +31,9 @@ internal enum class AppTheme(@StringRes val label: Int) {
 
 internal enum class NoteFontStyle(@StringRes val label: Int, val fontFamily: FontFamily) {
     System(R.string.font_system, FontFamily.Default),
-    Monospace(R.string.font_monospace, FontFamily(Font(R.font.noto_sans_mono))),
-    Serif(R.string.font_serif, FontFamily(Font(R.font.noto_serif))),
-    SansSerif(R.string.font_sans_serif, FontFamily(Font(R.font.noto_sans))),
+    Monospace(R.string.font_monospace, FontFamily(Font(com.kkps.kdesktopsuite.ui.R.font.noto_sans_mono))),
+    Serif(R.string.font_serif, FontFamily(Font(com.kkps.kdesktopsuite.ui.R.font.noto_serif))),
+    SansSerif(R.string.font_sans_serif, FontFamily(Font(com.kkps.kdesktopsuite.ui.R.font.noto_sans))),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

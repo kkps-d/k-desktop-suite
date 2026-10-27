@@ -29,6 +29,9 @@ class PaintStorageTest {
             assertEquals(BrushStyle.Solid,restored.brushStyle)
             assertTrue(restored.brushWidths.isEmpty())
             assertEquals(21,restored.width)
+            json.getJSONObject("options").put("tool","Zoom")
+            manifest.writeText(json.toString())
+            assertEquals(Tool.Pan,PaintRecovery(root).read()!!.options.tool)
         } finally { root.deleteRecursively() }
     }
 

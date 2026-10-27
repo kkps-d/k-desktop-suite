@@ -24,7 +24,7 @@ internal enum class Tool(val label: String, val isShape: Boolean = false) {
     FourPointStar("Four-point star", true), FivePointStar("Five-point star", true), SixPointStar("Six-point star", true),
     RectangleCallout("Rounded rectangle callout", true), EllipseCallout("Ellipse callout", true), CloudCallout("Cloud callout", true),
     Heart("Heart", true), Lightning("Lightning bolt", true),
-    Zoom("Zoom"), Pan("Hand");
+    Pan("Hand");
     val isClosedShape get() = isShape && this != Line && this != Curve
 }
 
@@ -163,14 +163,13 @@ internal fun Raster.render(preview: EditPreview, options: ToolOptions, mask: Pix
         }
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = options.foreground; textSize = options.fontSize.toFloat()
-            val family = when (options.font) { "Serif" -> "serif"; "Monospace" -> "monospace"; else -> "sans-serif" }
             val style = when {
                 options.bold && options.italic -> Typeface.BOLD_ITALIC
                 options.bold -> Typeface.BOLD
                 options.italic -> Typeface.ITALIC
                 else -> Typeface.NORMAL
             }
-            typeface = Typeface.create(family, style)
+            typeface = Typeface.create(PaintFonts.typeface(options.font), style)
             isUnderlineText = options.underline; isStrikeThruText = options.strike
         }
         val layout = StaticLayout.Builder.obtain(preview.text, 0, preview.text.length, textPaint, rect.width.coerceAtLeast(1))

@@ -11,7 +11,7 @@ import java.io.File
 import java.util.UUID
 import kotlin.math.*
 
-internal enum class PaintDialog { ReopenLastEdit, Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Geometry, CanvasSize, ResizeSkew, StrokeSize, About, Properties }
+internal enum class PaintDialog { ReopenLastEdit, Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Geometry, Rotation, CanvasSize, ResizeSkew, StrokeSize, About, Properties }
 internal enum class PickerKind { Open, Insert, Save }
 internal data class PickerRequest(val id: String = UUID.randomUUID().toString(), val kind: PickerKind, val mime: String = "image/png", val launched: Boolean = false)
 internal data class PlatformRequest(val id: String = UUID.randomUUID().toString(), val action: String, val file: File? = null)
@@ -24,7 +24,8 @@ internal data class PaintUiState(
     val message: String? = null, val picker: PickerRequest? = null, val platform: PlatformRequest? = null,
     val preferences: PaintPreferences = PaintPreferences(), val focusMode: Boolean = false,
     val ribbonCollapsed: Boolean = false, val showInformation: Boolean = true, val colorBackground: Boolean = false,
-    val settingsOpen: Boolean = false,
+    val settingsOpen: Boolean = false, val colorOptions: Boolean = false,
+    val lastShape: Tool = Tool.Rectangle,
 )
 
 internal class PaintViewModel(
@@ -32,7 +33,9 @@ internal class PaintViewModel(
     private val settings: PaintSettings, private val savedState: SavedStateHandle,
     private val applicationScope: CoroutineScope, private val compute: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
-    private val mutableState = MutableStateFlow(PaintUiState())
+    private val mutableState = MutableStateFlow(PaintUiState(
+        colorOptions = savedState["colorOptions"] ?: false, colorBackground = savedState["colorBackground"] ?: false,
+        lastShape = savedState.get<String>("lastShape")?.let { name -> shapeTools.firstOrNull { it.name == name } } ?: Tool.Rectangle))
     val state = mutableState.asStateFlow()
     private var history = RasterHistory(mutableState.value.raster)
     private var fingerprint: String? = null
@@ -106,6 +109,7 @@ internal class PaintViewModel(
         fingerprint = snapshot.fingerprint
         mutableState.update { it.copy(raster = snapshot.raster, options = snapshot.options,
             preview = snapshot.preview, selection = snapshot.selection,
+            lastShape = snapshot.options.tool.takeIf { tool -> tool.isShape } ?: it.lastShape,
             viewport = snapshot.viewport.resized(it.viewport.width,it.viewport.height,snapshot.raster.width,snapshot.raster.height,it.viewport.margin),
             uri = snapshot.uri, title = snapshot.name, mime = snapshot.mime, dirty = snapshot.dirty) }
         if (snapshot.dirty) message("Recovered draft. Undo history starts again after relaunch.")
@@ -135,7 +139,13 @@ internal class PaintViewModel(
     }
     fun message(text: String?) { mutableState.update { it.copy(message = text) } }
     fun dialog(value: PaintDialog?) { mutableState.update { it.copy(dialog = value) } }
-    fun colors(background: Boolean = false) { mutableState.update { it.copy(dialog = PaintDialog.Colors,colorBackground = background) } }
+    fun selectColor(background: Boolean) {
+        if (state.value.busy || state.value.loading) return
+        savedState["colorOptions"] = true
+        savedState["colorBackground"] = background
+        mutableState.update { it.copy(colorOptions = true,colorBackground = background) }
+    }
+    fun colors(background: Boolean = state.value.colorBackground) { mutableState.update { it.copy(dialog = PaintDialog.Colors,colorBackground = background) } }
     private fun sync() {
         mutableState.update { it.copy(raster = history.raster, dirty = history.dirty,
             viewport = it.viewport.resized(it.viewport.width,it.viewport.height,history.raster.width,history.raster.height),
@@ -197,6 +207,8 @@ internal class PaintViewModel(
     }
     fun brush(style: BrushStyle) {
         if (state.value.busy || state.value.loading) return
+        savedState["colorOptions"] = false
+        mutableState.update { it.copy(colorOptions = false) }
         applyPreview {
             options {
                 val widths = if (it.tool == Tool.Brush) it.brushWidths + (it.brushStyle to it.width) else it.brushWidths
@@ -207,7 +219,12 @@ internal class PaintViewModel(
         }
     }
     fun tool(tool: Tool) {
-        if (state.value.busy) return
+        if (state.value.busy || state.value.loading) return
+        savedState["colorOptions"] = false
+        if (tool.isShape) savedState["lastShape"] = tool.name
+        mutableState.update { it.copy(colorOptions = false,lastShape = if (tool.isShape) tool else it.lastShape) }
+        // Returning from color options must leave a floating edit intact.
+        if (tool == state.value.options.tool) return
         applyPreview {
             if (tool == Tool.Eyedropper && state.value.options.tool != Tool.Eyedropper) previousDrawingTool = state.value.options.tool
             mutableState.update {
@@ -245,7 +262,6 @@ internal class PaintViewModel(
         when (s.options.tool) {
             Tool.Fill -> operation({ it.fill(x, y, s.options.foreground, s.selection) })
             Tool.Eyedropper -> { options { it.copy(foreground = s.raster.pixel(x, y)) }; tool(previousDrawingTool) }
-            Tool.Zoom -> viewport(s.viewport.zoomed(s.viewport.scale * 2, s.viewport.screenPoint(point)))
             Tool.Text -> if (s.preview == null) setPreview(EditPreview(Tool.Text, PixelRect(x, y, min(240, s.raster.width - x).coerceAtLeast(1), 80)))
             else -> Unit
         }
@@ -293,7 +309,14 @@ internal class PaintViewModel(
         }
     }
     fun cancelPreview() { textEditor = null; mutableState.update { it.copy(preview = null) }; checkpoint() }
-    fun selectAll() { applyPreview { mutableState.update { it.copy(selection = PixelRect(0,0,it.raster.width,it.raster.height), options = it.options.copy(tool = Tool.Select)) }; checkpoint() } }
+    fun selectAll() {
+        applyPreview {
+            savedState["colorOptions"] = false
+            mutableState.update { it.copy(selection = PixelRect(0,0,it.raster.width,it.raster.height),
+                options = it.options.copy(tool = Tool.Select),colorOptions = false) }
+            checkpoint()
+        }
+    }
     fun clearSelection() { cancelPreview(); mutableState.update { it.copy(selection = null) }; checkpoint() }
     fun movePreview(bounds: PixelRect) {
         val s = state.value
@@ -340,12 +363,14 @@ internal class PaintViewModel(
         catch (_: OutOfMemoryError) { message("Not enough memory. The original image is unchanged.") }
     }
 
-    fun rotate(degrees: Int) {
+    fun rotate(degrees: Int) = rotate(degrees.toDouble())
+
+    fun rotate(degrees: Double) {
         val s = state.value
-        if (s.busy || s.loading || s.saving) return
-        if (s.preview?.payload != null || s.selection != null) rotateSelection(degrees.toDouble())
+        if (s.busy || s.loading || s.saving || !degrees.isFinite()) return
+        if (s.preview?.payload != null || s.selection != null) rotateSelection(degrees)
         else transformTarget { bounds ->
-            RasterTransform.around(Point(bounds.width/2f,bounds.height/2f),RasterTransform.rotation(degrees.toDouble()))
+            RasterTransform.around(Point(bounds.width/2f,bounds.height/2f),RasterTransform.rotation(degrees))
         }
     }
 
@@ -575,7 +600,7 @@ internal class PaintViewModel(
         val outputWidth = if (expand) max(s.raster.width,x+raster.width) else s.raster.width
         val outputHeight = if (expand) max(s.raster.height,y+raster.height) else s.raster.height
         try { checkImageSize(outputWidth,outputHeight) } catch (error: Exception) { message(error.message); return }
-        options { it.copy(tool = Tool.Select) }
+        tool(Tool.Select)
         setPreview(EditPreview(Tool.Select,PixelRect(x,y,raster.width,raster.height),payload = raster,
             outputWidth = outputWidth, outputHeight = outputHeight))
     }

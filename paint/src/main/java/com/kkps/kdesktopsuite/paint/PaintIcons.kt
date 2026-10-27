@@ -29,7 +29,6 @@ internal enum class PaintIcon(@DrawableRes private val resourceId: Int) {
     Line(R.drawable.ic_line),
     Rectangle(R.drawable.ms_rectangle),
     Ellipse(R.drawable.ic_ellipse),
-    Zoom(R.drawable.ms_zoom_in),
     Pan(R.drawable.ms_pan_tool),
     Crop(R.drawable.ms_crop),
     Resize(R.drawable.ms_resize),
@@ -42,7 +41,17 @@ internal enum class PaintIcon(@DrawableRes private val resourceId: Int) {
     Cancel(R.drawable.ms_close),
     Chevron(R.drawable.ms_expand_more),
     Folder(R.drawable.ms_folder),
-    Settings(R.drawable.ms_settings);
+    Settings(R.drawable.ms_settings),
+    Delete(R.drawable.ic_delete),
+    Geometry(R.drawable.ic_geometry),
+    RotateLeft(R.drawable.ic_rotate_left),
+    CustomRotate(R.drawable.ic_custom_rotate),
+    FlipHorizontal(R.drawable.ic_flip_horizontal),
+    FlipVertical(R.drawable.ic_flip_vertical),
+    Bold(R.drawable.ic_format_bold),
+    Italic(R.drawable.ic_format_italic),
+    Underline(R.drawable.ic_format_underline),
+    Strike(R.drawable.ic_format_strike);
 
     val vector: ImageVector
         @Composable get() = ImageVector.vectorResource(resourceId)
@@ -61,7 +70,7 @@ internal val Tool.icon: ImageVector
         return when (this) {
             Tool.Pencil -> PaintIcon.Pencil; Tool.Brush -> PaintIcon.Brush; Tool.Fill -> PaintIcon.Fill
             Tool.Eraser -> PaintIcon.Eraser; Tool.Text -> PaintIcon.Text; Tool.Eyedropper -> PaintIcon.Eyedropper
-            Tool.Select -> PaintIcon.Select; Tool.Zoom -> PaintIcon.Zoom; Tool.Pan -> PaintIcon.Pan
+            Tool.Select -> PaintIcon.Select; Tool.Pan -> PaintIcon.Pan
             else -> error("Missing icon for $label")
         }.vector
     }

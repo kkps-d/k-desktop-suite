@@ -9,6 +9,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,6 +56,7 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenDebug: (
             dismissButton = { Row { TextButton(onClick = { model.oversized(false) }) { Text(stringResource(R.string.ui_keep_canvas)) }; TextButton(onClick = { model.dialog(null) }) { Text(stringResource(R.string.ui_cancel)) } } })
         PaintDialog.Colors -> ColorsDialog(s,model)
         PaintDialog.Geometry -> GeometryDialog(s,model)
+        PaintDialog.Rotation -> if (s.selection != null || s.preview?.payload != null) GeometryDialog(s,model,true) else ImageRotationDialog(s,model)
         PaintDialog.CanvasSize -> CanvasSizeDialog(s,model)
         PaintDialog.ResizeSkew -> ResizeSkewDialog(s,model)
         PaintDialog.StrokeSize -> StrokeSizeDialog(s,model)
@@ -97,19 +101,13 @@ private fun CanvasSizeDialog(s: PaintUiState, model: PaintViewModel) {
 
 @Composable
 private fun ColorsDialog(s: PaintUiState, model: PaintViewModel) {
-    var background by remember { mutableStateOf(s.colorBackground) }
+    val background = s.colorBackground
     var hex by remember { mutableStateOf("%06X".format((if (s.colorBackground) s.options.background else s.options.foreground) and 0xFFFFFF)) }
     var customMenu by remember { mutableStateOf(false) }
     val parsed = hex.takeIf { it.length == 6 }?.toLongOrNull(16)?.toInt()?.or(BLACK)
     fun choose(color: Int) { hex = "%06X".format(color and 0xFFFFFF) }
-    AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text(stringResource(R.string.ui_edit_colors)) },text = {
+    AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text(if (background) "Edit secondary color" else "Edit primary color") },text = {
         Column(Modifier.verticalScroll(rememberScrollState())) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(!background,{ background = false; choose(s.options.foreground) })
-                Text(stringResource(R.string.ui_foreground),Modifier.clickable { background = false; choose(s.options.foreground) })
-                RadioButton(background,{ background = true; choose(s.options.background) })
-                Text(stringResource(R.string.ui_background),Modifier.clickable { background = true; choose(s.options.background) })
-            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(48.dp).background(Color(parsed ?: WHITE)).border(1.dp,MaterialTheme.colorScheme.outline))
                 OutlinedTextField(hex,{ hex = it.filter { c -> c.isDigit() || c.uppercaseChar() in 'A'..'F' }.take(6).uppercase() },
@@ -151,7 +149,7 @@ private fun ColorsDialog(s: PaintUiState, model: PaintViewModel) {
 }
 
 @Composable
-private fun GeometryDialog(s: PaintUiState, model: PaintViewModel) {
+private fun GeometryDialog(s: PaintUiState, model: PaintViewModel, focusAngle: Boolean = false) {
     val rect = s.preview?.bounds ?: s.selection
     if (rect == null) { LaunchedEffect(Unit) { model.dialog(null) }; return }
     var x by remember { mutableStateOf(rect.x.toString()) }; var y by remember { mutableStateOf(rect.y.toString()) }
@@ -160,14 +158,16 @@ private fun GeometryDialog(s: PaintUiState, model: PaintViewModel) {
     val selection = s.preview?.payload != null || s.selection != null
     var angle by remember { mutableStateOf((s.preview?.rotationDegrees ?: 0.0).toString()) }
     var error by remember { mutableStateOf<String?>(null) }
+    val angleFocus = remember { FocusRequester() }
     AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text(if (s.preview?.tool == Tool.Text) "Text and geometry" else "Move / resize preview") },text = {
         Column(Modifier.verticalScroll(rememberScrollState())) {
+            val windowFocused = LocalWindowInfo.current.isWindowFocused
+            LaunchedEffect(focusAngle,windowFocused) { if (focusAngle && windowFocused) angleFocus.requestFocus() }
             NumericField("X (image pixels)",x,{ x = it }); NumericField("Y (image pixels)",y,{ y = it })
             NumericField("Width (pixels)",width,{ width = it; if (locked) it.toIntOrNull()?.let { w -> height = maxOf(1,(w.toFloat()*rect.height/rect.width).roundToInt()).toString() } })
             NumericField("Height (pixels)",height,{ height = it; if (locked) it.toIntOrNull()?.let { h -> width = maxOf(1,(h.toFloat()*rect.width/rect.height).roundToInt()).toString() } })
             Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(locked,{ locked = it }); Text(stringResource(R.string.ui_maintain_aspect_ratio)) }
-            if (selection) NumericField(stringResource(R.string.ui_rotation_degrees),angle,{ angle = it })
-            if (s.preview?.tool == Tool.Text) TextOptions(s,model)
+            if (selection) NumericField(stringResource(R.string.ui_rotation_degrees),angle,{ angle = it },Modifier.focusRequester(angleFocus))
             error?.let { Text(it,color = MaterialTheme.colorScheme.error) }
         }
     },confirmButton = { TextButton(onClick = {
@@ -184,24 +184,20 @@ private fun GeometryDialog(s: PaintUiState, model: PaintViewModel) {
 }
 
 @Composable
-private fun NumericField(label: String, value: String, change: (String) -> Unit) {
-    OutlinedTextField(value,change,label = { Text(label) },singleLine = true,modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp))
+private fun NumericField(label: String, value: String, change: (String) -> Unit, modifier: Modifier = Modifier) {
+    OutlinedTextField(value,change,label = { Text(label) },singleLine = true,modifier = modifier.fillMaxWidth().padding(vertical = 4.dp))
 }
 
 @Composable
-private fun TextOptions(s: PaintUiState, model: PaintViewModel) {
-    Text(stringResource(R.string.ui_text_formatting),style = MaterialTheme.typography.titleSmall)
-    listOf("Sans-serif","Serif","Monospace").forEach { family ->
-        Row(verticalAlignment = Alignment.CenterVertically) { RadioButton(s.options.font == family,{ model.options { it.copy(font = family) } }); Text(family) }
-    }
-    var size by remember(s.options.fontSize) { mutableStateOf(s.options.fontSize.toString()) }
-    NumericField("Font size (image pixels)",size,{ value -> size = value; value.toIntOrNull()?.takeIf { it in 1..512 }?.let { number -> model.options { it.copy(fontSize = number) } } })
-    listOf("Bold" to s.options.bold,"Italic" to s.options.italic,"Underline" to s.options.underline,"Strikethrough" to s.options.strike,"Opaque text background" to s.options.opaqueText).forEach { (label,selected) ->
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(selected,{ value -> model.options { when(label) {
-                "Bold" -> it.copy(bold = value); "Italic" -> it.copy(italic = value); "Underline" -> it.copy(underline = value)
-                "Strikethrough" -> it.copy(strike = value); else -> it.copy(opaqueText = value)
-            } } }); Text(label)
-        }
-    }
+private fun ImageRotationDialog(s: PaintUiState, model: PaintViewModel) {
+    var angle by rememberSaveable { mutableStateOf("0") }
+    val degrees = angle.toDoubleOrNull()?.takeIf { it.isFinite() }
+    val focus = remember { FocusRequester() }
+    AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text("Custom rotate") },text = {
+        val windowFocused = LocalWindowInfo.current.isWindowFocused
+        LaunchedEffect(windowFocused) { if (windowFocused) focus.requestFocus() }
+        NumericField("Rotation (degrees)",angle,{ angle = it },Modifier.focusRequester(focus))
+    },confirmButton = {
+        TextButton(onClick = { degrees?.let { model.rotate(it); model.dialog(null) } },enabled = degrees != null && !s.busy) { Text("Apply") }
+    },dismissButton = { TextButton(onClick = { model.dialog(null) }) { Text("Cancel") } })
 }

@@ -44,12 +44,10 @@ class ClassicAdaptationTest {
         compose.runOnIdle { size = DpSize(360.dp,640.dp); largeText = true }
         compose.onNodeWithText("File").assertIsDisplayed()
         compose.onNodeWithText("View").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Choose drawing tool").performClick()
-        compose.onNodeWithText("Pencil").assertExists()
-        compose.onNodeWithText("Pencil").performClick()
+        compose.onNodeWithContentDescription("Pencil").performScrollTo().performClick()
         compose.onNodeWithTag("paint-canvas").assertIsDisplayed()
         compose.runOnIdle { assertEquals(BLACK,model.state.value.raster.pixel(20,20)); size = DpSize(1200.dp,400.dp); largeText = false }
-        compose.onNodeWithText("Collapse ribbon").performClick()
+        compose.onNodeWithText("Hide drawing tools").performClick()
         compose.onNodeWithText("Show drawing tools").assertIsDisplayed()
         compose.onNodeWithTag("paint-canvas").assertIsDisplayed()
     }

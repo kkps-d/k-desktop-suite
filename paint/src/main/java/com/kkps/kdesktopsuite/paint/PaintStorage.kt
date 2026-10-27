@@ -248,9 +248,11 @@ private fun RecoverySnapshot.json(): JSONObject {
         .put("outputWidth", p.outputWidth).put("outputHeight", p.outputHeight)) }
     return json
 }
+private fun recoveredTool(name: String) = if (name == "Zoom") Tool.Pan else Tool.valueOf(name)
+
 private fun snapshotFromJson(json: JSONObject, raster: Raster, payload: Raster?, textRaster: Raster?): RecoverySnapshot {
     val o = json.getJSONObject("options")
-    val options = ToolOptions(Tool.valueOf(o.getString("tool")), o.getInt("foreground"), o.getInt("background"),
+    val options = ToolOptions(recoveredTool(o.getString("tool")), o.getInt("foreground"), o.getInt("background"),
         o.getInt("width").coerceIn(1,100), o.getInt("eraserWidth").coerceIn(1,100), o.getBoolean("outline"),
         o.getBoolean("fill"), o.getBoolean("constrain"), o.getString("font"), o.getInt("fontSize").coerceIn(1,512),
         o.getBoolean("bold"), o.getBoolean("italic"), o.getBoolean("underline"), o.getBoolean("strike"), o.getBoolean("opaqueText"),
@@ -258,7 +260,7 @@ private fun snapshotFromJson(json: JSONObject, raster: Raster, payload: Raster?,
         brushWidths = BrushStyle.entries.mapNotNull { style ->
             o.optJSONObject("brushWidths")?.optInt(style.name,0)?.takeIf { it in 1..100 }?.let { style to it }
         }.toMap())
-    val preview = json.optJSONObject("preview")?.let { p -> EditPreview(Tool.valueOf(p.getString("tool")), p.getJSONArray("bounds").rect(),
+    val preview = json.optJSONObject("preview")?.let { p -> EditPreview(recoveredTool(p.getString("tool")), p.getJSONArray("bounds").rect(),
         Point(p.getDouble("startX").toFloat(), p.getDouble("startY").toFloat()), Point(p.getDouble("endX").toFloat(), p.getDouble("endY").toFloat()),
         p.optJSONArray("source")?.rect(), payload, p.optString("text"),
         if (p.has("outputWidth")) p.getInt("outputWidth") else null, if (p.has("outputHeight")) p.getInt("outputHeight") else null,

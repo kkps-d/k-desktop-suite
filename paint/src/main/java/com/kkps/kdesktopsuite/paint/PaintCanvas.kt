@@ -242,7 +242,7 @@ internal fun PaintCanvas(
                     CustomAccessibilityAction("Select all image pixels") { model.selectAll(); true },
                     CustomAccessibilityAction("Apply current edit") { model.applyPreview(); true },
                     CustomAccessibilityAction("Cancel current edit") { model.cancelPreview(); true },
-                    CustomAccessibilityAction("Finish shape") { model.finishShape(); true },
+                    CustomAccessibilityAction("Finish and commit shape") { model.applyPreview(); true },
                     CustomAccessibilityAction("Move or resize selection") { model.dialog(PaintDialog.Geometry); true },
                     CustomAccessibilityAction("Resize canvas") { model.dialog(PaintDialog.CanvasSize); true },
                     CustomAccessibilityAction("Create text in the image") { model.tool(Tool.Text); model.tap(Point(16f,16f)); true },
@@ -538,7 +538,7 @@ private fun TextOverlay(state: PaintUiState, preview: EditPreview, model: PaintV
                     }
                 }
             }, textStyle = TextStyle(color = Color(o.foreground),fontSize = o.fontSize.sp,
-                fontFamily = when (o.font) { "Serif" -> FontFamily.Serif; "Monospace" -> FontFamily.Monospace; else -> FontFamily.SansSerif },
+                fontFamily = PaintFonts.family(o.font),
                 fontWeight = if (o.bold) FontWeight.Bold else FontWeight.Normal,
                 fontStyle = if (o.italic) FontStyle.Italic else FontStyle.Normal,
                 textDecoration = TextDecoration.combine(buildList { if (o.underline) add(TextDecoration.Underline); if (o.strike) add(TextDecoration.LineThrough) }),

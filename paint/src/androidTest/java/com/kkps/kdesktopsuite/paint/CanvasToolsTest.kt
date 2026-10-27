@@ -180,13 +180,13 @@ class CanvasToolsTest {
     @Test fun shapeGalleryOffersAllShapesAtWideAndCompactWidths() {
         for (width in listOf(1200.dp,360.dp)) {
             compose.runOnIdle { size = DpSize(width,800.dp) }
-            compose.onNodeWithTag("paint-shape-picker").performScrollTo()
-                .assertContentDescriptionEquals("Choose shape: ${if (width == 1200.dp) "Rectangle" else "Heart"}").performClick()
-            for (tool in shapeTools) compose.onNodeWithContentDescription(tool.label).assertExists()
+            compose.onNodeWithTag("paint-shape-tool").performScrollTo().performClick()
+            compose.onNodeWithTag("paint-shape-picker").performScrollTo().assertContentDescriptionEquals("More shapes").performClick()
+            for (tool in shapeTools) compose.onNode(hasContentDescription(tool.label) and hasAnyAncestor(hasTestTag("dropdown-menu"))).assertExists()
             compose.onNodeWithContentDescription("Lightning bolt").performScrollTo().performClick()
             compose.runOnIdle { assertEquals(Tool.Lightning,model.state.value.options.tool) }
             compose.onNodeWithTag("dropdown-menu").assertDoesNotExist()
-            compose.onNodeWithTag("paint-shape-picker").assertContentDescriptionEquals("Choose shape: Lightning bolt")
+            compose.onNodeWithTag("paint-shape-picker").assertContentDescriptionEquals("More shapes")
             compose.onNodeWithTag("paint-shape-picker").performClick()
             compose.onNodeWithContentDescription("Lightning bolt").assertIsSelected().assertIsFocused()
             compose.onNodeWithTag("dropdown-menu").performKeyInput { pressKey(Key.DirectionLeft); pressKey(Key.Enter) }
@@ -227,7 +227,7 @@ class CanvasToolsTest {
         }
     }
 
-    @Test fun polygonCanFinishFromVisibleActionThenFillAndCancel() {
+    @Test fun polygonCheckFinishesAndCommitsAsOneUndoableEdit() {
         val blue = 0xFF0000FF.toInt()
         compose.runOnIdle {
             model.tool(Tool.Polygon)
@@ -242,11 +242,12 @@ class CanvasToolsTest {
             assertTrue(model.state.value.preview!!.constructing)
             assertEquals(3,model.state.value.preview!!.points.size)
         }
-        compose.onNodeWithText("Finish shape").performScrollTo().performClick()
-        compose.runOnIdle { assertFalse(model.state.value.preview!!.constructing) }
+        compose.onNodeWithContentDescription("Commit").performScrollTo().performClick()
+        compose.waitUntil(15000) { !model.state.value.busy && model.state.value.preview == null }
         assertCanvasColors(Point(150f,140f) to blue)
         compose.runOnIdle {
-            model.cancelPreview()
+            assertTrue(model.state.value.dirty)
+            model.undo()
             assertNull(model.state.value.preview)
             assertFalse(model.state.value.dirty)
             assertTrue(model.state.value.raster.pixels.all { it == WHITE })
@@ -348,13 +349,11 @@ class CanvasToolsTest {
         assertCanvasColors(Point(260f,220f) to WHITE)
     }
 
-    @Test fun handIsAvailableInExpandedRibbonAndCompactToolMenu() {
+    @Test fun handIsAvailableInBothToolbarWidths() {
         compose.onNodeWithContentDescription("Hand").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(Tool.Pan,model.state.value.options.tool); size = DpSize(360.dp,640.dp) }
-        compose.onNodeWithContentDescription("Choose drawing tool").performClick()
-        compose.onNodeWithText("Pencil").performClick()
-        compose.onNodeWithContentDescription("Choose drawing tool").performClick()
-        compose.onNodeWithText("Hand").performClick()
+        compose.onNodeWithContentDescription("Pencil").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Hand").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(Tool.Pan,model.state.value.options.tool) }
     }
 
