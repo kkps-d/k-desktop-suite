@@ -129,6 +129,7 @@ private fun PaintHeader(s: PaintUiState, model: PaintViewModel, width: Float, sh
             ViewMenu(s,model)
             HelpMenu(model)
             VerticalDivider(Modifier.padding(horizontal = 8.dp).height(20.dp))
+            if (!compact) PaintHeaderActions(s,model,showBusy)
             Row(Modifier.weight(1f).padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (s.dirty || s.preview?.hasContent == true) Box(Modifier.size(6.dp)
@@ -137,7 +138,6 @@ private fun PaintHeader(s: PaintUiState, model: PaintViewModel, width: Float, sh
                 Text(s.title,modifier = Modifier.testTag("paint-document-title"),maxLines = 1,
                     overflow = TextOverflow.Ellipsis,style = MaterialTheme.typography.titleSmall)
             }
-            if (!compact) PaintHeaderActions(s,model,showBusy)
             TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
                 tooltip = { PlainTooltip { Text(stringResource(R.string.ui_settings)) } },state = rememberTooltipState()) {
                 IconButton(onClick = { model.showSettings(true) }) {
@@ -157,6 +157,7 @@ private fun PaintHeaderActions(s: PaintUiState, model: PaintViewModel, showBusy:
         PaintButton(PaintIcon.Save,"Save (Ctrl+S)",!s.loading && !s.saving,busy = s.busy) { model.save() }
         PaintButton(PaintIcon.Undo,"Undo (Ctrl+Z)",s.canUndo || s.preview != null,busy = s.busy,action = model::undo)
         PaintButton(PaintIcon.Redo,"Redo (Ctrl+Shift+Z)",s.canRedo,busy = s.busy,action = model::redo)
+        VerticalDivider(Modifier.padding(horizontal = 8.dp).height(20.dp))
     }
 }
 
