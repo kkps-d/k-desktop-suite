@@ -275,6 +275,9 @@ internal fun PaintCanvas(
                     val bottomRight = existing?.let { initial.viewport.screenPoint(Point(it.right.toFloat(),it.bottom.toFloat())) }
                     val resize = !constructing && bottomRight != null && hypot(bottomRight.x-down.position.x,bottomRight.y-down.position.y) <= 14*density.density
                     var navigation = tool == Tool.Pan || spacePressed || startEvent.buttons.isTertiaryPressed
+                    // Resize from the gesture's original pixels and transform, even after crossing an axis.
+                    val resizingSelection = if (!navigation && resize && (initial.preview == null || initial.preview.payload != null))
+                        model.floatingSelection() else null
                     if (!navigation && !hitExisting && !resize &&
                         (imageStart.x !in 0f..initial.raster.width.toFloat() || imageStart.y !in 0f..initial.raster.height.toFloat())) {
                         down.consume()
@@ -311,8 +314,15 @@ internal fun PaintCanvas(
                                 else if (constructing) constructionPoint = point
                                 else if (resize) {
                                     requireNotNull(existing)
-                                    val w = max(1,(point.x-existing.x).roundToInt()); val h = max(1,(point.y-existing.y).roundToInt())
-                                    if (w <= 8192 && h <= 8192 && w.toLong()*h <= MAX_PIXELS) model.movePreview(existing.copy(width = w,height = h))
+                                    val dx = (point.x-existing.x).roundToInt(); val dy = (point.y-existing.y).roundToInt()
+                                    val w = max(1,if (resizingSelection != null) abs(dx) else dx)
+                                    val h = max(1,if (resizingSelection != null) abs(dy) else dy)
+                                    if (w <= 8192 && h <= 8192 && w.toLong()*h <= MAX_PIXELS) {
+                                        if (resizingSelection != null) {
+                                            val area = PixelRect(existing.x+min(0,dx),existing.y+min(0,dy),w,h)
+                                            model.setPreview(resizingSelection.resizedSelection(area,dx < 0,dy < 0))
+                                        } else model.movePreview(existing.copy(width = w,height = h))
+                                    }
                                 } else if (hitExisting && moved) {
                                     requireNotNull(existing)
                                     model.movePreview(existing.copy(x = existing.x+(point.x-imageStart.x).roundToInt(),y = existing.y+(point.y-imageStart.y).roundToInt()))
@@ -400,7 +410,8 @@ internal fun PaintCanvas(
                     }
                     close()
                 }
-                drawPath(border,outline,style = Stroke(1.5f,pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f,4f))))
+                drawPath(border,outline,style = Stroke(2.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(),4.dp.toPx()))))
                 drawRect(Color.White,Offset(p.x+size.width-5,p.y+size.height-5),Size(10f,10f))
                 drawRect(outline,Offset(p.x+size.width-5,p.y+size.height-5),Size(10f,10f),style = Stroke(1f))
             }

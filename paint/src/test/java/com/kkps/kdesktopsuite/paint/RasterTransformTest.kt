@@ -37,4 +37,19 @@ class RasterTransformTest {
         val moved = preview.resizedSelection(preview.bounds.copy(x = preview.bounds.x+12,y = preview.bounds.y+8))
         assertEquals(preview.selectionImageRequest(),moved.selectionImageRequest())
     }
+
+    @Test fun selectionResizeMirrorsEachAxisAndKeepsTheOriginalPayload() {
+        val original = EditPreview(Tool.Select,PixelRect(10,20,2,3),source = PixelRect(10,20,2,3),payload = fixture)
+        for (horizontal in listOf(false,true)) for (vertical in listOf(false,true)) {
+            val area = PixelRect(if (horizontal) 8 else 10,if (vertical) 17 else 20,2,3)
+            val resized = original.resizedSelection(area,horizontal,vertical)
+            assertEquals(area,resized.bounds)
+            assertSame(fixture,resized.payload)
+            assertEquals(original.source,resized.source)
+            val expected = (0 until 3).flatMap { y -> (0 until 2).map { x ->
+                fixture.pixel(if (horizontal) 1-x else x,if (vertical) 2-y else y)
+            } }.toIntArray()
+            assertArrayEquals(expected,resized.selectionPixels().pixels)
+        }
+    }
 }

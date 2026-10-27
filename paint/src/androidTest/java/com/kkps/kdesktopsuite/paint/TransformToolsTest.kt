@@ -175,6 +175,56 @@ class TransformToolsTest {
         }
     }
 
+    @Test fun selectionResizeCrossesBothAxesAndCrossesBackWithoutLosingPixels() {
+        compose.runOnIdle {
+            model.insert(Raster(80,40,IntArray(3200) {
+                when {
+                    it/80 < 20 && it%80 < 40 -> 0xFFFF0000.toInt()
+                    it/80 < 20 -> 0xFF00FF00.toInt()
+                    it%80 < 40 -> 0xFF0000FF.toInt()
+                    else -> BLACK
+                }
+            }))
+            model.movePreview(PixelRect(220,180,80,40))
+        }
+        val original = requireNotNull(model.state.value.preview)
+        val canvas = compose.onNodeWithTag("paint-canvas")
+        fun screenPoint(x: Int, y: Int): Offset {
+            val point = model.state.value.viewport.screenPoint(Point(x.toFloat(),y.toFloat()))
+            return Offset(point.x,point.y)
+        }
+        canvas.performTouchInput { down(screenPoint(300,220)) }
+        for ((x,y) in listOf(140 to 220,140 to 140,300 to 140,220 to 180,300 to 220)) {
+            canvas.performTouchInput { moveTo(screenPoint(x,y)) }
+            compose.runOnIdle {
+                val preview = requireNotNull(model.state.value.preview)
+                assertEquals(PixelRect(min(220,x),min(180,y),max(1,abs(x-220)),max(1,abs(y-180))),preview.bounds)
+                assertSame(original.payload,preview.payload)
+                assertEquals(x < 220,preview.selectionTransform.a < 0)
+                assertEquals(y < 180,preview.selectionTransform.d < 0)
+                if (x != 220 && y != 180) {
+                    val pixels = preview.selectionPixels()
+                    assertEquals(original.payload!!.pixel(if (x < 220) 70 else 10,if (y < 180) 30 else 10),pixels.pixel(10,10))
+                }
+            }
+        }
+        canvas.performTouchInput { up() }
+        compose.runOnIdle {
+            assertArrayEquals(original.selectionPixels().pixels,model.state.value.preview!!.selectionPixels().pixels)
+        }
+        // A second gesture starts from the settled transform and commits the mirrored pixels.
+        canvas.performTouchInput { down(screenPoint(300,220)); moveTo(screenPoint(140,140)); up() }
+        val preview = requireNotNull(model.state.value.preview)
+        val before = model.state.value.raster
+        val expected = before.render(preview,model.state.value.options)
+        compose.runOnIdle { model.applyPreview() }; waitForEdit()
+        compose.runOnIdle {
+            assertArrayEquals(expected.pixels,model.state.value.raster.pixels)
+            model.undo(); assertArrayEquals(before.pixels,model.state.value.raster.pixels)
+            model.redo(); assertArrayEquals(expected.pixels,model.state.value.raster.pixels)
+        }
+    }
+
     @Test fun selectAllKeepsTheRotationHandleFullyInsideTheViewport() {
         compose.runOnIdle { model.selectAll() }
         val viewport = compose.onNodeWithTag("paint-viewport").fetchSemanticsNode().boundsInRoot

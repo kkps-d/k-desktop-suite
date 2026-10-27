@@ -70,10 +70,14 @@ internal data class EditPreview(
         val left = min(original.x,bounds.x); val top = min(original.y,bounds.y)
         return PixelRect(left,top,max(original.right,bounds.right)-left,max(original.bottom,bounds.bottom)-top).clipped(width,height)
     }
-    fun resizedSelection(area: PixelRect): EditPreview = transformedSelection(
+    fun resizedSelection(area: PixelRect, flipHorizontal: Boolean = false, flipVertical: Boolean = false): EditPreview = transformedSelection(
         RasterTransform.translation(-bounds.x.toDouble(),-bounds.y.toDouble())
-            .then(RasterTransform.scale(area.width.toDouble()/bounds.width,area.height.toDouble()/bounds.height))
-            .then(RasterTransform.translation(area.x.toDouble(),area.y.toDouble())))
+            .then(RasterTransform.scale(
+                area.width.toDouble()/bounds.width * if (flipHorizontal) -1 else 1,
+                area.height.toDouble()/bounds.height * if (flipVertical) -1 else 1))
+            .then(RasterTransform.translation(
+                (if (flipHorizontal) area.right else area.x).toDouble(),
+                (if (flipVertical) area.bottom else area.y).toDouble())))
     fun rotatedSelection(degrees: Double): EditPreview {
         val center = selectionCenter
         var next = RasterTransform.around(center,RasterTransform.rotation(degrees))
