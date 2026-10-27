@@ -39,6 +39,8 @@ The Shapes icon dropdown offers lines, curves, basic geometry, arrows, stars,
 callouts, a heart, and lightning. Drag to create a preview; for curves, place two
 bend points; for polygons, add vertices and choose Commit to finish and apply in one action. Previews support
 move/resize, stroke width, outline/fill colors, Enter to apply, and Escape to cancel.
+Finished shapes also support the selection rotation handle, rotation/flip commands,
+and resizing past either origin to mirror the geometry. Shapes remain editable until committed.
 Text supports System plus the same bundled Noto Sans, Serif,
 and Sans Mono fonts as Notepad, with formatting in the secondary toolbar.
 Drag an uncommitted text box by its outside frame to move it; the interior keeps native
@@ -48,7 +50,7 @@ Selection resize handles also accept a 48dp touch area.
 Move/resize/skew opens one dialog with Move, Resize, and Skew tabs; text offers only Move and Resize.
 Position, percentage/pixel sizing, aspect lock, rotation, and skew apply together on OK.
 Selections and pending shapes/text keep their edits floating; Move/Resize keeps text
-editable, while Skew converts native shapes to a floating image. Cancel preserves
+editable; shape transforms retain native geometry. Cancel preserves
 the original preview, and committing remains one undoable edit.
 Rotation and flip controls live beside Select in the primary toolbar. Left/right
 buttons turn by 90 degrees; a separate button opens custom rotation, and

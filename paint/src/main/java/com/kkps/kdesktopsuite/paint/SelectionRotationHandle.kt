@@ -39,10 +39,10 @@ internal fun SelectionRotationHandle(state: PaintUiState, model: PaintViewModel,
     val enabled = active && !state.busy && !state.loading && !state.saving
     fun cancel() { if (dragging) model.setPreview(original); dragging = false; onDraggingChange(false); cancelGeneration++ }
     BackHandler(dragging) { cancel() }
-    val preview = state.preview?.takeIf { it.payload != null }
+    val preview = state.preview?.takeIf { it.canTransform }
     val area = preview?.bounds ?: state.selection ?: return
     val center = preview?.selectionCenter ?: Point(area.x+area.width/2f,area.y+area.height/2f)
-    val corner = preview?.let { it.selectionTransform.point(requireNotNull(it.payload).width.toDouble(),0.0) }
+    val corner = preview?.selectionCorners?.get(1)
         ?: Point(area.right.toFloat(),area.y.toFloat())
     val screenCorner = state.viewport.screenPoint(corner)
     val screenCenter = state.viewport.screenPoint(center)
@@ -53,7 +53,7 @@ internal fun SelectionRotationHandle(state: PaintUiState, model: PaintViewModel,
     val position = Point(
         (screenCorner.x+dx/length*distance).coerceIn(radius,max(radius,state.viewport.width-radius)),
         (screenCorner.y+dy/length*distance).coerceIn(radius,max(radius,state.viewport.height-radius)))
-    val label = stringResource(R.string.ui_rotation_handle)
+    val label = stringResource(if (preview?.tool?.isShape == true) R.string.ui_shape_rotation_handle else R.string.ui_rotation_handle)
     val description = stringResource(R.string.ui_rotation_state,preview?.rotationDegrees ?: 0.0)
     Box(Modifier.absoluteOffset {
         IntOffset((position.x-radius).roundToInt(),(position.y-radius).roundToInt())
@@ -107,7 +107,7 @@ internal fun SelectionRotationHandle(state: PaintUiState, model: PaintViewModel,
                         val next = angle(change.position)
                         total += (next-previous+540)%360-180
                         previous = next
-                        if (total != 0.0) model.rotateSelection(total,selection)
+                        model.rotateSelection(total,selection)
                         change.consume()
                         if (!change.pressed) { released = true; break }
                     }

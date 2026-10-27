@@ -283,6 +283,135 @@ class TransformToolsTest {
         }
     }
 
+    @Test fun shapeRotationControlsKeepGeometryEditableUntilCommit() {
+        compose.runOnIdle {
+            model.tool(Tool.RightTriangle)
+            model.options { it.copy(outline = false,fill = true,background = BLACK) }
+            model.createPreview(Point(220f,180f),Point(300f,220f))
+        }
+        val before = model.state.value.raster
+        compose.onNodeWithTag("selection-rotation-handle").assertIsDisplayed()
+            .assertContentDescriptionEquals("Shape rotation handle")
+        compose.onNodeWithContentDescription("Rotate right 90\u00b0").performScrollTo().performClick()
+        compose.runOnIdle {
+            val preview = requireNotNull(model.state.value.preview)
+            assertEquals(Tool.RightTriangle,preview.tool)
+            assertNull(preview.payload)
+            assertEquals(PixelRect(240,160,40,80),preview.bounds)
+            assertEquals(90.0,preview.rotationDegrees,0.0)
+            val rotated = before.render(preview,model.state.value.options)
+            assertEquals(BLACK,rotated.pixel(250,170))
+            assertEquals(WHITE,rotated.pixel(230,210))
+            assertSame(before,model.state.value.raster)
+            assertFalse(model.state.value.canUndo)
+        }
+        compose.onNodeWithContentDescription("Custom rotate").performScrollTo().performClick()
+        compose.onNodeWithText("Rotation (degrees clockwise)").performTextReplacement("30")
+        compose.onNodeWithText("Apply").performClick()
+        compose.onNodeWithContentDescription("Move/resize/skew").performScrollTo().performClick()
+        compose.onNodeWithTag("move-angle").assertTextContains("30.0").performTextReplacement("45")
+        compose.onNodeWithText("OK").performClick()
+        compose.runOnIdle {
+            assertEquals(45.0,model.state.value.preview!!.rotationDegrees,0.0)
+            model.flip(true)
+            model.options { it.copy(background = 0xFFFF0000.toInt(),width = 5) }
+        }
+        val preview = requireNotNull(model.state.value.preview)
+        assertEquals(Tool.RightTriangle,preview.tool)
+        assertNull(preview.payload)
+        val expected = before.render(preview,model.state.value.options)
+        val sample = preview.selectionTransform.point(20.0,30.0)
+        val screen = model.state.value.viewport.screenPoint(sample)
+        val visible = compose.onNodeWithTag("paint-canvas").captureToImage().toPixelMap()
+        assertEquals(0xFFFF0000.toInt(),expected.pixel(sample.x.toInt(),sample.y.toInt()))
+        assertEquals(expected.pixel(sample.x.toInt(),sample.y.toInt()),visible[screen.x.roundToInt(),screen.y.roundToInt()].toArgb())
+        compose.runOnIdle { model.applyPreview() }; waitForEdit()
+        compose.runOnIdle {
+            assertArrayEquals(expected.pixels,model.state.value.raster.pixels)
+            model.undo(); assertArrayEquals(before.pixels,model.state.value.raster.pixels)
+            model.redo(); assertArrayEquals(expected.pixels,model.state.value.raster.pixels)
+        }
+    }
+
+    @Test fun shapeResizeCrossesBothAxesAndBackForPrimitiveLineCurveAndPolygon() {
+        val canvas = compose.onNodeWithTag("paint-canvas")
+        fun screenPoint(x: Int, y: Int): Offset {
+            val point = model.state.value.viewport.screenPoint(Point(x.toFloat(),y.toFloat()))
+            return Offset(point.x,point.y)
+        }
+        for (tool in listOf(Tool.RightTriangle,Tool.RightArrow,Tool.Line,Tool.Curve,Tool.Polygon)) {
+            compose.runOnIdle {
+                model.cancelPreview(); model.tool(tool)
+                var preview = EditPreview.between(tool,Point(220f,180f),Point(300f,220f))
+                if (tool == Tool.Curve) preview = preview.withShapePoint(Point(240f,180f)).withShapePoint(Point(280f,220f))
+                if (tool == Tool.Polygon) preview = preview.withShapePoint(Point(220f,220f))
+                model.setPreview(preview.copy(constructing = false))
+            }
+            val original = requireNotNull(model.state.value.preview)
+            val before = model.state.value.raster
+            val rendered = before.render(original,model.state.value.options)
+            canvas.performTouchInput { down(screenPoint(300,220)) }
+            for ((x,y) in listOf(140 to 220,140 to 140,300 to 140,220 to 180,300 to 220)) {
+                canvas.performTouchInput { moveTo(screenPoint(x,y)) }
+                compose.runOnIdle {
+                    val preview = requireNotNull(model.state.value.preview)
+                    assertEquals(PixelRect(min(220,x),min(180,y),max(1,abs(x-220)),max(1,abs(y-180))),preview.bounds)
+                    assertEquals(tool,preview.tool)
+                    assertNull(preview.payload)
+                    assertEquals(x < 220,preview.selectionTransform.a < 0)
+                    assertEquals(y < 180,preview.selectionTransform.d < 0)
+                    assertEquals(original.points,preview.points)
+                    assertSame(before,model.state.value.raster)
+                }
+            }
+            canvas.performTouchInput { up() }
+            assertArrayEquals(rendered.pixels,before.render(model.state.value.preview!!,model.state.value.options).pixels)
+            // Navigation beginning during a mirrored resize restores the settled shape.
+            val settled = model.state.value.preview
+            canvas.performTouchInput {
+                down(0,screenPoint(300,220)); moveTo(0,screenPoint(140,140))
+                down(1,screenPoint(350,260)); up(0); up(1)
+            }
+            compose.runOnIdle { assertEquals(settled,model.state.value.preview) }
+        }
+    }
+
+    @Test fun shapeRotationHandleCancelsAndRecoveryPreservesMirroredGeometry() {
+        compose.runOnIdle {
+            model.tool(Tool.RightArrow)
+            model.createPreview(Point(220f,180f),Point(300f,220f))
+        }
+        val original = model.state.value.preview
+        val handle = compose.onNodeWithTag("selection-rotation-handle")
+        handle.performTouchInput { down(center); moveBy(Offset(20f,40f)) }
+        compose.runOnIdle { assertNotEquals(original,model.state.value.preview) }
+        handle.performTouchInput { cancel() }
+        compose.runOnIdle { assertEquals(original,model.state.value.preview) }
+        handle.performTouchInput {
+            down(0,center); moveBy(Offset(20f,40f))
+            down(1,center+Offset(-30f,30f)); up(0); up(1)
+        }
+        compose.runOnIdle {
+            assertEquals(original,model.state.value.preview)
+            model.rotate(33.0); model.flip(false)
+        }
+        val state = model.state.value
+        val preview = requireNotNull(state.preview)
+        val recovery = PaintRecovery(File(root,"shape-roundtrip"))
+        runBlocking {
+            recovery.write(RecoverySnapshot(state.raster,state.options,preview,null,state.viewport,
+                null,"Untitled","image/png",null,false))
+            val restored = requireNotNull(recovery.read()?.preview)
+            assertEquals(preview.geometryBounds,restored.geometryBounds)
+            assertEquals(preview.transform,restored.transform)
+            assertEquals(preview.rotationCenter,restored.rotationCenter)
+            assertEquals(preview.rotationDegrees,restored.rotationDegrees,0.0)
+            assertEquals(Tool.RightArrow,restored.tool)
+            assertNull(restored.payload)
+            assertArrayEquals(state.raster.render(preview,state.options).pixels,state.raster.render(restored,state.options).pixels)
+        }
+    }
+
     @Test fun selectAllKeepsTheRotationHandleFullyInsideTheViewport() {
         compose.runOnIdle { model.selectAll() }
         val viewport = compose.onNodeWithTag("paint-viewport").fetchSemanticsNode().boundsInRoot

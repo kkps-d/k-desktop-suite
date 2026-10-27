@@ -298,7 +298,7 @@ internal fun PaintCanvas(
                     val stylus = down.type == PointerType.Stylus || erasing
                     val existing = initial.preview?.bounds ?: initial.selection
                     val constructing = initial.preview?.constructing == true
-                    val hitExisting = !constructing && (initial.preview?.takeIf { it.payload != null }?.containsSelection(imageStart)
+                    val hitExisting = !constructing && (initial.preview?.takeIf { it.canTransform }?.containsSelection(imageStart)
                         ?: (existing?.contains(imageStart.x.toInt(),imageStart.y.toInt()) == true)) &&
                         (tool.isShape || tool in listOf(Tool.Select,Tool.Text))
                     val bottomRight = existing?.let { initial.viewport.screenPoint(Point(it.right.toFloat(),it.bottom.toFloat())) }
@@ -308,7 +308,7 @@ internal fun PaintCanvas(
                     var navigation = tool == Tool.Pan || spacePressed || startEvent.buttons.isTertiaryPressed
                     if (spacePressed) spaceUsedForPan = true
                     // Resize from the gesture's original pixels and transform, even after crossing an axis.
-                    val resizingSelection = if (!navigation && resize && (initial.preview == null || initial.preview.payload != null))
+                    val resizingSelection = if (!navigation && resize && (initial.preview == null || initial.preview.canTransform))
                         model.floatingSelection() else null
                     // An outside touch can still become two-finger navigation; it must not draw or select.
                     val canEdit = hitExisting || resize ||
@@ -442,8 +442,8 @@ internal fun PaintCanvas(
             bounds?.let { rect ->
                 val p = view.screenPoint(Point(rect.x.toFloat(),rect.y.toFloat()))
                 val size = Size(rect.width*view.scale,rect.height*view.scale)
-                val selected = state.preview?.takeIf { it.payload != null && dragPreview == null }
-                val corners = selected?.selectionTransform?.corners(requireNotNull(selected.payload).width,selected.payload.height)
+                val selected = state.preview?.takeIf { it.canTransform && dragPreview == null }
+                val corners = selected?.selectionCorners
                 val border = Path().apply {
                     if (corners != null) corners.forEachIndexed { index, point ->
                         val screen = view.screenPoint(point)
@@ -529,7 +529,7 @@ internal fun PaintCanvas(
         if (state.options.tool != Tool.Pan) {
             if (state.selection == null && state.preview?.payload == null)
                 CanvasResizeHandles(state,model,canvasResize,active,onBoundsChange = { canvasResize = it })
-            if (state.selection != null || state.preview?.payload != null)
+            if (state.preview?.constructing != true && (state.selection != null || state.preview?.canTransform == true))
                 SelectionRotationHandle(state,model,active,rotationCancelGeneration,onDraggingChange = { rotatingSelection = it })
         }
         contextMenu?.let { position ->

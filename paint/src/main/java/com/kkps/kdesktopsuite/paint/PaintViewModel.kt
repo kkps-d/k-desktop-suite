@@ -268,7 +268,7 @@ internal class PaintViewModel(
             return
         }
         if (preview?.payload != null && !preview.containsSelection(point)) { applyPreview(); return }
-        if (preview?.tool?.isShape == true && !preview.bounds.contains(x,y)) { applyPreview(); return }
+        if (preview?.tool?.isShape == true && !preview.containsSelection(point)) { applyPreview(); return }
         when (s.options.tool) {
             Tool.Fill -> operation({ it.fill(x, y, s.options.foreground, s.selection) })
             Tool.Eyedropper -> {
@@ -344,7 +344,7 @@ internal class PaintViewModel(
 
     fun floatingSelection(): EditPreview? {
         val s = state.value
-        return s.preview?.takeIf { it.payload != null } ?: s.selection?.let {
+        return s.preview?.takeIf { it.canTransform } ?: s.selection?.let {
             EditPreview(Tool.Select,it,source = it,payload = s.raster.extract(it))
         }
     }
@@ -408,8 +408,8 @@ internal class PaintViewModel(
 
     fun rotate(degrees: Double) {
         val s = state.value
-        if (s.busy || s.loading || s.saving || !degrees.isFinite()) return
-        if (s.preview?.payload != null || s.selection != null) rotateSelection(degrees)
+        if (s.busy || s.loading || s.saving || !degrees.isFinite() || s.preview?.constructing == true) return
+        if (s.preview?.canTransform == true || s.selection != null) rotateSelection(degrees)
         else transformTarget { bounds ->
             RasterTransform.around(Point(bounds.width/2f,bounds.height/2f),RasterTransform.rotation(degrees))
         }
@@ -426,7 +426,7 @@ internal class PaintViewModel(
 
     private fun transformTarget(makeTransform: (PixelRect) -> RasterTransform) {
         val s = state.value
-        if (s.busy || s.loading || s.saving) return
+        if (s.busy || s.loading || s.saving || s.preview?.constructing == true) return
         try {
             val selection = floatingSelection()
             if (selection != null) {

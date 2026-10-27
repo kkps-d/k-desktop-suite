@@ -57,21 +57,28 @@ internal data class EditPreview(
     val points: List<Point> = emptyList(), val constructing: Boolean = false,
     val transform: RasterTransform? = null, val rotationDegrees: Double = 0.0,
     val rotationCenter: Point? = null,
+    val shapeBounds: PixelRect? = null,
 ) {
     val hasContent get() = payload != null || tool.isShape || text.isNotEmpty()
+    val canTransform get() = payload != null || tool.isShape && !constructing
+    val geometryBounds get() = shapeBounds ?: bounds
+    private val transformWidth get() = payload?.width ?: geometryBounds.width
+    private val transformHeight get() = payload?.height ?: geometryBounds.height
 
     fun withBounds(area: PixelRect): EditPreview {
-        if (tool.isShape) {
+        if (tool.isShape && transform == null) {
             fun transform(point: Point) = Point(area.x + (point.x-bounds.x)*area.width/bounds.width,
                 area.y + (point.y-bounds.y)*area.height/bounds.height)
             return copy(bounds = area,start = transform(start),end = transform(end),points = points.map(::transform))
         }
-        return if (payload != null) resizedSelection(area) else copy(bounds = area)
+        return if (payload != null || tool.isShape) resizedSelection(area) else copy(bounds = area)
     }
 
+    // Shapes retain their original geometry, just as selections retain their source pixels.
     val selectionTransform get() = transform ?: RasterTransform.scale(
-        bounds.width.toDouble()/requireNotNull(payload).width,bounds.height.toDouble()/payload.height)
+        bounds.width.toDouble()/transformWidth,bounds.height.toDouble()/transformHeight)
         .then(RasterTransform.translation(bounds.x.toDouble(),bounds.y.toDouble()))
+    val selectionCorners get() = selectionTransform.corners(transformWidth,transformHeight)
     val selectionCenter get() = rotationCenter ?: Point(bounds.x+bounds.width/2f,bounds.y+bounds.height/2f)
     fun selectionPixels(checkCancelled: () -> Unit = {}) = requireNotNull(payload).transformed(selectionTransform,bounds,checkCancelled)
     fun affectedSelectionArea(width: Int, height: Int): PixelRect {
@@ -92,7 +99,7 @@ internal data class EditPreview(
         var next = RasterTransform.around(center,RasterTransform.rotation(degrees))
         // Keep exact quarter turns pixel-aligned, retaining the pivot for subsequent turns.
         if (abs(degrees % 90) < 1e-8 && abs(rotationDegrees % 90) < 1e-8) {
-            val corners = selectionTransform.then(next).corners(requireNotNull(payload).width,payload.height)
+            val corners = selectionTransform.then(next).corners(transformWidth,transformHeight)
             val left = corners.minOf { it.x }.toDouble(); val top = corners.minOf { it.y }.toDouble()
             next = next.then(RasterTransform.translation(round(left)-left,round(top)-top))
         }
@@ -100,14 +107,14 @@ internal data class EditPreview(
     }
     fun transformedSelection(next: RasterTransform, angle: Double = rotationDegrees, center: Point? = null): EditPreview {
         val combined = selectionTransform.then(next)
-        val area = combined.bounds(requireNotNull(payload).width,payload.height)
+        val area = combined.bounds(transformWidth,transformHeight)
         checkImageSize(area.width,area.height)
-        return copy(bounds = area,transform = combined,rotationDegrees = angle,
+        return copy(bounds = area,transform = combined,rotationDegrees = angle,shapeBounds = geometryBounds.takeIf { tool.isShape },
             rotationCenter = center ?: next.point(selectionCenter.x.toDouble(),selectionCenter.y.toDouble()))
     }
     fun containsSelection(point: Point): Boolean {
         val source = selectionTransform.inverse().point(point.x.toDouble(),point.y.toDouble())
-        return source.x >= 0 && source.y >= 0 && source.x < requireNotNull(payload).width && source.y < payload.height
+        return source.x >= 0 && source.y >= 0 && source.x < transformWidth && source.y < transformHeight
     }
 
     companion object {
@@ -123,9 +130,13 @@ internal data class EditPreview(
                     target = Point(start.x + size * if (end.x < start.x) -1 else 1, start.y + size * if (end.y < start.y) -1 else 1)
                 }
             }
-            return EditPreview(tool, PixelRect.between(start, target), start, target,
+            val preview = EditPreview(tool, PixelRect.between(start, target), start, target,
                 points = if (tool == Tool.Polygon) listOf(start,target) else emptyList(),
                 constructing = tool == Tool.Curve || tool == Tool.Polygon)
+            return if (tool.isClosedShape && tool != Tool.Polygon && (target.x < start.x || target.y < start.y))
+                preview.copy(shapeBounds = preview.bounds,transform = preview.selectionTransform.then(
+                    RasterTransform.around(preview.selectionCenter,RasterTransform.scale(
+                        if (target.x < start.x) -1.0 else 1.0,if (target.y < start.y) -1.0 else 1.0)))) else preview
         }
     }
 }

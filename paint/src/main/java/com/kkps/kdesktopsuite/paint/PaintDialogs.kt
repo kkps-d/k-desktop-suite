@@ -202,7 +202,7 @@ private fun RotationDialog(s: PaintUiState, model: PaintViewModel) {
         }
     },confirmButton = {
         TextButton(onClick = { degrees?.let {
-            if (s.selection != null || s.preview?.payload != null) model.rotateSelection(it-(s.preview?.rotationDegrees ?: 0.0))
+            if (s.selection != null || s.preview?.canTransform == true) model.rotateSelection(it-(s.preview?.rotationDegrees ?: 0.0))
             else model.rotate(it)
             model.dialog(null)
         } },enabled = degrees != null && !s.busy) { Text("Apply") }

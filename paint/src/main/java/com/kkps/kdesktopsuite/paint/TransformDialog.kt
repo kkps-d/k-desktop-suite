@@ -20,7 +20,7 @@ import kotlin.math.roundToInt
 
 @Composable
 internal fun TransformDialog(s: PaintUiState, model: PaintViewModel) {
-    val selection = s.preview?.takeIf { it.payload != null }
+    val selection = s.preview?.takeIf { it.canTransform }
     val original = s.preview?.bounds ?: s.selection ?: PixelRect(0,0,s.raster.width,s.raster.height)
     val canMove = s.preview != null || s.selection != null
     val canRotate = selection != null || s.selection != null
@@ -137,7 +137,7 @@ internal fun TransformDialog(s: PaintUiState, model: PaintViewModel) {
                 OutlinedTextField(skewY,{ skewY = it },label = { Text(stringResource(R.string.ui_vertical_degrees)) },singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("skew-vertical"))
                 Text(stringResource(R.string.ui_skew_range),style = MaterialTheme.typography.bodySmall)
-                if (s.preview?.payload == null && s.preview != null) Text("Applying skew converts this item to a floating image.",
+                if (s.preview?.tool == Tool.Text) Text("Applying skew converts this item to a floating image.",
                     style = MaterialTheme.typography.bodySmall)
             }
             dimensions.getOrNull()?.let { Text(stringResource(R.string.ui_transform_dimensions,it.width,it.height),Modifier.testTag("transform-dimensions")) }

@@ -243,6 +243,7 @@ private fun RecoverySnapshot.json(): JSONObject {
         .put("transform", p.transform?.let { JSONArray(listOf(it.a,it.b,it.c,it.d,it.tx,it.ty)) })
         .put("rotationDegrees", p.rotationDegrees)
         .put("rotationCenter", p.rotationCenter?.let { JSONArray(listOf(it.x,it.y)) })
+        .put("shapeBounds", p.shapeBounds?.json())
         .put("textSelectionStart", p.textSelectionStart).put("textSelectionEnd", p.textSelectionEnd)
         .put("textRaster", p.textRaster != null && p.textLayoutKey == textLayoutKey(p.text,p.bounds.width,options))
         .put("outputWidth", p.outputWidth).put("outputHeight", p.outputHeight)) }
@@ -272,9 +273,15 @@ private fun snapshotFromJson(json: JSONObject, raster: Raster, payload: Raster?,
         } } ?: emptyList(),constructing = p.optBoolean("constructing"),
         transform = p.optJSONArray("transform")?.let { values ->
             RasterTransform(values.getDouble(0),values.getDouble(1),values.getDouble(2),values.getDouble(3),values.getDouble(4),values.getDouble(5))
-                .also { it.inverse(); val area = it.bounds(requireNotNull(payload).width,payload.height); checkImageSize(area.width,area.height) }
+                .also {
+                    it.inverse()
+                    val geometry = (p.optJSONArray("shapeBounds") ?: p.getJSONArray("bounds")).rect()
+                    val area = it.bounds(payload?.width ?: geometry.width,payload?.height ?: geometry.height)
+                    checkImageSize(area.width,area.height)
+                }
         },rotationDegrees = p.optDouble("rotationDegrees",0.0),
-        rotationCenter = p.optJSONArray("rotationCenter")?.let { Point(it.getDouble(0).toFloat(),it.getDouble(1).toFloat()) }) }
+        rotationCenter = p.optJSONArray("rotationCenter")?.let { Point(it.getDouble(0).toFloat(),it.getDouble(1).toFloat()) },
+        shapeBounds = p.optJSONArray("shapeBounds")?.rect()) }
     return RecoverySnapshot(raster, options, preview, json.optJSONArray("selection")?.rect(),
         Viewport(imageWidth = raster.width, imageHeight = raster.height, scale = json.getDouble("scale").toFloat().coerceIn(0.1f,5f),
             center = Point(json.getDouble("cx").toFloat(), json.getDouble("cy").toFloat()), fit = json.getBoolean("fit")),

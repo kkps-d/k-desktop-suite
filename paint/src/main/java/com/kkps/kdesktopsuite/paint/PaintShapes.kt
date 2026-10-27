@@ -50,6 +50,18 @@ private fun regularShape(vertices: Int, innerRadius: Float? = null): String {
 }
 
 internal fun EditPreview.shapePath(): Path {
+    if (transform == null) return untransformedShapePath()
+    val geometry = copy(bounds = geometryBounds,transform = null,shapeBounds = null)
+    val path = geometry.untransformedShapePath()
+    val mapping = RasterTransform.translation(-geometryBounds.x.toDouble(),-geometryBounds.y.toDouble()).then(selectionTransform)
+    path.transform(Matrix().apply {
+        setValues(floatArrayOf(mapping.a.toFloat(),mapping.c.toFloat(),mapping.tx.toFloat(),
+            mapping.b.toFloat(),mapping.d.toFloat(),mapping.ty.toFloat(),0f,0f,1f))
+    })
+    return path
+}
+
+private fun EditPreview.untransformedShapePath(): Path {
     if (tool == Tool.Line || tool == Tool.Curve) return Path().apply {
         moveTo(start.x,start.y)
         when {
