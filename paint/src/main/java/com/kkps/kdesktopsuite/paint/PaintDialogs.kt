@@ -39,9 +39,21 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenDebug: (
             confirmButton = { TextButton(onClick = model::saveThenContinue) { Text(stringResource(R.string.ui_save)) } },
             dismissButton = { Row { TextButton(onClick = model::discard) { Text(stringResource(R.string.ui_discard)) }; TextButton(onClick = model::cancelReplace) { Text(stringResource(R.string.ui_cancel)) } } })
         PaintDialog.SaveFormat -> AlertDialog(onDismissRequest = model::cancelSave,
-            title = { Text(stringResource(R.string.ui_save_image_as)) },text = { Text(stringResource(R.string.ui_png_preserves_pixels_jpeg_uses_lossy_compression)) },
-            confirmButton = { TextButton(onClick = { model.saveFormat("image/png") }) { Text(stringResource(R.string.ui_png)) } },
-            dismissButton = { Row { TextButton(onClick = { model.saveFormat("image/jpeg") }) { Text(stringResource(R.string.ui_jpeg)) }; TextButton(onClick = model::cancelSave) { Text(stringResource(R.string.ui_cancel)) } } })
+            title = { Text(stringResource(R.string.ui_save_image_as)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text(stringResource(R.string.ui_png_preserves_pixels_jpeg_uses_lossy_compression))
+                    Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { model.saveFormat("image/png") },modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
+                            Text(stringResource(R.string.ui_png))
+                        }
+                        Button(onClick = { model.saveFormat("image/jpeg") },modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
+                            Text(stringResource(R.string.ui_jpeg))
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = model::cancelSave) { Text(stringResource(R.string.ui_cancel)) } })
         PaintDialog.JpegWarning -> AlertDialog(onDismissRequest = model::cancelSave,
             title = { Text(stringResource(R.string.ui_save_a_jpeg_image)) },text = { Text("JPEG compression can change colors and sharp edges. The current full-quality raster stays in your draft. Quality: ${s.preferences.jpegQuality}%.") },
             confirmButton = { TextButton(onClick = model::continueSave) { Text(stringResource(R.string.ui_continue)) } },
