@@ -445,13 +445,13 @@ class NotepadUiTest {
         val resources = compose.activity.resources
         val paint = android.graphics.Paint().apply {
             textSize = 32f
-            typeface = resources.getFont(R.font.noto_sans_mono)
+            typeface = resources.getFont(com.kkps.kdesktopsuite.ui.R.font.noto_sans_mono)
         }
         org.junit.Assert.assertEquals(paint.measureText("iiii"), paint.measureText("mmmm"), 0.01f)
-        paint.typeface = resources.getFont(R.font.noto_serif)
+        paint.typeface = resources.getFont(com.kkps.kdesktopsuite.ui.R.font.noto_serif)
         org.junit.Assert.assertTrue(paint.measureText("mmmm") > paint.measureText("iiii"))
         val serifWidth = paint.measureText("The quick brown fox 0123456789")
-        paint.typeface = resources.getFont(R.font.noto_sans)
+        paint.typeface = resources.getFont(com.kkps.kdesktopsuite.ui.R.font.noto_sans)
         org.junit.Assert.assertTrue(paint.measureText("mmmm") > paint.measureText("iiii"))
         org.junit.Assert.assertTrue(kotlin.math.abs(serifWidth - paint.measureText("The quick brown fox 0123456789")) > 1f)
     }
@@ -712,6 +712,77 @@ class NotepadUiTest {
         val title = compose.onNodeWithTag("tab-title-$id", useUnmergedTree = true).getUnclippedBoundsInRoot()
         org.junit.Assert.assertEquals(22f, (title.left - active.left).value, 2f)
         closeTab(2).assertTargetSize(height = 32.dp)
+    }
+
+    @Test
+    fun editorPaddingScrollsWithContentAndCaretStaysVisible() {
+        windowSize = DpSize(400.dp, 400.dp)
+        showEditor()
+        compose.runOnIdle { inputModeManager.requestInputMode(InputMode.Keyboard) }
+        val editor = compose.onNodeWithTag("document-editor")
+        val text = (1..100).joinToString("\n") { "M".repeat(80) }
+        editor.performTextReplacement(text)
+
+        fun assertEdges(topHasText: Boolean, bottomHasText: Boolean) {
+            val image = editor.captureToImage().toPixelMap()
+            val bounds = editor.getUnclippedBoundsInRoot()
+            val scale = image.width / (bounds.right - bounds.left).value
+            val inset = (16 * scale).toInt()
+            val background = image[0, image.height / 2]
+            fun hasText(firstRow: Int, lastRow: Int): Boolean =
+                (firstRow until lastRow).any { y ->
+                    (inset * 2 until image.width - inset * 2).any { x ->
+                        kotlin.math.abs(image[x, y].luminance() - background.luminance()) > 0.1f
+                    }
+                }
+            org.junit.Assert.assertEquals("Text at the top edge", topHasText, hasText(0, inset))
+            org.junit.Assert.assertEquals("Text at the bottom edge", bottomHasText, hasText(image.height - inset, image.height))
+        }
+
+        for (wrap in listOf(true, false)) {
+            compose.onNodeWithContentDescription("Settings")
+                .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus)
+            compose.runOnIdle { if (notepad.wordWrap != wrap) notepad.toggleWordWrap() }
+            compose.runOnIdle {
+                kotlinx.coroutines.runBlocking {
+                    notepad.active!!.scroll.scrollTo(0)
+                    notepad.active!!.horizontalScroll.scrollTo(0)
+                }
+            }
+            assertEdges(topHasText = false, bottomHasText = true)
+            compose.runOnIdle {
+                val scroll = notepad.active!!.scroll
+                kotlinx.coroutines.runBlocking { scroll.scrollTo(scroll.maxValue / 2) }
+            }
+            assertEdges(topHasText = true, bottomHasText = true)
+            compose.runOnIdle {
+                val scroll = notepad.active!!.scroll
+                kotlinx.coroutines.runBlocking { scroll.scrollTo(scroll.maxValue) }
+            }
+            assertEdges(topHasText = true, bottomHasText = false)
+
+            editor.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus)
+            editor.assertIsFocused()
+            editor.performKeyInput {
+                keyDown(Key.CtrlLeft); pressKey(Key.A); keyUp(Key.CtrlLeft)
+                pressKey(Key.DirectionLeft)
+            }
+            compose.runOnIdle {
+                org.junit.Assert.assertEquals(androidx.compose.ui.text.TextRange.Zero, notepad.active!!.editor.selection)
+            }
+            compose.waitUntil(5_000) { notepad.active!!.scroll.value <= 16 }
+            editor.performKeyInput {
+                keyDown(Key.CtrlLeft); pressKey(Key.A); keyUp(Key.CtrlLeft)
+                pressKey(Key.DirectionRight)
+            }
+            compose.waitUntil(5_000) {
+                val scroll = notepad.active!!.scroll
+                scroll.value >= scroll.maxValue - 16
+            }
+            compose.runOnIdle {
+                org.junit.Assert.assertEquals(androidx.compose.ui.text.TextRange(text.length), notepad.active!!.editor.selection)
+            }
+        }
     }
 
     @Test

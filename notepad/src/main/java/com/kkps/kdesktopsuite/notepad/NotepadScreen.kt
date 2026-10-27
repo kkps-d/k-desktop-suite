@@ -963,7 +963,6 @@ private fun DocumentEditor(
     BasicTextField(
         state = doc.editor,
         readOnly = doc.readOnly,
-        scrollState = doc.scroll,
         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
         textStyle = MaterialTheme.typography.bodyLarge.copy(
             fontFamily = fontFamily,
@@ -999,9 +998,19 @@ private fun DocumentEditor(
                         }
                     } while (event.changes.any { it.pressed })
                 }
+            },
+        decorator = { innerTextField ->
+            // Scroll the padding with the document so overflow reaches the viewport edges.
+            Box(
+                Modifier.fillMaxSize()
+                    .verticalScroll(doc.scroll)
+                    .then(if (wordWrap) Modifier else Modifier.horizontalScroll(doc.horizontalScroll))
+                    .padding(NotepadSpacing.medium),
+                propagateMinConstraints = true,
+            ) {
+                innerTextField()
             }
-            .then(if (wordWrap) Modifier else Modifier.horizontalScroll(doc.horizontalScroll))
-            .padding(NotepadSpacing.medium),
+        },
     )
 }
 
