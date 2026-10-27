@@ -1106,6 +1106,38 @@ class NotepadUiTest {
     }
 
     @Test
+    fun statusLabelAndToolbarIconDisableReadOnlyWithoutChangingTheDocument() {
+        showEditor()
+        val editor = compose.onNodeWithTag("document-editor")
+        val unlock = compose.onNodeWithContentDescription("Disable read-only")
+        editor.performTextReplacement("Keep this text")
+        unlock.assertDoesNotExist()
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Read-only").performClick()
+        unlock.assertIsDisplayed().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
+        val redo = compose.onNodeWithContentDescription("Redo (Ctrl+Y)").getUnclippedBoundsInRoot()
+        val icon = unlock.getUnclippedBoundsInRoot()
+        org.junit.Assert.assertTrue("Read-only follows Redo with room for a divider", icon.left > redo.right)
+        compose.onNodeWithText("Read-only enabled").assertHasClickAction().performClick()
+        unlock.assertDoesNotExist()
+        compose.onNodeWithText("Read-only enabled").assertDoesNotExist()
+        editor.assertTextEquals("Keep this text")
+        editor.performTextInput("!")
+        editor.assertTextContains("!", substring = true)
+
+        compose.onNodeWithText("View").performClick()
+        compose.onNodeWithText("Read-only").performClick()
+        compose.runOnIdle { inputModeManager.requestInputMode(InputMode.Keyboard) }
+        unlock.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus)
+        unlock.assertIsFocused().performKeyInput { pressKey(Key.Enter) }
+        unlock.assertDoesNotExist()
+        compose.onNodeWithText("Read-only enabled").assertDoesNotExist()
+        compose.runOnIdle { org.junit.Assert.assertFalse(notepad.active!!.readOnly) }
+        editor.performTextInput("?")
+        editor.assertTextContains("?", substring = true)
+    }
+
+    @Test
     fun compactCommandsToggleReadOnlyAndKeepItsStatusVisible() {
         windowSize = DpSize(400.dp, 800.dp)
         showEditor(largeFontRtl = true)
@@ -1114,7 +1146,8 @@ class NotepadUiTest {
         compose.onNodeWithText("Read-only").performScrollTo().performClick()
         compose.onNodeWithText("Read-only enabled").assertIsDisplayed()
         compose.onNodeWithText("Commands").performClick()
-        compose.onNodeWithText("Read-only").performScrollTo().assertIsOn().performClick()
+        compose.onNodeWithText("Read-only").performScrollTo().assertIsOn().performKeyInput { pressKey(Key.Escape) }
+        compose.onNodeWithText("Read-only enabled").assertHasClickAction().performClick()
         compose.onNodeWithText("Read-only enabled").assertDoesNotExist()
         compose.onNodeWithTag("document-editor").performTextInput("!")
         compose.onNodeWithTag("document-editor").assertTextContains("!", substring = true)

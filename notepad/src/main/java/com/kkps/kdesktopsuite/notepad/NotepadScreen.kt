@@ -940,6 +940,11 @@ private fun CommandBar(
                     TooltipAction("${stringResource(command.label)} (${command.shortcut})", icon, iconSize = 24.dp,
                         enabled = enabled(command), onClick = { run(command) })
                 }
+                if (readOnly) {
+                    VerticalDivider(Modifier.padding(horizontal = 8.dp).height(20.dp))
+                    TooltipAction(stringResource(R.string.disable_read_only), R.drawable.ic_read_only, iconSize = 24.dp,
+                        enabled = enabled(NotepadCommand.ReadOnly), onClick = { run(NotepadCommand.ReadOnly) })
+                }
             }
             Spacer(Modifier.weight(1f))
             TooltipAction(stringResource(R.string.settings), R.drawable.ic_settings, iconSize = 20.dp, onClick = openSettings)
@@ -1018,7 +1023,7 @@ private fun StatusBar(doc: DocumentSession, zoom: Int, compact: Boolean, run: (N
         if (compact) {
             Column(Modifier.heightIn(min = 40.dp).padding(horizontal = NotepadSpacing.medium, vertical = 4.dp)) {
                 FlowRow(verticalArrangement = Arrangement.Center) {
-                    CursorStatus(cursor, doc.readOnly)
+                    CursorStatus(cursor, doc.readOnly, disableReadOnly = { run(NotepadCommand.ReadOnly) })
                     Text(" · ${stringResource(R.string.zoom_value, zoom)}", style = MaterialTheme.typography.labelMedium)
                 }
                 Text(stringResource(status), style = MaterialTheme.typography.labelMedium)
@@ -1026,7 +1031,7 @@ private fun StatusBar(doc: DocumentSession, zoom: Int, compact: Boolean, run: (N
         } else {
             val zoomLabel = stringResource(R.string.zoom_description, zoom)
             Row(Modifier.fillMaxWidth().heightIn(min = 28.dp).padding(horizontal = NotepadSpacing.medium, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                CursorStatus(cursor, doc.readOnly, Modifier.weight(1f))
+                CursorStatus(cursor, doc.readOnly, Modifier.weight(1f), disableReadOnly = { run(NotepadCommand.ReadOnly) })
                 Text(stringResource(status), Modifier.padding(horizontal = NotepadSpacing.small), style = MaterialTheme.typography.labelMedium)
                 Text(stringResource(R.string.zoom_value, zoom),
                     Modifier.semantics { contentDescription = zoomLabel }
@@ -1039,13 +1044,22 @@ private fun StatusBar(doc: DocumentSession, zoom: Int, compact: Boolean, run: (N
 }
 
 @Composable
-private fun CursorStatus(cursor: String, readOnly: Boolean, modifier: Modifier = Modifier) {
+private fun CursorStatus(cursor: String, readOnly: Boolean, modifier: Modifier = Modifier, disableReadOnly: () -> Unit) {
     FlowRow(modifier, verticalArrangement = Arrangement.Center) {
         Text(cursor, style = MaterialTheme.typography.labelMedium)
         if (readOnly) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 VerticalDivider(Modifier.padding(horizontal = NotepadSpacing.small).height(14.dp))
-                Text(stringResource(R.string.read_only_enabled), style = MaterialTheme.typography.labelMedium)
+                Row(
+                    Modifier.clip(MaterialTheme.shapes.small)
+                        .clickable(role = Role.Button, onClickLabel = stringResource(R.string.disable_read_only), onClick = disableReadOnly)
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(painterResource(R.drawable.ic_read_only), null, Modifier.size(16.dp))
+                    Text(stringResource(R.string.read_only_enabled), style = MaterialTheme.typography.labelMedium)
+                }
             }
         }
     }
