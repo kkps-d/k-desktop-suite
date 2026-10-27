@@ -1050,16 +1050,14 @@ private fun CursorStatus(cursor: String, readOnly: Boolean, modifier: Modifier =
         if (readOnly) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 VerticalDivider(Modifier.padding(horizontal = NotepadSpacing.small).height(14.dp))
-                Row(
+                Text(
+                    stringResource(R.string.read_only_enabled),
                     Modifier.clip(MaterialTheme.shapes.small)
                         .clickable(role = Role.Button, onClickLabel = stringResource(R.string.disable_read_only), onClick = disableReadOnly)
                         .padding(horizontal = 4.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Icon(painterResource(R.drawable.ic_read_only), null, Modifier.size(16.dp))
-                    Text(stringResource(R.string.read_only_enabled), style = MaterialTheme.typography.labelMedium)
-                }
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelMedium,
+                )
             }
         }
     }
