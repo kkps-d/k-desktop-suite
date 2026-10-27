@@ -95,6 +95,23 @@ private fun CanvasSizeDialog(s: PaintUiState, model: PaintViewModel) {
         Column(Modifier.verticalScroll(rememberScrollState())) {
             CanvasSizeFields(width,height,{ width = it; error = null },{ height = it; error = null })
             error?.let { Text(it,color = MaterialTheme.colorScheme.error) }
+            listOf(
+                "4:3" to listOf(640 to 480,800 to 600,1024 to 768,1600 to 1200),
+                "16:9" to listOf(1280 to 720,1920 to 1080,2560 to 1440,3840 to 2160),
+                "1:1" to listOf(256 to 256,512 to 512,1024 to 1024,2048 to 2048)
+            ).forEach { (ratio,sizes) ->
+                Text(ratio,Modifier.padding(top = 12.dp),style = MaterialTheme.typography.labelLarge)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    sizes.forEach { (w,h) ->
+                        FilterChip(
+                            selected = width.toIntOrNull() == w && height.toIntOrNull() == h,
+                            onClick = { width = w.toString(); height = h.toString(); error = null },
+                            label = { Text("$w × $h") },
+                            modifier = Modifier.heightIn(min = 48.dp)
+                        )
+                    }
+                }
+            }
         }
     },confirmButton = { TextButton(onClick = {
         try {

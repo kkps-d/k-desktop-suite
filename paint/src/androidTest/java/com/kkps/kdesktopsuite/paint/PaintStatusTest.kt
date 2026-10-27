@@ -136,7 +136,21 @@ class PaintStatusTest {
         compose.onNodeWithText("Width").performTextReplacement("0")
         compose.onNodeWithText("Resize",useUnmergedTree = true).performClick()
         compose.onNodeWithText("Images must be",substring = true).assertIsDisplayed()
+        for ((width,height) in listOf(
+            640 to 480,800 to 600,1024 to 768,1600 to 1200,
+            1280 to 720,1920 to 1080,2560 to 1440,3840 to 2160,
+            256 to 256,512 to 512,1024 to 1024,2048 to 2048
+        )) {
+            compose.onNodeWithText("$width × $height").performScrollTo().performClick().assertIsSelected()
+            compose.onNodeWithTag("canvas-width-input").assertTextContains(width.toString())
+            compose.onNodeWithTag("canvas-height-input").assertTextContains(height.toString())
+            compose.onNodeWithText("Images must be",substring = true).assertDoesNotExist()
+            compose.runOnIdle { assertEquals(800,model.state.value.raster.width); assertEquals(600,model.state.value.raster.height) }
+        }
+        compose.onNodeWithText("Width").performScrollTo().performTextReplacement("2048")
+        compose.onNodeWithText("2048 × 2048").assertIsSelected()
         compose.onNodeWithText("Width").performTextReplacement("1000")
+        compose.onNodeWithText("2048 × 2048").assertIsNotSelected()
         compose.onNodeWithText("Height").performTextReplacement("700")
         compose.onNodeWithText("Resize",useUnmergedTree = true).performClick()
         compose.waitUntil(15000) { !model.state.value.busy && model.state.value.raster.width == 1000 }
@@ -157,6 +171,9 @@ class PaintStatusTest {
         compose.runOnIdle { size = DpSize(360.dp,640.dp); fontScale = 2f }
         compose.onNodeWithTag("paint-canvas-dimensions").performScrollTo().performClick()
         compose.onNodeWithText("Canvas size").assertIsDisplayed()
+        compose.onNodeWithText("2048 × 2048").performScrollTo().assertIsDisplayed().performClick().assertIsSelected()
+        compose.onNodeWithTag("canvas-width-input").performScrollTo().assertTextContains("2048")
+        compose.onNodeWithTag("canvas-height-input").assertTextContains("2048")
         compose.onNodeWithText("Cancel",useUnmergedTree = true).performClick()
         compose.onNodeWithTag("paint-zoom-menu").performScrollTo().performClick()
         compose.onNodeWithText("25%",useUnmergedTree = true).performClick()
