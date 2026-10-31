@@ -10,7 +10,6 @@ Build and lint the affected module, compile its instrumented tests, and run its
 JVM tests where available:
 
 ```sh
-./gradlew :app:assembleDebug :app:lintDebug :app:assembleDebugAndroidTest
 ./gradlew :notepad:testDebugUnitTest :notepad:assembleDebug :notepad:lintDebug :notepad:assembleDebugAndroidTest
 ./gradlew :paint:testDebugUnitTest :paint:assembleDebug :paint:lintDebug :paint:assembleDebugAndroidTest
 ```
@@ -61,7 +60,6 @@ PowerShell:
 
 ```powershell
 $env:ANDROID_SERIAL = "emulator-5554"
-.\gradlew.bat :app:connectedDebugAndroidTest
 .\gradlew.bat :notepad:connectedDebugAndroidTest
 .\gradlew.bat :paint:connectedDebugAndroidTest
 ```
@@ -69,19 +67,11 @@ $env:ANDROID_SERIAL = "emulator-5554"
 macOS/Linux:
 
 ```sh
-ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest
 ANDROID_SERIAL=emulator-5554 ./gradlew :notepad:connectedDebugAndroidTest
 ANDROID_SERIAL=emulator-5554 ./gradlew :paint:connectedDebugAndroidTest
 ```
 
 ## Coverage
-
-### Starter
-
-Instrumented tests cover compact and expanded windows, live resizing, state
-restoration, activity recreation, and destination switching. Adaptive UI tests
-force 400 × 800 dp and 1200 × 900 dp configurations on the selected emulator.
-Compose previews cover phone, tablet, foldable, and desktop layouts.
 
 ### Notepad
 

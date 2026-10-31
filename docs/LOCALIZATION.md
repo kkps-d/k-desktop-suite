@@ -2,7 +2,6 @@
 
 KD Notepad and KD Paint support English and Burmese. The Burmese translation is
 a generated draft for testing; wording should be reviewed by a fluent speaker.
-The KD Suite starter is not localized by this feature.
 
 ## Choosing a language
 

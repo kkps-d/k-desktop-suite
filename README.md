@@ -11,7 +11,6 @@ windows, including Googlebook. Built with Kotlin, Jetpack Compose, and Material 
   recovery.
 - **[KD Paint](docs/PAINT.md)** — A drawing and image editor with brushes, shapes,
   selections, text, image transforms, PNG/JPEG files, multiple windows, and draft recovery.
-- **KD Suite** — An adaptive starter with a sample document list and editor.
 
 The apps support Android 8.0 / API 26 and newer, touch, keyboard, mouse, and
 trackpad. Layouts adapt as windows resize, with system light/dark appearance and
@@ -30,8 +29,8 @@ no fixed orientation or aspect ratio.
 1. Open the repository in Android Studio Rabbit 2 RC 1 or newer and let Gradle sync.
 2. Install Android 17 / API 37, Build Tools 36.0.0, and Android Emulator through
    SDK Manager. Use the separate API 37.1 desktop system image for desktop testing.
-3. Start the local **Small Desktop** emulator, select the `notepad`, `paint`, or
-   `app` run configuration, and run.
+3. Start the local **Small Desktop** emulator, select the `notepad` or `paint`
+   run configuration, and run.
 
 See [Development](docs/DEVELOPMENT.md) for command-line builds and SDK setup.
 
@@ -42,9 +41,6 @@ Both use Android's file picker and keep private recovery drafts. Save important
 work explicitly: abrupt termination can lose changes since the last checkpoint,
 undo history resets after a process restart, and uninstalling removes private
 recovery data. Paint flattens opened transparent images onto white.
-
-**KD Suite starter documents are sample data.** Its transient drafts are not
-reliable storage and may be lost when the task is closed or the app is stopped.
 
 ## Documentation
 

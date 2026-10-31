@@ -10,9 +10,9 @@ Follow the [contributor instructions](CONTRIBUTING.md) and
    Emulator. The desktop API 37.1 system image is a separate emulator package;
    it does not require changing the app's compile SDK.
 3. Create or start the **Small Desktop** local virtual device with the desktop
-   image. Select the `app`, `notepad`, or `paint` run configuration.
+   image. Select the `notepad` or `paint` run configuration.
 
-All three apps compile and target API 37 and support Android 8.0 / API 26 onward.
+Both apps compile and target API 37 and support Android 8.0 / API 26 onward.
 They use standard Android APIs, with no fixed orientation or aspect ratio and no
 touchscreen requirement or Googlebook-specific detection.
 
@@ -34,19 +34,18 @@ Run commands from the repository root. On Windows PowerShell, replace
 `./gradlew` with `.\gradlew.bat`.
 
 ```sh
-./gradlew :app:assembleDebug :app:lintDebug :app:assembleDebugAndroidTest
 ./gradlew :notepad:assembleDebug :notepad:lintDebug :notepad:assembleDebugAndroidTest
 ./gradlew :paint:assembleDebug :paint:lintDebug :paint:assembleDebugAndroidTest
 ```
 
 | App | Module | Application ID | Debug APK |
 | --- | --- | --- | --- |
-| KD Suite starter | `:app` | `com.kkps.kdesktopsuite` | `app/build/outputs/apk/debug/app-debug.apk` |
 | KD Notepad | `:notepad` | `com.kkps.kdesktopsuite.notepad` | `notepad/build/outputs/apk/debug/notepad-debug.apk` |
 | KD Paint | `:paint` | `com.kkps.kdesktopsuite.paint` | `paint/build/outputs/apk/debug/paint-debug.apk` |
 
-The apps install independently. Paint includes a shared Android Studio
-[launch configuration](../.run/paint.run.xml). If a module is missing from the
+The apps install independently. Both include shared Android Studio launch
+configurations for [Notepad](../.run/notepad.run.xml) and
+[Paint](../.run/paint.run.xml). If a module is missing from the
 run configurations, use **File > Sync Project with Gradle Files** first.
 
 See [Testing](TESTING.md) for JVM tests, instrumented tests, and manual checks.
@@ -65,12 +64,6 @@ compatibility, instead of relying on Compose's older transitive test dependency.
 ## Project layout
 
 ```text
-app/                         KD Suite adaptive starter
-  src/main/java/com/kkps/kdesktopsuite/
-    MainActivity.kt          Activity and ViewModel wiring
-    ui/KDesktopSuiteApp.kt   Adaptive navigation, guide, and previews
-    ui/theme/Theme.kt        Light and dark Material 3 themes
-    workspace/              Sample list/detail UI and transient drafts
 notepad/                     Notepad editor, documents, tabs, and recovery
 paint/                       Paint editor, raster operations, and recovery
 core/ui/                     Shared theme, fonts, menus, settings, and caption support
@@ -108,28 +101,6 @@ state. See [Localization](LOCALIZATION.md) for resource ownership and locale set
 
 Apps that support document tabs should follow the shared
 [document tab guidance](TABS.md) for layout, input, state, and window transfers.
-
-## KD Suite starter
-
-The starter provides:
-
-- Material 3 navigation that switches between a bottom bar and a navigation rail
-  based on window space and device posture.
-- A navigable list/detail scaffold with fold-aware panes and predictive Back.
-- An editable sample workspace, with selection and draft state restored across
-  activity recreation and destination changes.
-- System light/dark themes, edge-to-edge insets, and keyboard/IME handling.
-- Focusable controls, mouse text selection, and standard text editing shortcuts.
-- Phone, tablet, foldable, and desktop Compose previews in `KDesktopSuiteApp.kt`.
-
-Open a sample document and resize the window. Expanded windows show the list and
-editor together; compact windows use Back to return to the list.
-
-**Starter documents are sample data.** Drafts use `SavedStateHandle` for transient
-restoration and may not survive closing the task or force-stopping the app. Add
-a repository backed by Room or files and domain logic behind the ViewModel before
-using the workspace for real documents. Keep large document bodies out of saved
-instance state.
 
 ## Paint implementation ownership
 
