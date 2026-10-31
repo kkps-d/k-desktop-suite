@@ -152,14 +152,22 @@ private fun ColorsDialog(s: PaintUiState, model: PaintViewModel) {
     val strings = LocalResources.current
     val background = s.colorBackground
     var hex by remember { mutableStateOf("%06X".format((if (s.colorBackground) s.options.background else s.options.foreground) and 0xFFFFFF)) }
+    var selectedSlot by remember { mutableStateOf(if (background) s.backgroundSlot else s.foregroundSlot) }
     var savingCustomColor by remember { mutableStateOf(false) }
     val parsed = hex.takeIf { it.length == 6 }?.toLongOrNull(16)?.toInt()?.or(BLACK)
-    fun choose(color: Int) { hex = "%06X".format(color and 0xFFFFFF) }
+    val activeSlot = selectedSlot?.takeIf { it.color(s.preferences) == parsed }
+    LaunchedEffect(s.preferences.customColors) {
+        if (selectedSlot?.color(s.preferences) != parsed) selectedSlot = null
+    }
+    fun choose(color: Int, slot: ColorSlot? = null) {
+        hex = "%06X".format(color and 0xFFFFFF)
+        selectedSlot = slot
+    }
     AlertDialog(onDismissRequest = { model.dialog(null) },modifier = Modifier.testTag("paint-colors-dialog"),title = { Text(if (background) strings.getString(R.string.ui_edit_secondary_color) else strings.getString(R.string.ui_edit_primary_color)) },text = {
         Column(Modifier.verticalScroll(rememberScrollState())) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(48.dp).background(Color(parsed ?: WHITE)).border(1.dp,MaterialTheme.colorScheme.outline))
-                OutlinedTextField(hex,{ hex = it.filter { c -> c.isDigit() || c.uppercaseChar() in 'A'..'F' }.take(6).uppercase() },
+                OutlinedTextField(hex,{ hex = it.filter { c -> c.isDigit() || c.uppercaseChar() in 'A'..'F' }.take(6).uppercase(); selectedSlot = null },
                     label = { Text(stringResource(R.string.ui_rgb_hex)) },prefix = { Text(stringResource(R.string.ui_)) },singleLine = true,modifier = Modifier.padding(start = 12.dp).weight(1f),isError = parsed == null)
             }
             listOf(R.string.ui_color_red to 16,R.string.ui_color_green to 8,R.string.ui_color_blue to 0).forEach { (labelResource,shift) ->
@@ -168,6 +176,7 @@ private fun ColorsDialog(s: PaintUiState, model: PaintViewModel) {
                 var entry by remember(component) { mutableStateOf(component.toString()) }
                 OutlinedTextField(entry,{ value ->
                     entry = value.filter(Char::isDigit).take(3)
+                    selectedSlot = null
                     entry.toIntOrNull()?.takeIf { it in 0..255 }?.let { number ->
                         choose(((parsed ?: WHITE) and (255 shl shift).inv()) or (number shl shift))
                     }
@@ -180,18 +189,23 @@ private fun ColorsDialog(s: PaintUiState, model: PaintViewModel) {
             }
             Text(stringResource(R.string.ui_preset_colors),style = MaterialTheme.typography.labelLarge)
             Column(Modifier.horizontalScroll(rememberScrollState()).testTag("paint-dialog-preset-colors")) {
-                presetColors.chunked(10).forEach { row -> Row { row.forEach { color -> ColorSwatch(color,strings.getString(R.string.ui_choose_color),parsed == color) { choose(color) } } } }
+                presetColors.chunked(10).forEachIndexed { rowIndex,row -> Row { row.forEachIndexed { index,color ->
+                    val slot = ColorSlot(ColorPalette.Preset,rowIndex * 10 + index)
+                    ColorSwatch(color,strings.getString(R.string.ui_choose_color),activeSlot == slot) { choose(color,slot) }
+                } } }
             }
             Text(stringResource(R.string.ui_custom_colors),style = MaterialTheme.typography.labelLarge)
             Column(Modifier.horizontalScroll(rememberScrollState()).testTag("paint-dialog-custom-colors")) {
                 s.preferences.customColors.chunked(10).forEachIndexed { rowIndex,row -> Row { row.forEachIndexed { index,color ->
-                    ColorSwatch(color,strings.getString(R.string.ui_custom_color_1_d, rowIndex * 10 + index + 1),enabled = !savingCustomColor || parsed != null,saving = savingCustomColor) {
+                    val slot = ColorSlot(ColorPalette.Custom,rowIndex * 10 + index)
+                    ColorSwatch(color,strings.getString(R.string.ui_custom_color_1_d, slot.index + 1),selected = activeSlot == slot,enabled = !savingCustomColor || parsed != null,saving = savingCustomColor) {
                         if (savingCustomColor) {
                             parsed?.let { chosen ->
-                                model.preferences { it.copy(customColors = it.customColors.toMutableList().also { colors -> colors[rowIndex*10+index] = chosen }) }
+                                model.preferences { it.copy(customColors = it.customColors.toMutableList().also { colors -> colors[slot.index] = chosen }) }
+                                choose(chosen,slot)
                             }
                             savingCustomColor = false
-                        } else choose(color)
+                        } else choose(color,slot)
                     }
                 } } }
             }
@@ -204,7 +218,7 @@ private fun ColorsDialog(s: PaintUiState, model: PaintViewModel) {
                 }
             }
         }
-    },confirmButton = { TextButton(onClick = { parsed?.let { color -> model.options { if (background) it.copy(background = color) else it.copy(foreground = color) }; model.dialog(null) } },enabled = parsed != null) { Text(stringResource(R.string.ui_apply)) } },
+    },confirmButton = { TextButton(onClick = { parsed?.let { color -> model.setColor(color,activeSlot,background); model.dialog(null) } },enabled = parsed != null) { Text(stringResource(R.string.ui_apply)) } },
         dismissButton = { TextButton(onClick = { model.dialog(null) }) { Text(stringResource(R.string.ui_cancel)) } })
 }
 

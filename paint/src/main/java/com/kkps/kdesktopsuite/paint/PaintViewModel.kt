@@ -13,6 +13,13 @@ import kotlin.math.*
 
 internal enum class PaintDialog { ReopenLastEdit, Unsaved, SaveFormat, ShareFormat, JpegWarning, Conflict, Oversized, Colors, Transform, Rotation, CanvasSize, StrokeSize, About, Properties }
 internal enum class PickerKind { Open, Insert, Save }
+internal enum class ColorPalette { Preset, Custom }
+internal data class ColorSlot(val palette: ColorPalette, val index: Int) {
+    fun color(preferences: PaintPreferences): Int? = when (palette) {
+        ColorPalette.Preset -> presetColors.getOrNull(index)
+        ColorPalette.Custom -> preferences.customColors.getOrNull(index)
+    }
+}
 internal data class PickerRequest(val id: String = UUID.randomUUID().toString(), val kind: PickerKind, val mime: String = "image/png", val launched: Boolean = false)
 internal data class PlatformRequest(val id: String = UUID.randomUUID().toString(), val action: String, val file: File? = null, val mime: String = "image/png")
 internal data class PaintUiState(
@@ -25,11 +32,18 @@ internal data class PaintUiState(
     val preferences: PaintPreferences = PaintPreferences(), val focusMode: Boolean = false,
     val ribbonCollapsed: Boolean = false, val showInformation: Boolean = true, val colorBackground: Boolean = false,
     val settingsOpen: Boolean = false, val colorOptions: Boolean = false,
+    val foregroundSlot: ColorSlot? = null, val backgroundSlot: ColorSlot? = null,
     val lastShape: Tool = Tool.Rectangle,
     val eyedropperSlot: Int = 0,
     val assignCustomColor: Boolean = false,
     val closed: Boolean = false,
-)
+) {
+    fun withPreferences(preferences: PaintPreferences): PaintUiState = copy(
+        preferences = preferences,
+        foregroundSlot = foregroundSlot?.takeIf { it.color(preferences) == options.foreground },
+        backgroundSlot = backgroundSlot?.takeIf { it.color(preferences) == options.background },
+    )
+}
 
 internal class PaintViewModel(
     private val images: ImageRepository, private val recovery: PaintRecovery,
@@ -92,13 +106,13 @@ internal class PaintViewModel(
     init {
         viewModelScope.launch {
             settings.preferences.catch { failure(it, R.string.error_settings_read) }.collect { preferences ->
-                mutableState.update { it.copy(preferences = preferences) }
+                mutableState.update { it.withPreferences(preferences) }
             }
         }
         viewModelScope.launch {
             try {
                 val preferences = settings.preferences.catch { emit(PaintPreferences()) }.first()
-                mutableState.update { it.copy(preferences = preferences) }
+                mutableState.update { it.withPreferences(preferences) }
                 if (window?.askStartup == true) {
                     startupChoice = true
                     dialog(PaintDialog.ReopenLastEdit)
@@ -131,6 +145,7 @@ internal class PaintViewModel(
         history = RasterHistory(snapshot.raster).apply { if (snapshot.dirty) savedRevision = null }
         fingerprint = snapshot.fingerprint
         mutableState.update { it.copy(raster = snapshot.raster, options = snapshot.options,
+            foregroundSlot = null, backgroundSlot = null,
             preview = snapshot.preview, selection = snapshot.selection,
             lastShape = snapshot.options.tool.takeIf { tool -> tool.isShape } ?: it.lastShape,
             viewport = snapshot.viewport.resized(it.viewport.width,it.viewport.height,snapshot.raster.width,snapshot.raster.height,it.viewport.margin),
@@ -201,6 +216,23 @@ internal class PaintViewModel(
         mutableState.update { it.copy(colorOptions = true,colorBackground = background) }
     }
     fun colors(background: Boolean = state.value.colorBackground) { mutableState.update { it.copy(dialog = PaintDialog.Colors,colorBackground = background) } }
+    fun selectColorSlot(slot: ColorSlot) {
+        val color = slot.color(state.value.preferences) ?: return
+        setColor(color,slot)
+    }
+    fun setColor(color: Int, slot: ColorSlot? = null, background: Boolean = state.value.colorBackground) {
+        mutableState.update {
+            val selected = slot?.takeIf { slot -> slot.color(it.preferences) == color }
+            if (background) it.copy(options = it.options.copy(background = color),backgroundSlot = selected)
+            else it.copy(options = it.options.copy(foreground = color),foregroundSlot = selected)
+        }
+        checkpoint()
+    }
+    fun swapColors() {
+        mutableState.update { it.copy(options = it.options.copy(foreground = it.options.background,background = it.options.foreground),
+            foregroundSlot = it.backgroundSlot,backgroundSlot = it.foregroundSlot) }
+        checkpoint()
+    }
     fun assignCustomColor(enabled: Boolean) {
         if (state.value.busy || state.value.loading) return
         savedState["assignCustomColor"] = enabled
@@ -263,7 +295,9 @@ internal class PaintViewModel(
         mutableState.update {
             val options = change(it.options)
             it.copy(options = if (options.tool == Tool.Brush) options.copy(
-                brushWidths = options.brushWidths + (options.brushStyle to options.width)) else options)
+                brushWidths = options.brushWidths + (options.brushStyle to options.width)) else options,
+                foregroundSlot = if (options.foreground == it.options.foreground) it.foregroundSlot else null,
+                backgroundSlot = if (options.background == it.options.background) it.backgroundSlot else null)
         }; checkpoint()
     }
     fun strokeWidth(value: Int) {
@@ -328,7 +362,7 @@ internal class PaintViewModel(
             Tool.Fill -> operation({ it.fill(x, y, s.options.foreground, s.selection) })
             Tool.Eyedropper -> {
                 val color = s.raster.pixel(x,y)
-                options { if (s.colorBackground) it.copy(background = color) else it.copy(foreground = color) }
+                setColor(color)
                 if (s.assignCustomColor) preferences {
                     it.copy(customColors = it.customColors.toMutableList().also { colors -> colors[s.eyedropperSlot] = color })
                 }
@@ -718,7 +752,7 @@ internal class PaintViewModel(
     }
     private fun recent(uri: String) = preferences { it.copy(recent = (listOf(uri) + it.recent.filter { old -> old != uri }).take(10)) }
     fun preferences(change: (PaintPreferences) -> PaintPreferences) {
-        mutableState.update { it.copy(preferences = change(it.preferences)) }
+        mutableState.update { it.withPreferences(change(it.preferences)) }
         viewModelScope.launch { try { settings.update(change) } catch (error: Exception) { failure(error, R.string.error_settings_save) } }
     }
     fun insertPicker() { applyPreview { launchPicker(PickerKind.Insert) } }

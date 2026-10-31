@@ -249,16 +249,18 @@ private fun PaletteOptions(s: PaintUiState, model: PaintViewModel, width: Float)
     val strings = LocalResources.current
     val presets = if (width < 600) 5 else if (width < 1200) 10 else 15
     val custom = if (width < 600) 2 else if (width < 1200) 3 else 5
-    val current = if (s.colorBackground) s.options.background else s.options.foreground
+    val selected = if (s.colorBackground) s.backgroundSlot else s.foregroundSlot
     presetColors.take(presets).forEachIndexed { index,color ->
-        ColorSwatch(color,strings.getString(R.string.ui_preset_color_1_d, index + 1),current == color,!s.busy && !s.loading) { model.options { if (s.colorBackground) it.copy(background = color) else it.copy(foreground = color) } }
+        val slot = ColorSlot(ColorPalette.Preset,index)
+        ColorSwatch(color,strings.getString(R.string.ui_preset_color_1_d, index + 1),selected == slot,!s.busy && !s.loading) { model.selectColorSlot(slot) }
     }
     ToolbarDivider()
     s.preferences.customColors.take(custom).forEachIndexed { index,color ->
-        ColorSwatch(color,strings.getString(R.string.ui_custom_color_1_d, index + 1),current == color,!s.busy && !s.loading) { model.options { if (s.colorBackground) it.copy(background = color) else it.copy(foreground = color) } }
+        val slot = ColorSlot(ColorPalette.Custom,index)
+        ColorSwatch(color,strings.getString(R.string.ui_custom_color_1_d, index + 1),selected == slot,!s.busy && !s.loading) { model.selectColorSlot(slot) }
     }
     PaintButton(PaintIcon.Chevron,stringResource(R.string.ui_edit_colors),!s.busy && !s.loading) { model.colors() }
-    PaintButton(PaintIcon.Swap,stringResource(R.string.ui_swap_foreground_and_background),!s.busy && !s.loading) { model.options { it.copy(foreground = it.background,background = it.foreground) } }
+    PaintButton(PaintIcon.Swap,stringResource(R.string.ui_swap_foreground_and_background),!s.busy && !s.loading,action = model::swapColors)
 }
 
 @Composable

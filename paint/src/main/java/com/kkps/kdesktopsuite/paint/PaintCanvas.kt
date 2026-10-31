@@ -194,7 +194,7 @@ internal fun PaintCanvas(
         if (event.key == Key.F10 && event.isShiftPressed) { contextMenu = Offset.Zero; return true }
         if (event.key == Key.Delete) { model.deleteSelection(); return true }
         if (event.key == Key.X && !event.isCtrlPressed) {
-            model.options { it.copy(foreground = it.background,background = it.foreground) }; return true
+            model.swapColors(); return true
         }
         if (event.key in listOf(Key.LeftBracket,Key.RightBracket)) {
             if (state.options.tool == Tool.Pencil) return false
