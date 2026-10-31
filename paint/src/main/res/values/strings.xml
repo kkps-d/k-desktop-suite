@@ -37,7 +37,7 @@
     <string name="ui_save_ctrl_s">Save</string>
     <string name="ui_save_as_ctrl_shift_s">Save as…</string>
     <string name="ui_insert_image">Insert image…</string>
-    <string name="ui_share_png">Share PNG…</string>
+    <string name="ui_share_this_image">Share this image…</string>
     <string name="ui_image_properties">Image properties</string>
     <string name="ui_close_image_ctrl_w">Close image</string>
     <string name="ui_view">View</string>
@@ -86,9 +86,13 @@
     <string name="ui_discard">Discard</string>
     <string name="ui_cancel">Cancel</string>
     <string name="ui_save_image_as">Save image as</string>
-    <string name="ui_png_preserves_pixels_jpeg_uses_lossy_compression">PNG preserves pixels. JPEG uses lossy compression.</string>
-    <string name="ui_png">PNG</string>
-    <string name="ui_jpeg">JPEG</string>
+    <string name="ui_share_image">Share this image</string>
+    <string name="ui_choose_save_format">Choose a format to save your image as below</string>
+    <string name="ui_choose_share_format">Choose a format to share your image as below</string>
+    <string name="ui_png_extension">.png</string>
+    <string name="ui_jpeg_extension">.jpg</string>
+    <string name="ui_smaller_image">Smaller image</string>
+    <string name="ui_better_quality">Better quality</string>
     <string name="ui_save_a_jpeg_image">Save a JPEG image?</string>
     <string name="ui_continue">Continue</string>
     <string name="ui_the_saved_image_changed">The saved image changed</string>

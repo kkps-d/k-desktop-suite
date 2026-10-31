@@ -101,7 +101,7 @@ class PaintActivity : ComponentActivity() {
                             val uri = FileProvider.getUriForFile(this@PaintActivity, "$packageName.images", requireNotNull(request.file))
                             if (request.action == "share") {
                                 startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                                    type = "image/png"; putExtra(Intent.EXTRA_STREAM, uri)
+                                    type = request.mime; putExtra(Intent.EXTRA_STREAM, uri)
                                     clipData = ClipData.newUri(contentResolver, "Image", uri)
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }, "Share image"))

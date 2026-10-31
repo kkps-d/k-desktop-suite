@@ -15,6 +15,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
@@ -36,22 +37,8 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenLicenses
             title = { Text("Save changes to ${s.title}?") },text = { Text(stringResource(R.string.ui_your_image_has_unsaved_changes_including_any_current_preview)) },
             confirmButton = { TextButton(onClick = model::saveThenContinue) { Text(stringResource(R.string.ui_save)) } },
             dismissButton = { Row { TextButton(onClick = model::discard) { Text(stringResource(R.string.ui_discard)) }; TextButton(onClick = model::cancelReplace) { Text(stringResource(R.string.ui_cancel)) } } })
-        PaintDialog.SaveFormat -> AlertDialog(onDismissRequest = model::cancelSave,
-            title = { Text(stringResource(R.string.ui_save_image_as)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(stringResource(R.string.ui_png_preserves_pixels_jpeg_uses_lossy_compression))
-                    Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { model.saveFormat("image/png") },modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
-                            Text(stringResource(R.string.ui_png))
-                        }
-                        Button(onClick = { model.saveFormat("image/jpeg") },modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
-                            Text(stringResource(R.string.ui_jpeg))
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = model::cancelSave) { Text(stringResource(R.string.ui_cancel)) } })
+        PaintDialog.SaveFormat -> ImageFormatDialog(sharing = false,onDismiss = model::cancelSave,onFormat = model::saveFormat)
+        PaintDialog.ShareFormat -> ImageFormatDialog(sharing = true,onDismiss = { model.dialog(null) },onFormat = model::shareFormat)
         PaintDialog.JpegWarning -> AlertDialog(onDismissRequest = model::cancelSave,
             title = { Text(stringResource(R.string.ui_save_a_jpeg_image)) },text = { Text("JPEG compression can change colors and sharp edges. The current full-quality raster stays in your draft. Quality: ${s.preferences.jpegQuality}%.") },
             confirmButton = { TextButton(onClick = model::continueSave) { Text(stringResource(R.string.ui_continue)) } },
@@ -84,6 +71,39 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenLicenses
             text = { Text("${s.title}\n\n${s.raster.width} × ${s.raster.height} pixels\nOpaque sRGB, 32-bit working raster\n${if (s.mime == "image/jpeg") "JPEG" else "PNG"}\n\n${if (s.uri == null) "Not saved to a file" else s.uri}\n\n${if (s.dirty) "Unsaved changes" else "Saved revision"}") },
             confirmButton = { TextButton(onClick = { model.dialog(null) }) { Text(stringResource(R.string.ui_close)) } })
     }
+}
+
+@Composable
+internal fun ImageFormatDialog(sharing: Boolean, onDismiss: () -> Unit, onFormat: (String) -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(if (sharing) R.string.ui_share_image else R.string.ui_save_image_as)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(stringResource(if (sharing) R.string.ui_choose_share_format else R.string.ui_choose_save_format),
+                    color = MaterialTheme.colorScheme.onSurface,style = MaterialTheme.typography.bodyLarge)
+                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min),horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    listOf(
+                        Triple("image/png",R.string.ui_png_extension,R.string.ui_better_quality),
+                        Triple("image/jpeg",R.string.ui_jpeg_extension,R.string.ui_smaller_image),
+                    ).forEach { (mime,extension,description) ->
+                        FilledTonalButton(
+                            onClick = { onFormat(mime) },
+                            modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 84.dp),
+                            shape = MaterialTheme.shapes.large,
+                            contentPadding = PaddingValues(16.dp),
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally,verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(stringResource(extension),style = MaterialTheme.typography.titleLarge,textAlign = TextAlign.Center)
+                                Text(stringResource(description),style = MaterialTheme.typography.bodyMedium,textAlign = TextAlign.Center)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ui_cancel)) } },
+    )
 }
 
 @Composable

@@ -11,10 +11,10 @@ import java.io.File
 import java.util.UUID
 import kotlin.math.*
 
-internal enum class PaintDialog { ReopenLastEdit, Unsaved, SaveFormat, JpegWarning, Conflict, Oversized, Colors, Transform, Rotation, CanvasSize, StrokeSize, About, Properties }
+internal enum class PaintDialog { ReopenLastEdit, Unsaved, SaveFormat, ShareFormat, JpegWarning, Conflict, Oversized, Colors, Transform, Rotation, CanvasSize, StrokeSize, About, Properties }
 internal enum class PickerKind { Open, Insert, Save }
 internal data class PickerRequest(val id: String = UUID.randomUUID().toString(), val kind: PickerKind, val mime: String = "image/png", val launched: Boolean = false)
-internal data class PlatformRequest(val id: String = UUID.randomUUID().toString(), val action: String, val file: File? = null)
+internal data class PlatformRequest(val id: String = UUID.randomUUID().toString(), val action: String, val file: File? = null, val mime: String = "image/png")
 internal data class PaintUiState(
     val raster: Raster = Raster.blank(), val options: ToolOptions = ToolOptions(),
     val selection: PixelRect? = null, val preview: EditPreview? = null, val viewport: Viewport = Viewport(),
@@ -665,10 +665,24 @@ internal class PaintViewModel(
             catch (error: Exception) { message(error.message) }
         }
     }
-    fun share() { applyPreview { viewModelScope.launch {
-        try { val file = images.stage(history.raster,"image/png",100).file; mutableState.update { it.copy(platform = PlatformRequest(action = "share", file = file)) } }
-        catch (error: Exception) { message(error.message) }
-    } } }
+    fun share() {
+        if (state.value.busy || state.value.loading) return
+        applyPreview { dialog(PaintDialog.ShareFormat) }
+    }
+    fun shareFormat(mime: String) {
+        if (state.value.dialog != PaintDialog.ShareFormat || state.value.busy) return
+        val raster = history.raster
+        val quality = state.value.preferences.jpegQuality
+        mutableState.update { it.copy(dialog = null,busy = true) }
+        viewModelScope.launch {
+            try {
+                val file = images.stage(raster,mime,quality).file
+                mutableState.update { it.copy(platform = PlatformRequest(action = "share",file = file,mime = mime)) }
+            } catch (cancel: CancellationException) { throw cancel }
+            catch (error: Exception) { message(error.message) }
+            finally { mutableState.update { it.copy(busy = false) } }
+        }
+    }
     fun paste() { mutableState.update { it.copy(platform = PlatformRequest(action = "paste")) } }
     fun platformDone(id: String, success: Boolean, uri: String? = null) {
         val request = state.value.platform?.takeIf { it.id == id } ?: return

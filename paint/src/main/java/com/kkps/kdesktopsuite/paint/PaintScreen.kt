@@ -282,7 +282,7 @@ private fun FileMenu(s: PaintUiState, model: PaintViewModel) {
                 HorizontalDivider()
             }
             AppMenuItem({ Text(stringResource(R.string.ui_insert_image)) },{ close(model::insertPicker) },enabled = !s.busy)
-            AppMenuItem({ Text(stringResource(R.string.ui_share_png)) },{ close(model::share) },enabled = !s.busy)
+            AppMenuItem({ Text(stringResource(R.string.ui_share_this_image)) },{ close(model::share) },enabled = !s.busy)
             AppMenuItem({ Text(stringResource(R.string.ui_image_properties)) },{ close { model.dialog(PaintDialog.Properties) } })
             AppMenuItem({ Text(stringResource(R.string.ui_close_image_ctrl_w)) },{ close(model::newImage) },enabled = !s.busy,shortcut = "Ctrl+W")
         }
