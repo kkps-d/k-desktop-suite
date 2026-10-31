@@ -109,6 +109,8 @@ Long document titles truncate with an ellipsis. System window buttons remain cle
 and the title area allows window dragging. Narrow windows, short
 captions, and larger text keep the row below the system caption. Settings and
 focus mode retain the system caption clearance.
+The integrated header has no extra side padding; below the title bar, it keeps
+8dp of padding on both sides.
 
 Settings → On startup lets you reopen previous windows and drafts (the default),
 start a new image at the default canvas size, or ask each time a previous session

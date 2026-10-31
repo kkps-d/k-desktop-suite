@@ -185,7 +185,7 @@ private fun PaintHeader(
     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides if (captionHeight == null) 48.dp else 0.dp) {
         Column(modifier.fillMaxWidth().testTag("paint-header")) {
             Row(Modifier.fillMaxWidth().then(if (captionHeight == null) Modifier.heightIn(min = 48.dp) else Modifier.height(captionHeight))
-                .padding(start = 8.dp,end = if (captionHeight == null) 8.dp else 0.dp),verticalAlignment = Alignment.CenterVertically) {
+                .padding(horizontal = if (captionHeight == null) 8.dp else 0.dp),verticalAlignment = Alignment.CenterVertically) {
                 Row(Modifier.captionControl(input,"menus"),verticalAlignment = Alignment.CenterVertically) {
                     FileMenu(s,model)
                     ViewMenu(s,model)
