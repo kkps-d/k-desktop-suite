@@ -1,0 +1,25 @@
+Use case: ui-mockup.
+Asset type: high-fidelity KD Explorer desktop-window design reference for a native Android productivity suite.
+Primary request: Create one polished, realistic, front-facing application screenshot based on an Explorer-style basic file browser specification. It must combine Microsoft File Explorer's familiar information architecture with Google's Material 3 Expressive styling. Landscape 16:10 composition, high resolution and razor-sharp readable UI text. Show a single complete expanded desktop window, occupying almost the entire image, with only a very narrow neutral backdrop. No angled device mockup, no laptop, no promotional headings or annotation callouts.
+
+Visual language: Material 3 Expressive LIGHT theme, suite green fallback palette. Warm off-white listing surface, pale sage-green tonal chrome and locations pane, deep forest-green icon/label accents, dark charcoal filenames, muted readable gray metadata. Thoughtfully rounded address and search containers, rounded tonal selection indicators, connected pill-shaped Details/Icons view toggle with Details active and a checkmark. Simple consistent Material line icons, standard folder symbols and file-type glyphs. System sans-serif typography. Hierarchy and shape should feel distinctly Material 3 Expressive, while the density, column alignment and command placement feel familiar to Explorer users. Subtle separators, minimal elevation, generous 48dp interaction targets, compact functional spacing. Do not turn files into separate cards.
+
+Composition from top to bottom:
+1. Quiet native Android desktop system caption, app folder icon and exact title "KD Explorer" at leading edge, understated system window controls at trailing edge. No Windows branding and no tabs.
+2. Navigation row: Back, disabled Forward, Up, Refresh icon buttons, then a broad rounded breadcrumb container with folder icon and exact text "Locations > Work > Reports". Current segment Reports is emphasized. At the trailing edge a separate rounded search field with magnifying-glass icon and placeholder "Search this folder".
+3. Quiet command row: Sort dropdown near left of main content; connected Details and Icons toggle beside it with Details selected; three-dot overflow at far right. No New or edit commands.
+4. Main area split into a 256dp leading sidebar and broad content pane with a subtle vertical boundary. Sidebar is light sage and main file table is nearly white.
+Sidebar heading "Locations". Rows: location-overview icon "All locations"; expanded granted-folder root "Work"; indented children "Projects" and "Reports". Reports is current: wide rounded secondary-container tonal active indicator with clearly emphasized label. A chevron beside Work points down, Projects and Reports have separate expansion chevrons. Beneath Work show collapsed granted-folder roots "Pictures" and "Personal". At the bottom of the sidebar show a low-emphasis plus icon button labeled "Add location". Saved roots are folders, not disk drives. No Home feed, Windows C drive, Downloads shortcut, storage charts or cloud accounts.
+Main pane: Details view, aligned header columns "Name" (with ascending sort indicator), "Date modified", "Type", "Size". Main Name column consumes most width; sizes are right-aligned. Exactly eight evenly spaced rows, three folders first then five files:
+Annual reports | 23 Oct 2026, 10:24 | Folder | —
+Invoices | 22 Oct 2026, 14:10 | Folder | —
+Reference | 20 Oct 2026, 09:15 | Folder | —
+Budget.xlsx | 24 Oct 2026, 09:42 | Spreadsheet | 84 KB
+Meeting notes.txt | 23 Oct 2026, 16:30 | Text document | 3 KB
+Project brief.pdf | 22 Oct 2026, 11:05 | PDF document | 248 KB
+Q4 summary.pdf | 21 Oct 2026, 15:20 | PDF document | 512 KB
+Timeline.csv | 20 Oct 2026, 08:45 | CSV document | 12 KB
+Budget.xlsx alone is selected with a soft primary green container across the full row, a small selection check, and visible fine focus outline. All row text remains dark and legible. Folder rows have simple sage folder icons; files have modest file-type symbols, no thumbnails. Leave a substantial quiet empty area beneath eight rows. No details/preview pane.
+5. Thin subdued status bar at bottom with exact text "8 items · 1 selected".
+
+Constraints: preserve the exact app title and functional labels; prioritize accurate readable text and consistent table alignment. Depict only basic browsing functionality. No create/copy/cut/paste/move/rename/delete/share commands, floating action button, file thumbnails, tabs, extra windows, gradients, glass effects, giant headings, illustrations, avatars, ads, screenshots inside screenshots, or decorative dashboard widgets. This is a credible native desktop-window application screenshot, not a landing page.
