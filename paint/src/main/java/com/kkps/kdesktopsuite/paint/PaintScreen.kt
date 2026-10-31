@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.stringResource
@@ -60,10 +61,11 @@ internal fun PaintButton(icon: PaintIcon, label: String, enabled: Boolean = true
 @Composable
 internal fun PaintButton(icon: ImageVector, label: String, modifier: Modifier = Modifier,
     enabled: Boolean = true, selected: Boolean = false, busy: Boolean = false, action: () -> Unit) {
+    val strings = LocalResources.current
     TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
         tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState()) {
         IconButton(onClick = action, enabled = enabled && !busy, modifier = modifier.size(48.dp)
-            .semantics { this.selected = selected; if (selected) stateDescription = "Selected" }) {
+            .semantics { this.selected = selected; if (selected) stateDescription = strings.getString(R.string.ui_selected) }) {
             Box(Modifier.size(40.dp).background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
                 RoundedCornerShape(12.dp)),contentAlignment = Alignment.Center) {
                 Icon(icon, label, tint = if (!enabled || (busy && LocalPaintBusyVisible.current)) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -80,6 +82,7 @@ internal fun PaintScreen(
     caption: DesktopCaption = rememberDesktopCaption(true),
     contentInsets: WindowInsets = WindowInsets.safeDrawing.union(WindowInsets.ime),
 ) {
+    val strings = LocalResources.current
     val snackbar = remember { SnackbarHostState() }
     var showBusy by remember { mutableStateOf(false) }
     LaunchedEffect(state.busy) {
@@ -96,7 +99,7 @@ internal fun PaintScreen(
         if (selectedLicense != null) selectedLicense = null
         else { licensesOpen = false; model.dialog(PaintDialog.About) }
     }
-    LaunchedEffect(state.message) { state.message?.let { snackbar.showSnackbar(it); model.message(null) } }
+    LaunchedEffect(state.message, strings) { state.message?.let { snackbar.showSnackbar(it.resolve(strings)); model.message(null) } }
     val imeVisible = WindowInsets.isImeVisible
     BackHandler(!imeVisible && (debugOpen || state.settingsOpen || state.dialog != null || state.preview != null || state.selection != null || state.focusMode)) {
         if (debugOpen) debugOpen = false else model.back()
@@ -180,6 +183,7 @@ private fun PaintHeader(
     s: PaintUiState, model: PaintViewModel, width: Float, showBusy: Boolean,
     modifier: Modifier = Modifier, captionHeight: Dp? = null, input: CaptionInput? = null,
 ) {
+    val strings = LocalResources.current
     val compact = captionHeight == null && width < 700 * LocalDensity.current.fontScale
     val buttonHeight = (captionHeight ?: 48.dp).coerceAtMost(48.dp)
     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides if (captionHeight == null) 48.dp else 0.dp) {
@@ -197,8 +201,8 @@ private fun PaintHeader(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (s.dirty || s.preview?.hasContent == true) Box(Modifier.size(6.dp)
                         .background(MaterialTheme.colorScheme.onSurfaceVariant,CircleShape).testTag("paint-unsaved-indicator")
-                        .semantics { contentDescription = "Unsaved changes" })
-                    Text(s.title,modifier = Modifier.weight(1f).testTag("paint-document-title"),maxLines = 1,
+                        .semantics { contentDescription = strings.getString(R.string.ui_unsaved_changes) })
+                    Text(paintDisplayTitle(s),modifier = Modifier.weight(1f).testTag("paint-document-title"),maxLines = 1,
                         overflow = TextOverflow.Ellipsis,style = MaterialTheme.typography.titleSmall)
                 }
                 TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
@@ -219,21 +223,23 @@ private fun PaintHeader(
 private fun PaintHeaderActions(
     s: PaintUiState, model: PaintViewModel, showBusy: Boolean, modifier: Modifier = Modifier, height: Dp = 48.dp,
 ) {
+    val strings = LocalResources.current
     Row(verticalAlignment = Alignment.CenterVertically,modifier = modifier.testTag("paint-header-actions")) {
         PaintOperationProgress(s,model,showBusy,height)
-        PaintButton(PaintIcon.Save.vector,"Save (Ctrl+S)",Modifier.height(height),!s.loading && !s.saving,busy = s.busy) { model.save() }
-        PaintButton(PaintIcon.Undo.vector,"Undo (Ctrl+Z)",Modifier.height(height),s.canUndo || s.preview != null,busy = s.busy,action = model::undo)
-        PaintButton(PaintIcon.Redo.vector,"Redo (Ctrl+Shift+Z)",Modifier.height(height),s.canRedo,busy = s.busy,action = model::redo)
+        PaintButton(PaintIcon.Save.vector,strings.getString(R.string.ui_save_ctrl_s_description),Modifier.height(height),!s.loading && !s.saving,busy = s.busy) { model.save() }
+        PaintButton(PaintIcon.Undo.vector,strings.getString(R.string.ui_undo_ctrl_z),Modifier.height(height),s.canUndo || s.preview != null,busy = s.busy,action = model::undo)
+        PaintButton(PaintIcon.Redo.vector,strings.getString(R.string.ui_redo_ctrl_shift_z),Modifier.height(height),s.canRedo,busy = s.busy,action = model::redo)
         VerticalDivider(Modifier.padding(horizontal = 8.dp).height(20.dp))
     }
 }
 
 @Composable
 private fun PaintOperationProgress(s: PaintUiState, model: PaintViewModel, showBusy: Boolean, height: Dp = 48.dp) {
+    val strings = LocalResources.current
     if (s.loading || (s.busy && showBusy) || s.saving) Row(Modifier.testTag("paint-operation-progress"),verticalAlignment = Alignment.CenterVertically) {
         CircularProgressIndicator(Modifier.padding(horizontal = 12.dp).size(20.dp)
-            .semantics { contentDescription = if (s.loading) "Loading image" else if (s.saving) "Saving image" else "Editing image" },strokeWidth = 2.dp)
-        if (s.busy && !s.loading) PaintButton(PaintIcon.Cancel.vector,"Cancel operation",Modifier.height(height),action = model::cancelOperation)
+            .semantics { contentDescription = if (s.loading) strings.getString(R.string.ui_loading_image) else if (s.saving) strings.getString(R.string.ui_saving_image) else strings.getString(R.string.ui_editing_image) },strokeWidth = 2.dp)
+        if (s.busy && !s.loading) PaintButton(PaintIcon.Cancel.vector,strings.getString(R.string.ui_cancel_operation),Modifier.height(height),action = model::cancelOperation)
         VerticalDivider(Modifier.padding(horizontal = 8.dp).height(20.dp))
     }
 }
@@ -313,6 +319,7 @@ private fun ViewMenu(s: PaintUiState, model: PaintViewModel) {
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, selectionDrag: PixelRect?, canvasResize: PixelRect?, portrait: Boolean) {
+    val strings = LocalResources.current
     val fontScale = LocalDensity.current.fontScale
     val fieldWidth = 144.dp * fontScale
     val selection = if (s.options.tool == Tool.Select) selectionDrag ?: s.preview?.bounds ?: s.selection else null
@@ -334,16 +341,16 @@ private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, 
                     .widthIn(min = informationWidth.coerceAtLeast(360.dp * fontScale)).heightIn(min = 32.dp).padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     Text(dimensions,Modifier.weight(1f).padding(horizontal = 12.dp).testTag("paint-selection-dimensions")
-                        .semantics { contentDescription = "Selection dimensions: $dimensions" },color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        .semantics { contentDescription = strings.getString(R.string.ui_selection_dimensions_1_s, dimensions) },color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelMedium,maxLines = 1)
                     VerticalDivider(Modifier.height(20.dp))
                     Text(position,Modifier.weight(1f).padding(horizontal = 12.dp).testTag("paint-cursor-position")
-                        .semantics { contentDescription = "Cursor position: $position" },color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        .semantics { contentDescription = strings.getString(R.string.ui_cursor_position_1_s, position) },color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelMedium,maxLines = 1)
                     VerticalDivider(Modifier.height(20.dp))
                     TextButton(onClick = { model.dialog(PaintDialog.CanvasSize) },enabled = !s.busy && !s.loading,
                         modifier = Modifier.weight(1f).heightIn(min = 28.dp).testTag("paint-canvas-dimensions")
-                            .semantics { contentDescription = "Resize canvas" },contentPadding = PaddingValues(horizontal = 12.dp,vertical = 2.dp)) {
+                            .semantics { contentDescription = strings.getString(R.string.ui_resize_canvas) },contentPadding = PaddingValues(horizontal = 12.dp,vertical = 2.dp)) {
                         Row(Modifier.fillMaxWidth(),verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text("${canvasResize?.width ?: s.raster.width} x ${canvasResize?.height ?: s.raster.height} px",
                                 Modifier.weight(1f,fill = false),style = MaterialTheme.typography.labelMedium,maxLines = 1)
@@ -360,7 +367,7 @@ private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, 
                     TextButton({ model.viewport(s.viewport.actual()) },modifier = Modifier.heightIn(min = 28.dp),
                         contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp)) { Text(stringResource(R.string.ui_actual_size),style = MaterialTheme.typography.labelMedium) }
                     Box {
-                        TextButton({ zoomMenu = true },Modifier.heightIn(min = 28.dp).testTag("paint-zoom-menu").semantics { contentDescription = "Zoom level: $zoom%" },
+                        TextButton({ zoomMenu = true },Modifier.heightIn(min = 28.dp).testTag("paint-zoom-menu").semantics { contentDescription = strings.getString(R.string.ui_zoom_level_1_d, zoom) },
                             contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp)) {
                             Text("$zoom%",style = MaterialTheme.typography.labelMedium)
                             Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
@@ -378,7 +385,7 @@ private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, 
                     Slider(state = zoomSlider,onValueChange = { model.viewport(s.viewport.zoomed(it)) },
                         interactionSource = zoomInteraction,
                         modifier = (if (stacked) Modifier.weight(1f) else Modifier.width(160.dp)).heightIn(min = 32.dp).testTag("paint-zoom-slider")
-                            .semantics { contentDescription = "Zoom"; stateDescription = "$zoom%" },
+                            .semantics { contentDescription = strings.getString(R.string.ui_zoom); stateDescription = "$zoom%" },
                         thumb = {
                             Spacer(Modifier.size(16.dp).indication(zoomInteraction,ripple(bounded = false,radius = 20.dp))
                                 .background(MaterialTheme.colorScheme.primary,CircleShape))

@@ -12,6 +12,7 @@
 - [Testing](TESTING.md): local emulator tests and manual verification.
 - [Design guidelines](DESIGN_GUIDELINES.md): branding, appearance, adaptive layout, and input.
 - [Document tabs](TABS.md): shared tab layout, input, document state, and window transfers.
+- [Localization](LOCALIZATION.md): language settings, Burmese resources, and translation checks.
 - [Roadmap](ROADMAP.md): deferred features and ideas, separate from current behavior.
 
 ## Specifications and references

@@ -1,5 +1,5 @@
-<resources>
-    <string name="app_name">KD Paint</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name" translatable="false">KD Paint</string>
     <string name="ui_show_toolbar">Show toolbar</string>
     <string name="ui_exit_focus_mode">Exit focus mode</string>
     <string name="ui_hide_toolbar">Hide toolbar</string>
@@ -90,8 +90,8 @@
     <string name="ui_share_image">Share this image</string>
     <string name="ui_choose_save_format">Choose a format to save your image as below</string>
     <string name="ui_choose_share_format">Choose a format to share your image as below</string>
-    <string name="ui_png_extension">.png</string>
-    <string name="ui_jpeg_extension">.jpg</string>
+    <string name="ui_png_extension" translatable="false">.png</string>
+    <string name="ui_jpeg_extension" translatable="false">.jpg</string>
     <string name="ui_smaller_image">Smaller image</string>
     <string name="ui_better_quality">Better quality</string>
     <string name="ui_save_a_jpeg_image">Save a JPEG image?</string>
@@ -106,7 +106,7 @@
     <string name="ui_keep_canvas">Keep canvas</string>
     <string name="ui_close">Close</string>
     <string name="ui_rgb_hex">RGB hex</string>
-    <string name="ui_">#</string>
+    <string name="ui_" translatable="false">#</string>
     <string name="ui_preset_colors">Preset colors</string>
     <string name="ui_custom_colors">Custom colors</string>
     <string name="ui_assign_to_custom_color">Assign to custom color</string>
@@ -150,4 +150,183 @@
     <string name="ui_align_top">Align top</string>
     <string name="ui_align_middle">Align middle</string>
     <string name="ui_align_bottom">Align bottom</string>
+    <!-- Tool, brush, handle, and font labels. -->
+    <string name="ui_tool_pencil">Pencil</string>
+    <string name="ui_tool_brush">Brush</string>
+    <string name="ui_tool_fill">Fill</string>
+    <string name="ui_tool_eraser">Eraser</string>
+    <string name="ui_tool_text">Text</string>
+    <string name="ui_tool_eyedropper">Eyedropper</string>
+    <string name="ui_tool_select">Select</string>
+    <string name="ui_tool_line">Line</string>
+    <string name="ui_tool_curve">Curve</string>
+    <string name="ui_tool_ellipse">Ellipse</string>
+    <string name="ui_tool_rectangle">Rectangle</string>
+    <string name="ui_tool_roundedrectangle">Rounded rectangle</string>
+    <string name="ui_tool_polygon">Polygon</string>
+    <string name="ui_tool_triangle">Triangle</string>
+    <string name="ui_tool_righttriangle">Right triangle</string>
+    <string name="ui_tool_diamond">Diamond</string>
+    <string name="ui_tool_pentagon">Pentagon</string>
+    <string name="ui_tool_hexagon">Hexagon</string>
+    <string name="ui_tool_rightarrow">Right arrow</string>
+    <string name="ui_tool_leftarrow">Left arrow</string>
+    <string name="ui_tool_uparrow">Up arrow</string>
+    <string name="ui_tool_downarrow">Down arrow</string>
+    <string name="ui_tool_fourpointstar">Four-point star</string>
+    <string name="ui_tool_fivepointstar">Five-point star</string>
+    <string name="ui_tool_sixpointstar">Six-point star</string>
+    <string name="ui_tool_rectanglecallout">Rounded rectangle callout</string>
+    <string name="ui_tool_ellipsecallout">Ellipse callout</string>
+    <string name="ui_tool_cloudcallout">Cloud callout</string>
+    <string name="ui_tool_heart">Heart</string>
+    <string name="ui_tool_lightning">Lightning bolt</string>
+    <string name="ui_brushstyle_solid">Solid</string>
+    <string name="ui_brushstyle_calligraphyleft">Calligraphy left</string>
+    <string name="ui_brushstyle_calligraphyright">Calligraphy right</string>
+    <string name="ui_brushstyle_airbrush">Airbrush</string>
+    <string name="ui_brushstyle_oil">Oil</string>
+    <string name="ui_brushstyle_crayon">Crayon</string>
+    <string name="ui_brushstyle_marker">Marker</string>
+    <string name="ui_brushstyle_graphite">Graphite</string>
+    <string name="ui_brushstyle_watercolor">Watercolor</string>
+    <string name="ui_canvasresizehandle_topleft">Top left</string>
+    <string name="ui_canvasresizehandle_top">Top</string>
+    <string name="ui_canvasresizehandle_topright">Top right</string>
+    <string name="ui_canvasresizehandle_right">Right</string>
+    <string name="ui_canvasresizehandle_bottomright">Bottom right</string>
+    <string name="ui_canvasresizehandle_bottom">Bottom</string>
+    <string name="ui_canvasresizehandle_bottomleft">Bottom left</string>
+    <string name="ui_canvasresizehandle_left">Left</string>
+    <string name="ui_font_sans_serif">Sans-serif</string>
+    <string name="ui_font_serif">Serif</string>
+    <string name="ui_font_monospace">Monospace</string>
+    <string name="ui_font_system">System</string>
+    <string name="ui_shape">Shape</string>
+    <string name="ui_transparent">Transparent</string>
+    <string name="ui_available_in_a_future_update">Available in a future update</string>
+    <string name="ui_opaque_background">Opaque background</string>
+    <string name="ui_outline">Outline</string>
+    <string name="ui_keep_aspect_ratio">Keep aspect ratio</string>
+    <string name="ui_custom_rotate">Custom rotate</string>
+    <string name="ui_flip">Flip</string>
+    <string name="ui_font_family">Font family</string>
+    <string name="ui_font_size_image_pixels">Font size (image pixels)</string>
+    <string name="ui_bold">Bold</string>
+    <string name="ui_italic">Italic</string>
+    <string name="ui_underline">Underline</string>
+    <string name="ui_strikethrough">Strikethrough</string>
+    <string name="ui_more_shapes">More shapes</string>
+    <string name="ui_commit">Commit</string>
+    <string name="ui_x_image_pixels">X (image pixels)</string>
+    <string name="ui_y_image_pixels">Y (image pixels)</string>
+    <string name="ui_text_skew_warning">Applying skew converts this item to a floating image.</string>
+    <string name="error_dimensions_number">Enter whole numbers for dimensions.</string>
+    <string name="error_dimensions_positive">Dimensions must be greater than zero.</string>
+    <string name="error_dimension_limit">Each dimension must be at most 8192 pixels.</string>
+    <string name="error_x_number">Enter a whole number for X.</string>
+    <string name="error_y_number">Enter a whole number for Y.</string>
+    <string name="error_position_range">Position must be between -8192 and 8192.</string>
+    <string name="error_horizontal_skew_number">Enter a whole number for horizontal skew.</string>
+    <string name="error_vertical_skew_number">Enter a whole number for vertical skew.</string>
+    <string name="error_rotation_number">Enter a valid rotation angle.</string>
+    <string name="ui_selected">Selected</string>
+    <string name="ui_unsaved_changes">Unsaved changes</string>
+    <string name="ui_resize_canvas">Resize canvas</string>
+    <string name="ui_zoom">Zoom</string>
+    <string name="ui_jpeg_quality_label">JPEG quality</string>
+    <string name="error_width_number">Enter a valid width in pixels.</string>
+    <string name="error_height_number">Enter a valid height in pixels.</string>
+    <string name="ui_move_text_frame">Move text frame</string>
+    <string name="ui_enter_text_position">Enter text position</string>
+    <string name="ui_choose_brush_1_s">Choose brush: %1$s</string>
+    <string name="ui_custom_color_1_d">Custom color %1$d</string>
+    <string name="ui_preset_color_1_d">Preset color %1$d</string>
+    <string name="ui_theme_light">Light</string>
+    <string name="ui_theme_dark">Dark</string>
+    <string name="ui_selection_dimensions_1_s">Selection dimensions: %1$s</string>
+    <string name="ui_cursor_position_1_s">Cursor position: %1$s</string>
+    <string name="ui_zoom_level_1_d">Zoom level: %1$d%%</string>
+    <string name="ui_save_changes_to_1_s">Save changes to %1$s?</string>
+    <string name="ui_jpeg_warning">JPEG compression can change colors and sharp edges. The current full-quality raster stays in your draft. Quality: %1$d%%.</string>
+    <string name="ui_not_saved_to_a_file">Not saved to a file</string>
+    <string name="ui_saved_revision">Saved revision</string>
+    <!-- Coordinates and dimensions use pixel units, not item counts. -->
+    <string name="ui_image_properties_body" tools:ignore="PluralsCandidate">%1$s\n\n%2$d × %3$d pixels\nOpaque sRGB, 32-bit working raster\n%4$s\n\n%5$s\n\n%6$s</string>
+    <!-- Validation and operation messages. -->
+    <string name="error_operation">The operation could not be completed.</string>
+    <string name="error_settings_read">Settings could not be read. Default settings are being used.</string>
+    <string name="message_draft_recovered">Recovered draft. Undo history starts again after relaunch.</string>
+    <string name="error_session_unchanged">The previous session is unchanged. Please try again.</string>
+    <string name="error_recovery_write">Draft recovery failed. Keep this window open and save your image.</string>
+    <string name="error_edit_memory">Not enough memory. The original image is unchanged.</string>
+    <string name="error_shape_style">Choose an outline or fill before applying this shape.</string>
+    <string name="error_selection_outside">The selection is outside the image.</string>
+    <string name="error_save_interrupted">Save was interrupted by a process restart. Choose Save as again.</string>
+    <string name="error_file_already_open">This image is already open in another Paint window. Choose a different file with Save as.</string>
+    <string name="error_image_memory">This image needs more memory than is available.</string>
+    <string name="message_newer_edits_open">Saved an earlier revision. Newer edits remain open.</string>
+    <string name="message_image_saved">Image saved.</string>
+    <string name="error_save">Save failed. The private draft is safe.</string>
+    <string name="error_settings_save">Settings could not be saved. Please try again.</string>
+    <string name="error_import_changed">The document changed during image import. Insert the image again when ready.</string>
+    <string name="error_recovery_read">Recovery could not be read. Its files have been preserved.</string>
+    <string name="error_new_window">A new Paint window could not be opened.</string>
+    <string name="error_close_window">The window could not be closed. Its draft is retained.</string>
+    <string name="error_image_window">The image\'s window could not be opened. Its draft is retained.</string>
+    <string name="error_open_image">Could not open image.</string>
+    <string name="error_insert_image">The image could not be inserted.</string>
+    <string name="error_image_dimensions">Images must be 1–8192 pixels per side and no more than 16 megapixels.</string>
+    <string name="error_working_memory">This image needs more working memory than is available.</string>
+    <string name="error_empty_selection">Select some image pixels first.</string>
+    <string name="error_transform_size">The transform is too small.</string>
+    <string name="error_transform_bounds">The transformed image is too large.</string>
+    <string name="error_skew_range">Skew angles must be between −89° and 89°.</string>
+    <string name="error_encoded_file_size">Encoded images must be smaller than 128 MiB.</string>
+    <string name="error_image_format">Choose a PNG or JPEG image.</string>
+    <string name="error_incomplete_write">The provider did not retain the complete image. The private draft is safe.</string>
+    <string name="error_compare_file_size">The external file is too large to compare safely.</string>
+    <string name="error_restore_window">A Paint window could not be opened. Its draft is retained.</string>
+    <string name="message_selection_copied">Image selection copied.</string>
+    <string name="error_window_recovery">Window recovery failed. Keep this window open and save your image.</string>
+    <string name="error_window_startup">Paint recovery could not be read. Its files have been preserved.</string>
+    <string name="error_browser">No browser is available to open the source repository.</string>
+    <string name="ui_untitled">Untitled</string>
+    <!-- Canvas accessibility. -->
+    <!-- Coordinates and dimensions use pixel units, not item counts. -->
+    <string name="ui_canvas_description" tools:ignore="PluralsCandidate">Image canvas, %1$d by %2$d pixels. %3$s tool.</string>
+    <string name="ui_canvas_keyboard_help"> Use arrow keys to position, Space to place points, Enter to apply, Escape to cancel. Hold Space and drag to pan.</string>
+    <string name="ui_select_all_image_pixels">Select all image pixels</string>
+    <string name="ui_apply_current_edit">Apply current edit</string>
+    <string name="ui_cancel_current_edit">Cancel current edit</string>
+    <string name="ui_finish_and_commit_shape">Finish and commit shape</string>
+    <string name="ui_move_or_resize_selection">Move or resize selection</string>
+    <string name="ui_create_text_in_the_image">Create text in the image</string>
+    <string name="ui_announce_cursor_coordinates">Announce cursor coordinates</string>
+    <!-- Coordinates and dimensions use pixel units, not item counts. -->
+    <string name="ui_cursor_pixels" tools:ignore="PluralsCandidate">Cursor %1$d, %2$d pixels</string>
+    <string name="ui_picked_color_1_s">Picked color %1$s</string>
+    <string name="ui_canvas_resize_handle">%1$s canvas resize handle</string>
+    <string name="ui_pixel_dimensions">%1$d x %2$d px</string>
+    <string name="ui_enter_canvas_dimensions">Enter canvas dimensions</string>
+    <!-- Image preparation errors. -->
+    <string name="error_display_memory">Not enough memory to display this image.</string>
+    <string name="error_preview_memory">Not enough memory to preview this selection.</string>
+    <!-- Dialogs and progress. -->
+    <string name="ui_edit_secondary_color">Edit secondary color</string>
+    <string name="ui_edit_primary_color">Edit primary color</string>
+    <string name="ui_choose_color">Choose color</string>
+    <string name="ui_target_text">Target: Text</string>
+    <string name="ui_target_shape">Target: Shape</string>
+    <string name="ui_save_ctrl_s_description">Save (Ctrl+S)</string>
+    <string name="ui_undo_ctrl_z">Undo (Ctrl+Z)</string>
+    <string name="ui_redo_ctrl_shift_z">Redo (Ctrl+Shift+Z)</string>
+    <string name="ui_loading_image">Loading image</string>
+    <string name="ui_saving_image">Saving image</string>
+    <string name="ui_editing_image">Editing image</string>
+    <string name="ui_cancel_operation">Cancel operation</string>
+    <string name="ui_enter_selection_rotation">Enter selection rotation</string>
+    <string name="ui_color_red">Red</string>
+    <string name="ui_color_green">Green</string>
+    <string name="ui_color_blue">Blue</string>
 </resources>

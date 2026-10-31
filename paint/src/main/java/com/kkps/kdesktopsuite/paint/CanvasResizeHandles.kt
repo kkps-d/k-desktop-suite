@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +32,7 @@ internal fun CanvasResizeHandles(
     state: PaintUiState, model: PaintViewModel, bounds: PixelRect?, active: Boolean,
     onBoundsChange: (PixelRect?) -> Unit,
 ) {
+    val strings = LocalResources.current
     val current by rememberUpdatedState(state)
     val density = LocalDensity.current
     val context = LocalContext.current
@@ -41,6 +43,7 @@ internal fun CanvasResizeHandles(
     val area = bounds ?: PixelRect(0,0,state.raster.width,state.raster.height)
 
     CanvasResizeHandle.entries.forEach { handle ->
+        val handleLabel = handle.displayLabel()
         val focus = remember { FocusRequester() }
         var focused by remember { mutableStateOf(false) }
         var dragging by remember { mutableStateOf(false) }
@@ -59,11 +62,11 @@ internal fun CanvasResizeHandles(
         }.size(48.dp).testTag("canvas-resize-${handle.name}").pointerHoverIcon(cursor)
             .focusRequester(focus).onFocusChanged { focused = it.isFocused }.focusable(enabled)
             .semantics {
-                contentDescription = "${handle.label} canvas resize handle"
-                stateDescription = "${area.width} x ${area.height} px"
+                contentDescription = strings.getString(R.string.ui_canvas_resize_handle, handleLabel)
+                stateDescription = strings.getString(R.string.ui_pixel_dimensions, area.width, area.height)
                 role = Role.Button
                 if (!enabled) disabled()
-                onClick("Enter canvas dimensions") { if (enabled) model.dialog(PaintDialog.CanvasSize); enabled }
+                onClick(strings.getString(R.string.ui_enter_canvas_dimensions)) { if (enabled) model.dialog(PaintDialog.CanvasSize); enabled }
             }.onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown || !enabled || event.isCtrlPressed || event.isAltPressed) false
                 else if (event.key == Key.Escape && bounds != null) { cancel(); true }

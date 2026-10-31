@@ -14,6 +14,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -27,7 +28,7 @@ fun AppSettingsPage(
     Column(modifier.fillMaxSize().testTag("settings-page").onPreviewKeyEvent {
         if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) { onBack(); true } else false
     }) {
-        TopAppBar(title = { Text(title) },navigationIcon = {
+        TopAppBar(title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },navigationIcon = {
             IconButton(onClick = onBack,modifier = Modifier.focusRequester(backFocus)) {
                 Icon(painterResource(R.drawable.ic_back),backLabel)
             }

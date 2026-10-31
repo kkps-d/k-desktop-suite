@@ -8,7 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowInsetsController
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.enableEdgeToEdge
@@ -39,7 +39,7 @@ internal class PaintApplication : Application() {
     val images by lazy { ImageRepository(this) }
 }
 
-class PaintActivity : ComponentActivity() {
+class PaintActivity : AppCompatActivity() {
     internal lateinit var paintModel: PaintViewModel
         private set
     private var paintWindow: PaintWindow? = null
@@ -91,7 +91,7 @@ class PaintActivity : ComponentActivity() {
                 setContent {
                     PaintTheme {
                         Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp)) {
-                            Text("Paint recovery could not be read. Its files have been preserved. ${error.message.orEmpty()}")
+                            Text(androidx.compose.ui.res.stringResource(R.string.error_window_startup))
                         }
                     }
                 }
@@ -108,7 +108,7 @@ class PaintActivity : ComponentActivity() {
         setContent {
             val state by model.state.collectAsStateWithLifecycle()
             LaunchedEffect(state.loading) {
-                if (!state.loading && !state.closed) application.windows.restoreOthers(this@PaintActivity, window, model::message)
+                if (!state.loading && !state.closed) application.windows.restoreOthers(this@PaintActivity, window) { model.failure(it, R.string.error_restore_window) }
             }
             val picker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 val data = result.data
@@ -138,7 +138,7 @@ class PaintActivity : ComponentActivity() {
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
                     }
                     model.pickerLaunched(request.id)
-                    try { picker.launch(intent) } catch (error: Exception) { model.pickerResult(null); model.message(error.message) }
+                    try { picker.launch(intent) } catch (error: Exception) { model.pickerResult(null); model.failure(error) }
                 }
             }
             LaunchedEffect(state.platform?.id) {
@@ -156,20 +156,21 @@ class PaintActivity : ComponentActivity() {
                             if (request.action == "share") {
                                 startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                                     type = request.mime; putExtra(Intent.EXTRA_STREAM, uri)
-                                    clipData = ClipData.newUri(contentResolver, "Image", uri)
+                                    clipData = ClipData.newUri(contentResolver, getString(R.string.ui_image_properties), uri)
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }, "Share image"))
+                                }, getString(R.string.ui_share_image)))
                             } else {
-                                clipboard.setPrimaryClip(ClipData.newUri(contentResolver, "Image selection", uri))
-                                if (Build.VERSION.SDK_INT < 33) model.message("Image selection copied.")
+                                clipboard.setPrimaryClip(ClipData.newUri(contentResolver, getString(R.string.ui_copy_selection), uri))
+                                if (Build.VERSION.SDK_INT < 33) model.message(R.string.message_selection_copied)
                             }
                         }
                         succeeded = true
-                    } catch (error: Exception) { model.message(error.message ?: "The action could not be completed.") }
+                    } catch (error: Exception) { model.failure(error) }
                     finally { model.platformDone(request.id, succeeded, pasteUri) }
                 }
             }
-            SideEffect { title = "${state.title} — KD Paint" }
+            val displayTitle = paintDisplayTitle(state)
+            SideEffect { title = "$displayTitle — ${getString(R.string.app_name)}" }
             PaintTheme(state.preferences.appearance) {
                 val lightCaption = MaterialTheme.colorScheme.surface.luminance() > 0.5f
                 SideEffect {
@@ -227,7 +228,7 @@ class PaintActivity : ComponentActivity() {
             lifecycleScope.launch {
                 try { (application as PaintApplication).windows.focus(window) }
                 catch (cancel: CancellationException) { throw cancel }
-                catch (error: Exception) { if (::paintModel.isInitialized) paintModel.message("Window recovery failed: ${error.message}") }
+                catch (error: Exception) { if (::paintModel.isInitialized) paintModel.failure(error, R.string.error_window_recovery) }
             }
         }
     }

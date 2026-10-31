@@ -152,7 +152,7 @@ class PaintWindowSessionTest {
         waitFor { !model.state.value.saving }
         assertFalse(window.closed)
         assertTrue(model.state.value.dirty)
-        assertTrue(model.state.value.message.orEmpty().startsWith("Save failed"))
+        assertEquals(R.string.error_save, model.state.value.message?.resourceId)
         main { model.flush() }
         waitFor { window.hasDraft }
         assertTrue(requireNotNull(window.recovery.read()).dirty)
@@ -173,7 +173,7 @@ class PaintWindowSessionTest {
         main { b.save(true); b.saveFormat("image/png"); b.pickerResult(uri) }
         assertFalse(b.state.value.saving)
         assertNull(b.state.value.uri)
-        assertTrue(b.state.value.message.orEmpty().contains("already open"))
+        assertEquals(R.string.error_file_already_open, b.state.value.message?.resourceId)
         assertFalse(a.state.value.dirty)
     } }
 
@@ -287,7 +287,7 @@ class PaintWindowSessionTest {
         val a = model(broken, restored)
         val b = model(healthy, restored)
         main { a.flush() }
-        assertTrue(a.state.value.message.orEmpty().contains("preserved"))
+        assertEquals(R.string.error_recovery_read, a.state.value.message?.resourceId)
         assertEquals("broken", brokenManifest.readText())
         assertEquals(4, b.state.value.raster.width)
         assertEquals(WHITE, b.state.value.raster.pixel(0, 0))
@@ -340,7 +340,7 @@ class PaintWindowSessionTest {
             assertFalse(model.state.value.closed)
             assertFalse(window.closed)
             assertSame(window, windows.windows[window.id])
-            assertTrue(model.state.value.message.orEmpty().isNotEmpty())
+            assertNotNull(model.state.value.message)
         } finally {
             assertTrue(blocker.delete())
             assertTrue(pending.delete())

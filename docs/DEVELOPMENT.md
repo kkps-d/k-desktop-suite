@@ -84,6 +84,12 @@ Extract shared UI when both apps demonstrate reuse.
 
 ## Shared desktop UI constraints
 
+Both editor activities extend AppCompatActivity so per-app language changes work
+on Android 8–12 as well as newer releases. Keep locale changes on the normal
+configuration-recreation path, retaining each app's window identities and editor
+ViewModels. Do not manually restart tasks or store translated labels in document
+state. See [Localization](LOCALIZATION.md) for resource ownership and locale setup.
+
 - Use the actual caption height, system control bounds, cutouts, and content
   origin when integrating controls into a desktop title bar. Geometry is in
   physical window pixels; RTL must not mirror system control positions.

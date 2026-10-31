@@ -17,6 +17,25 @@ JVM tests where available:
 
 ## Instrumented tests
 
+For localization, also run `python scripts/check_localization.py` and
+`./gradlew :core:ui:testDebugUnitTest`. The shared JVM tests exercise API 32 locale
+application across activities and unavailable/restricted Android settings intents.
+Each editor's `LanguageSettingsTest` covers language changes with retained drafts
+or multiple windows. Check system settings and in-app selection in both directions,
+Follow system, supported-language links, Burmese wrapping at large text sizes,
+and independence between the two app preferences. Restore locale and display
+settings after testing. Small Desktop's API 37.1 image does not verify actual
+pre-13 emulator or manufacturer-specific ROM behavior.
+
+Localization verification on 31 October 2026: both debug builds and instrumented
+test APKs compiled; lint reported no errors (five existing Notepad warnings and
+two existing Paint warnings). All 60 JVM tests and 35 focused instrumented tests
+passed. The instrumented checks ran on local Small Desktop's regular desktop
+user. The resource check covered 415 translated entries. Manual checks covered
+the Android app-language settings shortcut, independent per-app preferences,
+relaunch persistence, Burmese glyph rendering, and a 400dp window at 200% font
+size. Burmese wording still needs fluent-speaker review.
+
 **Run tests only on the local Small Desktop emulator. Never run tests on
 connected ADB remote devices.** Start Small Desktop through Android Studio's
 Device Manager if it is not already running.
@@ -25,6 +44,11 @@ Run `adb devices -l` and identify Small Desktop's local `emulator-…` serial.
 Always set `ANDROID_SERIAL` explicitly to that serial before running connected
 tests, especially when other devices are connected. The serial below is an
 example; replace it with the one belonging to Small Desktop.
+
+After a cold boot, wait for the regular desktop user to finish signing in before
+starting tests. `adb -s <serial> shell am get-current-user` should identify that
+user, rather than the internal System User. Locale changes do not behave like a
+normal app session under the internal user.
 
 Some Paint Compose fixtures request a 1200 × 800 dp surface. Give their host
 window enough space; a smaller freeform window clips the fixture and can cause

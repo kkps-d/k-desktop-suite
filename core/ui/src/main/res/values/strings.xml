@@ -1,4 +1,14 @@
 <resources>
+    <!-- Shared language settings. Keep both action annotations in every translation. -->
+    <string name="core_ui_language_title">Language</string>
+    <string name="core_ui_language_follow_system">Follow system</string>
+    <string name="core_ui_language_open_system">Open language settings</string>
+    <string name="core_ui_language_change_in_app">Change language in app</string>
+    <string name="core_ui_language_supported">Supported languages</string>
+    <string name="core_ui_language_links"><annotation action="supported">Supported languages</annotation>\nSettings not working? <annotation action="picker">Change language in app</annotation></string>
+    <string name="core_ui_language_explanation">Choose a language for all windows of this app. Follow system uses your device language when supported, otherwise English.</string>
+    <string name="core_ui_language_back">Back</string>
+    <string name="core_ui_language_close">Close</string>
     <string name="open_source_licenses">Open-source licenses</string>
     <string name="licenses_back">Back</string>
     <string name="licenses_description">Licenses and acknowledgments for this app and its third-party components.</string>

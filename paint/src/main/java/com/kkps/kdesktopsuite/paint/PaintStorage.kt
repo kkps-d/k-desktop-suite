@@ -45,14 +45,14 @@ internal class ImageRepository(private val context: Context, private val io: Cor
                     while (true) {
                         val read = input.read(buffer); if (read < 0) break
                         total += read
-                        require(total <= 128L * 1024 * 1024) { "Encoded images must be smaller than 128 MiB." }
+                        validatePaint(total <= 128L * 1024 * 1024, PaintProblem.EncodedFileSize)
                         output.write(buffer, 0, read)
                     }
                 }
             } ?: throw IOException("This provider did not supply image data.")
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(staged.path, bounds)
-            require(bounds.outMimeType in setOf("image/png", "image/jpeg")) { "Choose a PNG or JPEG image." }
+            validatePaint(bounds.outMimeType in setOf("image/png", "image/jpeg"), PaintProblem.ImageFormat)
             checkImageSize(bounds.outWidth, bounds.outHeight)
             val decoded = BitmapFactory.decodeFile(staged.path, BitmapFactory.Options().apply {
                 inPreferredConfig = Bitmap.Config.ARGB_8888
@@ -101,14 +101,14 @@ internal class ImageRepository(private val context: Context, private val io: Cor
             staged.file.inputStream().use { it.copyTo(output) }
         } ?: throw IOException("This image cannot be written. Use Save as.")
         val actual = externalFingerprint(uri)
-        check(actual == staged.fingerprint) { "The provider did not retain the complete image. The private draft is safe." }
+        validatePaint(actual == staged.fingerprint, PaintProblem.IncompleteWrite)
         staged.file.name
     }
     private fun externalFingerprint(uri: String): String = resolver.openInputStream(uri.toUri())?.use { input ->
         val digest = MessageDigest.getInstance("SHA-256"); val buffer = ByteArray(32768)
         var size = 0L
         while (true) { val read = input.read(buffer); if (read < 0) break; size += read
-            require(size <= 128L * 1024 * 1024) { "The external file is too large to compare safely." }
+            validatePaint(size <= 128L * 1024 * 1024, PaintProblem.ComparisonFileSize)
             digest.update(buffer, 0, read)
         }
         digest.digest().joinToString("") { "%02x".format(it) }

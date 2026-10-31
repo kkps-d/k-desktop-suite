@@ -7,6 +7,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -17,31 +18,32 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.kkps.kdesktopsuite.ui.AppSettingsPage
+import com.kkps.kdesktopsuite.ui.AppLanguageSettingsPage
 import kotlin.math.roundToInt
 
 @Composable
 internal fun PaintSettingsScreen(s: PaintUiState, model: PaintViewModel) {
+    val strings = LocalResources.current
     val preferences = s.preferences
     var width by rememberSaveable { mutableStateOf(preferences.defaultCanvasWidth.toString()) }
     var height by rememberSaveable { mutableStateOf(preferences.defaultCanvasHeight.toString()) }
-    var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var error by rememberSaveable { mutableStateOf<Int?>(null) }
     fun saveDefaultCanvasSize(widthText: String, heightText: String) {
         width = widthText
         height = heightText
         try {
-            val w = requireNotNull(widthText.toIntOrNull()) { "Enter a valid width in pixels." }
-            val h = requireNotNull(heightText.toIntOrNull()) { "Enter a valid height in pixels." }
+            val w = widthText.toIntOrNull() ?: run { error = R.string.error_width_number; return }
+            val h = heightText.toIntOrNull() ?: run { error = R.string.error_height_number; return }
             checkImageSize(w,h)
             error = null
             if (w != preferences.defaultCanvasWidth || h != preferences.defaultCanvasHeight) {
                 model.preferences { it.copy(defaultCanvasWidth = w,defaultCanvasHeight = h) }
             }
-        } catch (invalid: IllegalArgumentException) { error = invalid.message }
+        } catch (invalid: IllegalArgumentException) { error = if (invalid is PaintValidationException) invalid.problem.messageResource() else R.string.error_operation }
     }
     val quality = rememberSliderState(value = preferences.jpegQuality.toFloat(),trackRange = 1f..100f)
     quality.value = preferences.jpegQuality.toFloat()
-    AppSettingsPage(stringResource(R.string.ui_settings),stringResource(R.string.ui_back),{ model.showSettings(false) }) { availableWidth ->
+    AppLanguageSettingsPage(stringResource(R.string.ui_settings),stringResource(R.string.ui_back),{ model.showSettings(false) }) { availableWidth ->
         val stackChoices = availableWidth < 360.dp || LocalDensity.current.fontScale > 1.3f
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.ui_appearance),Modifier.semantics { heading() },style = MaterialTheme.typography.titleMedium)
@@ -57,7 +59,7 @@ internal fun PaintSettingsScreen(s: PaintUiState, model: PaintViewModel) {
                             2 -> ButtonGroupDefaults.connectedTrailingButtonShapes()
                             else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                         },icon = if (preferences.appearance == appearance) ({ Icon(PaintIcon.Apply.vector,null) }) else null) {
-                        Text(if (appearance == "System") stringResource(R.string.ui_theme_auto) else appearance)
+                        Text(stringResource(when (appearance) { "Light" -> R.string.ui_theme_light; "Dark" -> R.string.ui_theme_dark; else -> R.string.ui_theme_auto }))
                     }
                 }
             }
@@ -90,12 +92,12 @@ internal fun PaintSettingsScreen(s: PaintUiState, model: PaintViewModel) {
                     saveDefaultCanvasSize(defaults.defaultCanvasWidth.toString(),defaults.defaultCanvasHeight.toString())
                 },modifier = Modifier.testTag("reset-default-canvas-size")) { Text(stringResource(R.string.ui_reset)) }
             }
-            error?.let { Text(it,color = MaterialTheme.colorScheme.error) }
+            error?.let { Text(stringResource(it),color = MaterialTheme.colorScheme.error) }
         }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.ui_jpeg_quality,preferences.jpegQuality),Modifier.semantics { heading() },style = MaterialTheme.typography.titleMedium)
             Slider(state = quality,onValueChange = { value -> model.preferences { it.copy(jpegQuality = value.roundToInt()) } },
-                modifier = Modifier.semantics { contentDescription = "JPEG quality" })
+                modifier = Modifier.semantics { contentDescription = strings.getString(R.string.ui_jpeg_quality_label) })
         }
     }
 }

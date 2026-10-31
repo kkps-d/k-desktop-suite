@@ -1,5 +1,5 @@
 <resources>
-    <style name="Theme.KDNotepad" parent="android:style/Theme.Material.Light.NoActionBar">
+    <style name="Theme.KDNotepad" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowSoftInputMode">adjustResize</item>

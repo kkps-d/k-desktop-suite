@@ -23,7 +23,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.kkps.kdesktopsuite.ui.AppSettingsPage
+import com.kkps.kdesktopsuite.ui.AppLanguageSettingsPage
 
 internal enum class AppTheme(@StringRes val label: Int) {
     Light(R.string.theme_light), Dark(R.string.theme_dark), Auto(R.string.theme_auto),
@@ -46,7 +46,7 @@ internal fun NotepadSettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    AppSettingsPage(stringResource(R.string.settings),stringResource(R.string.back),onBack,modifier) { availableWidth ->
+    AppLanguageSettingsPage(stringResource(R.string.settings),stringResource(R.string.back),onBack,modifier) { availableWidth ->
         val fontScale = LocalDensity.current.fontScale
         // Stack choices when three readable, accessible controls won't fit comfortably.
         val stackChoices = availableWidth < 360.dp || fontScale > 1.3f

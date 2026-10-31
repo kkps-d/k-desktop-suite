@@ -4,6 +4,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.stringResource
@@ -25,6 +26,7 @@ import com.kkps.kdesktopsuite.ui.AppAboutDialog
 
 @Composable
 internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenLicenses: () -> Unit, onOpenDebug: () -> Unit) {
+    val strings = LocalResources.current
     val uriHandler = LocalUriHandler.current
     when (s.dialog) {
         null -> Unit
@@ -34,13 +36,13 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenLicenses
             confirmButton = { TextButton(onClick = { model.resolveStartup(true) }) { Text(stringResource(R.string.ui_reopen)) } },
             dismissButton = { TextButton(onClick = { model.resolveStartup(false) }) { Text(stringResource(R.string.ui_start_new_image)) } })
         PaintDialog.Unsaved -> AlertDialog(onDismissRequest = model::cancelReplace,
-            title = { Text("Save changes to ${s.title}?") },text = { Text(stringResource(R.string.ui_your_image_has_unsaved_changes_including_any_current_preview)) },
+            title = { Text(strings.getString(R.string.ui_save_changes_to_1_s, paintDisplayTitle(s))) },text = { Text(stringResource(R.string.ui_your_image_has_unsaved_changes_including_any_current_preview)) },
             confirmButton = { TextButton(onClick = model::saveThenContinue) { Text(stringResource(R.string.ui_save)) } },
             dismissButton = { Row { TextButton(onClick = model::discard) { Text(stringResource(R.string.ui_discard)) }; TextButton(onClick = model::cancelReplace) { Text(stringResource(R.string.ui_cancel)) } } })
         PaintDialog.SaveFormat -> ImageFormatDialog(sharing = false,onDismiss = model::cancelSave,onFormat = model::saveFormat)
         PaintDialog.ShareFormat -> ImageFormatDialog(sharing = true,onDismiss = { model.dialog(null) },onFormat = model::shareFormat)
         PaintDialog.JpegWarning -> AlertDialog(onDismissRequest = model::cancelSave,
-            title = { Text(stringResource(R.string.ui_save_a_jpeg_image)) },text = { Text("JPEG compression can change colors and sharp edges. The current full-quality raster stays in your draft. Quality: ${s.preferences.jpegQuality}%.") },
+            title = { Text(stringResource(R.string.ui_save_a_jpeg_image)) },text = { Text(strings.getString(R.string.ui_jpeg_warning, s.preferences.jpegQuality)) },
             confirmButton = { TextButton(onClick = model::continueSave) { Text(stringResource(R.string.ui_continue)) } },
             dismissButton = { TextButton(onClick = model::cancelSave) { Text(stringResource(R.string.ui_cancel)) } })
         PaintDialog.Conflict -> AlertDialog(onDismissRequest = model::cancelSave,
@@ -65,10 +67,10 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenLicenses
                         interactionSource = remember { MutableInteractionSource() },indication = null,onClick = onOpenDebug))
             },
             onSourceClick = { runCatching { uriHandler.openUri("https://github.com/kkps-d/k-desktop-suite") }
-                .onFailure { model.message("No browser is available to open the source repository.") } },
+                .onFailure { model.failure(it, R.string.error_browser) } },
             onDismiss = { model.dialog(null) },onLicensesClick = onOpenLicenses)
         PaintDialog.Properties -> AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text(stringResource(R.string.ui_image_properties)) },
-            text = { Text("${s.title}\n\n${s.raster.width} × ${s.raster.height} pixels\nOpaque sRGB, 32-bit working raster\n${if (s.mime == "image/jpeg") "JPEG" else "PNG"}\n\n${if (s.uri == null) "Not saved to a file" else s.uri}\n\n${if (s.dirty) "Unsaved changes" else "Saved revision"}") },
+            text = { Text(strings.getString(R.string.ui_image_properties_body, paintDisplayTitle(s), s.raster.width, s.raster.height, if (s.mime == "image/jpeg") "JPEG" else "PNG", s.uri ?: strings.getString(R.string.ui_not_saved_to_a_file), strings.getString(if (s.dirty) R.string.ui_unsaved_changes else R.string.ui_saved_revision))) },
             confirmButton = { TextButton(onClick = { model.dialog(null) }) { Text(stringResource(R.string.ui_close)) } })
     }
 }
@@ -110,11 +112,11 @@ internal fun ImageFormatDialog(sharing: Boolean, onDismiss: () -> Unit, onFormat
 private fun CanvasSizeDialog(s: PaintUiState, model: PaintViewModel) {
     var width by rememberSaveable { mutableStateOf(s.raster.width.toString()) }
     var height by rememberSaveable { mutableStateOf(s.raster.height.toString()) }
-    var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var error by rememberSaveable { mutableStateOf<Int?>(null) }
     AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text(stringResource(R.string.ui_canvas_size)) },text = {
         Column(Modifier.verticalScroll(rememberScrollState())) {
             CanvasSizeFields(width,height,{ width = it; error = null },{ height = it; error = null })
-            error?.let { Text(it,color = MaterialTheme.colorScheme.error) }
+            error?.let { Text(stringResource(it),color = MaterialTheme.colorScheme.error) }
             listOf(
                 "4:3" to listOf(640 to 480,800 to 600,1024 to 768,1600 to 1200),
                 "16:9" to listOf(1280 to 720,1920 to 1080,2560 to 1440,3840 to 2160),
@@ -135,31 +137,33 @@ private fun CanvasSizeDialog(s: PaintUiState, model: PaintViewModel) {
         }
     },confirmButton = { TextButton(onClick = {
         try {
-            val w = requireNotNull(width.toIntOrNull()) { "Enter a valid width in pixels." }
-            val h = requireNotNull(height.toIntOrNull()) { "Enter a valid height in pixels." }
+            val w = width.toIntOrNull() ?: run { error = R.string.error_width_number; return@TextButton }
+            val h = height.toIntOrNull() ?: run { error = R.string.error_height_number; return@TextButton }
             checkImageSize(w,h)
             model.resizeCanvas(w,h)
             model.dialog(null)
-        } catch (invalid: IllegalArgumentException) { error = invalid.message }
+        } catch (invalid: IllegalArgumentException) { error = if (invalid is PaintValidationException) invalid.problem.messageResource() else R.string.error_operation }
     },enabled = !s.busy && !s.loading) { Text(stringResource(R.string.ui_resize)) } },
         dismissButton = { TextButton(onClick = { model.dialog(null) }) { Text(stringResource(R.string.ui_cancel)) } })
 }
 
 @Composable
 private fun ColorsDialog(s: PaintUiState, model: PaintViewModel) {
+    val strings = LocalResources.current
     val background = s.colorBackground
     var hex by remember { mutableStateOf("%06X".format((if (s.colorBackground) s.options.background else s.options.foreground) and 0xFFFFFF)) }
     var savingCustomColor by remember { mutableStateOf(false) }
     val parsed = hex.takeIf { it.length == 6 }?.toLongOrNull(16)?.toInt()?.or(BLACK)
     fun choose(color: Int) { hex = "%06X".format(color and 0xFFFFFF) }
-    AlertDialog(onDismissRequest = { model.dialog(null) },modifier = Modifier.testTag("paint-colors-dialog"),title = { Text(if (background) "Edit secondary color" else "Edit primary color") },text = {
+    AlertDialog(onDismissRequest = { model.dialog(null) },modifier = Modifier.testTag("paint-colors-dialog"),title = { Text(if (background) strings.getString(R.string.ui_edit_secondary_color) else strings.getString(R.string.ui_edit_primary_color)) },text = {
         Column(Modifier.verticalScroll(rememberScrollState())) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(48.dp).background(Color(parsed ?: WHITE)).border(1.dp,MaterialTheme.colorScheme.outline))
                 OutlinedTextField(hex,{ hex = it.filter { c -> c.isDigit() || c.uppercaseChar() in 'A'..'F' }.take(6).uppercase() },
                     label = { Text(stringResource(R.string.ui_rgb_hex)) },prefix = { Text(stringResource(R.string.ui_)) },singleLine = true,modifier = Modifier.padding(start = 12.dp).weight(1f),isError = parsed == null)
             }
-            listOf("Red" to 16,"Green" to 8,"Blue" to 0).forEach { (label,shift) ->
+            listOf(R.string.ui_color_red to 16,R.string.ui_color_green to 8,R.string.ui_color_blue to 0).forEach { (labelResource,shift) ->
+                val label = stringResource(labelResource)
                 val component = (parsed ?: WHITE) ushr shift and 255
                 var entry by remember(component) { mutableStateOf(component.toString()) }
                 OutlinedTextField(entry,{ value ->
@@ -176,12 +180,12 @@ private fun ColorsDialog(s: PaintUiState, model: PaintViewModel) {
             }
             Text(stringResource(R.string.ui_preset_colors),style = MaterialTheme.typography.labelLarge)
             Column(Modifier.horizontalScroll(rememberScrollState()).testTag("paint-dialog-preset-colors")) {
-                presetColors.chunked(10).forEach { row -> Row { row.forEach { color -> ColorSwatch(color,"Choose color",parsed == color) { choose(color) } } } }
+                presetColors.chunked(10).forEach { row -> Row { row.forEach { color -> ColorSwatch(color,strings.getString(R.string.ui_choose_color),parsed == color) { choose(color) } } } }
             }
             Text(stringResource(R.string.ui_custom_colors),style = MaterialTheme.typography.labelLarge)
             Column(Modifier.horizontalScroll(rememberScrollState()).testTag("paint-dialog-custom-colors")) {
                 s.preferences.customColors.chunked(10).forEachIndexed { rowIndex,row -> Row { row.forEachIndexed { index,color ->
-                    ColorSwatch(color,"Custom color ${rowIndex*10+index+1}",enabled = !savingCustomColor || parsed != null,saving = savingCustomColor) {
+                    ColorSwatch(color,strings.getString(R.string.ui_custom_color_1_d, rowIndex * 10 + index + 1),enabled = !savingCustomColor || parsed != null,saving = savingCustomColor) {
                         if (savingCustomColor) {
                             parsed?.let { chosen ->
                                 model.preferences { it.copy(customColors = it.customColors.toMutableList().also { colors -> colors[rowIndex*10+index] = chosen }) }
@@ -211,10 +215,11 @@ private fun NumericField(label: String, value: String, change: (String) -> Unit,
 
 @Composable
 private fun RotationDialog(s: PaintUiState, model: PaintViewModel) {
+    val strings = LocalResources.current
     var angle by rememberSaveable { mutableStateOf((s.preview?.rotationDegrees ?: 0.0).toString()) }
     val degrees = angle.toDoubleOrNull()?.takeIf { it.isFinite() }
     val focus = remember { FocusRequester() }
-    AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text("Custom rotate") },text = {
+    AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text(strings.getString(R.string.ui_custom_rotate)) },text = {
         Column(Modifier.verticalScroll(rememberScrollState())) {
             val windowFocused = LocalWindowInfo.current.isWindowFocused
             LaunchedEffect(windowFocused) { if (windowFocused) focus.requestFocus() }
@@ -225,6 +230,6 @@ private fun RotationDialog(s: PaintUiState, model: PaintViewModel) {
             if (s.selection != null || s.preview?.canTransform == true) model.rotateSelection(it-(s.preview?.rotationDegrees ?: 0.0))
             else model.rotate(it)
             model.dialog(null)
-        } },enabled = degrees != null && !s.busy) { Text("Apply") }
-    },dismissButton = { TextButton(onClick = { model.dialog(null) }) { Text("Cancel") } })
+        } },enabled = degrees != null && !s.busy) { Text(strings.getString(R.string.ui_apply)) }
+    },dismissButton = { TextButton(onClick = { model.dialog(null) }) { Text(strings.getString(R.string.ui_cancel)) } })
 }

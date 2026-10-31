@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <application
         android:name=".NotepadApplication"
@@ -7,7 +8,8 @@
         android:icon="@drawable/ic_notepad"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.KDNotepad">
+        android:theme="@style/Theme.KDNotepad"
+        android:localeConfig="@xml/core_ui_supported_locales" tools:targetApi="33">
         <property android:name="android.window.PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI" android:value="true" />
         <activity
             android:name=".NotepadActivity"

@@ -16,7 +16,7 @@ internal data class RasterTransform(
         next.x(tx,ty), next.y(tx,ty))
     fun inverse(): RasterTransform {
         val det = a*d - b*c
-        require(det.isFinite() && abs(det) > 1e-12) { "The transform is too small." }
+        validatePaint(det.isFinite() && abs(det) > 1e-12, PaintProblem.TransformSize)
         return RasterTransform(d/det,-b/det,-c/det,a/det,
             (c*ty-d*tx)/det,(b*tx-a*ty)/det)
     }
@@ -24,9 +24,7 @@ internal data class RasterTransform(
         point(width.toDouble(),height.toDouble()),point(0.0,height.toDouble()))
     fun bounds(width: Int, height: Int): PixelRect {
         val corners = corners(width,height)
-        require(corners.all { it.x.isFinite() && it.y.isFinite() && abs(it.x) < 1e8 && abs(it.y) < 1e8 }) {
-            "The transformed image is too large."
-        }
+        validatePaint(corners.all { it.x.isFinite() && it.y.isFinite() && abs(it.x) < 1e8 && abs(it.y) < 1e8 }, PaintProblem.TransformBounds)
         // Suppress floating-point noise at exact pixel edges (especially quarter turns).
         val left = floor(corners.minOf { it.x }.toDouble()+1e-5).toInt()
         val top = floor(corners.minOf { it.y }.toDouble()+1e-5).toInt()
@@ -50,7 +48,7 @@ internal data class RasterTransform(
 
 internal fun resizeSkewTransform(bounds: PixelRect, width: Int, height: Int, horizontal: Int, vertical: Int): RasterTransform {
     checkImageSize(width,height)
-    require(horizontal in -89..89 && vertical in -89..89) { "Skew angles must be between −89° and 89°." }
+    validatePaint(horizontal in -89..89 && vertical in -89..89, PaintProblem.SkewRange)
     val transform = RasterTransform.scale(width.toDouble()/bounds.width,height.toDouble()/bounds.height)
         .then(RasterTransform(c = tan(horizontal*PI/180)))
         .then(RasterTransform(b = tan(vertical*PI/180)))

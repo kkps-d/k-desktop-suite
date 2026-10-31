@@ -7,12 +7,8 @@ internal const val BLACK: Int = -16777216
 internal const val MAX_PIXELS = 16_777_216
 
 internal fun checkImageSize(width: Int, height: Int) {
-    require(width in 1..8192 && height in 1..8192 && width.toLong() * height <= MAX_PIXELS) {
-        "Images must be 1–8192 pixels per side and no more than 16 megapixels."
-    }
-    require(width.toLong() * height * 16 < Runtime.getRuntime().maxMemory() * 2 / 3) {
-        "This image needs more working memory than is available."
-    }
+    validatePaint(width in 1..8192 && height in 1..8192 && width.toLong() * height <= MAX_PIXELS, PaintProblem.ImageDimensions)
+    validatePaint(width.toLong() * height * 16 < Runtime.getRuntime().maxMemory() * 2 / 3, PaintProblem.WorkingMemory)
 }
 
 internal data class Point(val x: Float, val y: Float)
@@ -61,7 +57,7 @@ internal class Raster(val width: Int, val height: Int, internal val pixels: IntA
     }
     fun extract(rect: PixelRect): Raster {
         val area = rect.clipped(width, height)
-        require(area.width > 0 && area.height > 0) { "Select some image pixels first." }
+        validatePaint(area.width > 0 && area.height > 0, PaintProblem.EmptySelection)
         return Raster(area.width, area.height, IntArray(area.width * area.height) { index ->
             pixel(area.x + index % area.width, area.y + index / area.width)
         })

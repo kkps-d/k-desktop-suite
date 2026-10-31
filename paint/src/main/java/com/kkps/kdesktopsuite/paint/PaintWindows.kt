@@ -192,11 +192,11 @@ internal class PaintWindows(private val root: File, private val legacy: PaintRec
         catch (error: Exception) { window.launching = false; throw error }
     }
 
-    fun restoreOthers(context: Context, current: PaintWindow, onError: (String) -> Unit) {
+    fun restoreOthers(context: Context, current: PaintWindow, onError: (Throwable) -> Unit) {
         if (previousIds.isNotEmpty()) return
         windows.values.filter { it.id in restorePending && it !== current && !it.closed && it.activity == null && !it.launching }
             .sortedBy { it.id == restoreFocusId }.forEach {
-                try { show(context, it) } catch (error: Exception) { onError(error.message ?: "A Paint window could not be opened. Its draft is retained.") }
+                try { show(context, it) } catch (error: Exception) { onError(error) }
             }
         if (windows.values.none { it.launching }) {
             restoreFocusId?.let { windows[it]?.activity?.bringWindowToFront() }

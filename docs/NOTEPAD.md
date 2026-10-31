@@ -24,6 +24,11 @@ across relaunch; Auto follows system appearance. Dynamic color is used where
 available, with a green fallback palette. Back, system Back, and Escape return to
 the active draft.
 
+Settings also offers English, Burmese, and Follow system. Android 13+ opens the
+system app-language page, with an in-app picker available through the fallback
+link; older versions open the picker directly. Changes apply to all Notepad
+windows without changing document contents. See [Localization](LOCALIZATION.md).
+
 Help > About KD Notepad shows the app icon, version, developer, source repository,
 and open-source licenses. Compact windows put About at the bottom of Commands.
 Dismiss, system Back, and Escape return to the active draft.

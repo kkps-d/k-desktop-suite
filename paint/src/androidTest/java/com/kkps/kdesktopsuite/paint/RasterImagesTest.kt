@@ -17,7 +17,7 @@ class RasterImagesTest {
         var dragging by mutableStateOf(false)
         var displayed: SelectionImage? = null
         compose.setContent {
-            val image = rememberSelectionImage(preview.selectionImageRequest(),dragging) { fail(it) }
+            val image = rememberSelectionImage(preview.selectionImageRequest(),dragging) { fail("Image preparation failed with resource $it") }
             SideEffect { displayed = image }
         }
         compose.waitUntil(5000) { displayed != null }
@@ -42,7 +42,7 @@ class RasterImagesTest {
         var source by mutableStateOf(original)
         var displayed: RasterImage? = null
         compose.setContent {
-            val image = rememberRasterImage(source) { fail(it) }
+            val image = rememberRasterImage(source) { fail("Image preparation failed with resource $it") }
             SideEffect { displayed = image }
         }
         compose.waitUntil(5000) { displayed?.raster === original }

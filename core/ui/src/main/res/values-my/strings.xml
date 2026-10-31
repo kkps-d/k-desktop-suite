@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated Burmese test translation; review wording with a fluent speaker. -->
+<resources>
+    <string name="core_ui_language_title">ဘာသာစကား</string>
+    <string name="core_ui_language_follow_system">စနစ်၏ဘာသာစကားကို အသုံးပြုရန်</string>
+    <string name="core_ui_language_open_system">ဘာသာစကားဆက်တင်များ ဖွင့်ရန်</string>
+    <string name="core_ui_language_change_in_app">အက်ပ်အတွင်း ဘာသာစကားပြောင်းရန်</string>
+    <string name="core_ui_language_supported">အသုံးပြုနိုင်သော ဘာသာစကားများ</string>
+    <string name="core_ui_language_links">
+        <annotation action="supported">အသုံးပြုနိုင်သော ဘာသာစကားများ</annotation>\nဆက်တင်များ အလုပ်မလုပ်ပါက <annotation action="picker">အက်ပ်အတွင်း ဘာသာစကားပြောင်းရန်</annotation>
+    </string>
+    <string name="core_ui_language_explanation">ဤအက်ပ်၏ ဝင်းဒိုးအားလုံးအတွက် ဘာသာစကားတစ်ခု ရွေးပါ။ စနစ်၏ဘာသာစကားကို အသုံးပြုရန် ရွေးလျှင် ပံ့ပိုးထားသော စက်ဘာသာစကားကို အသုံးပြုမည်။ မပံ့ပိုးပါက အင်္ဂလိပ်ဘာသာကို အသုံးပြုမည်။</string>
+    <string name="core_ui_language_back">နောက်သို့</string>
+    <string name="core_ui_language_close">ပိတ်ရန်</string>
+    <string name="open_source_licenses">အများသုံးမူရင်းကုဒ် လိုင်စင်များ</string>
+    <string name="licenses_back">နောက်သို့</string>
+    <string name="licenses_description">ဤအက်ပ်နှင့် ပြင်ပအစိတ်အပိုင်းများ၏ လိုင်စင်များနှင့် အသိအမှတ်ပြုချက်များ။</string>
+    <string name="license_app_source">အက်ပ် မူရင်းကုဒ်</string>
+    <string name="license_dependencies">အက်ပ်လုပ်ဆောင်ရေး လိုင်ဘရီများ</string>
+    <string name="license_dependencies_summary">AndroidX၊ Kotlin နှင့် ပြင်ပအစိတ်အပိုင်း အသိပေးချက်များ</string>
+    <string name="license_load_error">ပါဝင်သော လိုင်စင်ကို မဖတ်နိုင်ပါ။ ဤစာမျက်နှာကို ပြန်ဖွင့်ပြီး ထပ်စမ်းကြည့်ပါ။</string>
+</resources>

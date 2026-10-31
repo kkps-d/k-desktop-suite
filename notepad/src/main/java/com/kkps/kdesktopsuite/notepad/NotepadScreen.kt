@@ -308,10 +308,7 @@ internal fun NotepadScreen(
                     } else if (licensesOpen) {
                         false
                     } else if (notepad.settingsOpen) {
-                        if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
-                            notepad.showSettings(false)
-                            true
-                        } else false
+                        false
                     } else if (event.type != KeyEventType.KeyDown || !event.isCtrlPressed || notepad.closeConfirmation != null || notepad.conflict != null) false
                     else if (event.key == Key.Tab) {
                         notepad.cycleTab(if (event.isShiftPressed) -1 else 1)

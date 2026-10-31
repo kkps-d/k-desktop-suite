@@ -50,7 +50,9 @@ internal fun PaintCanvas(
     onCursorChange: (Point?) -> Unit, onSelectionChange: (PixelRect?) -> Unit,
     onCanvasResizeChange: (PixelRect?) -> Unit,
 ) {
+    val strings = LocalResources.current
     val current by rememberUpdatedState(state)
+    val toolLabel = state.options.tool.displayLabel()
     val density = LocalDensity.current
     val context = LocalContext.current
     val handCursor = remember(context) { PointerIcon(android.view.PointerIcon.getSystemIcon(context,android.view.PointerIcon.TYPE_GRAB)) }
@@ -85,7 +87,7 @@ internal fun PaintCanvas(
     var rotationCancelGeneration by remember { mutableIntStateOf(0) }
     var suppressRotationPointers by remember { mutableStateOf(false) }
     val raster = state.raster
-    val image = rememberRasterImage(raster,model::message)
+    val image = rememberRasterImage(raster,{ model.message(it) })
     var retainedState by remember { mutableStateOf(state) }
     // Keep the last complete image/preview together while the next committed bitmap is prepared.
     val displayedState = if (image != null && image.raster !== raster) retainedState else state
@@ -112,9 +114,9 @@ internal fun PaintCanvas(
         }
     }
     val selectionPreview = displayedState.preview?.takeIf { it.payload != null }
-    val payloadImage = rememberRasterImage(selectionPreview?.payload,model::message)
+    val payloadImage = rememberRasterImage(selectionPreview?.payload,{ model.message(it) })
     val selectionRequest = remember(selectionPreview) { selectionPreview?.selectionImageRequest() }
-    val selectionImage = rememberSelectionImage(selectionRequest,movingSelection || rotatingSelection,model::message)
+    val selectionImage = rememberSelectionImage(selectionRequest,movingSelection || rotatingSelection,{ model.message(it) })
     val selectionMatrix = remember(selectionPreview) {
         selectionPreview?.selectionTransform?.let { transform -> android.graphics.Matrix().apply {
             setValues(floatArrayOf(transform.a.toFloat(),transform.c.toFloat(),transform.tx.toFloat(),
@@ -265,17 +267,17 @@ internal fun PaintCanvas(
             }
             .focusable().onKeyEvent(::commandKey)
             .semantics {
-                contentDescription = "Image canvas, ${state.raster.width} by ${state.raster.height} pixels. ${state.options.tool.label} tool." +
-                    if (state.options.tool != Tool.Pan) " Use arrow keys to position, Space to place points, Enter to apply, Escape to cancel. Hold Space and drag to pan." else ""
+                contentDescription = strings.getString(R.string.ui_canvas_description, state.raster.width, state.raster.height, toolLabel) +
+                    if (state.options.tool != Tool.Pan) strings.getString(R.string.ui_canvas_keyboard_help) else ""
                 customActions = listOf(
-                    CustomAccessibilityAction("Select all image pixels") { model.selectAll(); true },
-                    CustomAccessibilityAction("Apply current edit") { model.applyPreview(); true },
-                    CustomAccessibilityAction("Cancel current edit") { model.cancelPreview(); true },
-                    CustomAccessibilityAction("Finish and commit shape") { model.applyPreview(); true },
-                    CustomAccessibilityAction("Move or resize selection") { model.dialog(PaintDialog.Transform); true },
-                    CustomAccessibilityAction("Resize canvas") { model.dialog(PaintDialog.CanvasSize); true },
-                    CustomAccessibilityAction("Create text in the image") { model.tool(Tool.Text); model.tap(Point(16f,16f)); true },
-                    CustomAccessibilityAction("Announce cursor coordinates") { model.message("Cursor ${keyboardCursor.x.toInt()}, ${keyboardCursor.y.toInt()} pixels"); true },
+                    CustomAccessibilityAction(strings.getString(R.string.ui_select_all_image_pixels)) { model.selectAll(); true },
+                    CustomAccessibilityAction(strings.getString(R.string.ui_apply_current_edit)) { model.applyPreview(); true },
+                    CustomAccessibilityAction(strings.getString(R.string.ui_cancel_current_edit)) { model.cancelPreview(); true },
+                    CustomAccessibilityAction(strings.getString(R.string.ui_finish_and_commit_shape)) { model.applyPreview(); true },
+                    CustomAccessibilityAction(strings.getString(R.string.ui_move_or_resize_selection)) { model.dialog(PaintDialog.Transform); true },
+                    CustomAccessibilityAction(strings.getString(R.string.ui_resize_canvas)) { model.dialog(PaintDialog.CanvasSize); true },
+                    CustomAccessibilityAction(strings.getString(R.string.ui_create_text_in_the_image)) { model.tool(Tool.Text); model.tap(Point(16f,16f)); true },
+                    CustomAccessibilityAction(strings.getString(R.string.ui_announce_cursor_coordinates)) { model.message(R.string.ui_cursor_pixels, keyboardCursor.x.toInt(), keyboardCursor.y.toInt()); true },
                 )
             }
             .pointerHoverIcon(if (state.options.tool == Tool.Pan) handCursor else PointerIcon.Crosshair)
@@ -514,7 +516,7 @@ internal fun PaintCanvas(
                             .coerceIn(0,max(0,state.viewport.height.roundToInt()-eyedropperPreviewSize.height))
                         IntOffset(left,top)
                     }.onSizeChanged { eyedropperPreviewSize = it }.testTag("paint-eyedropper-preview")
-                        .semantics(mergeDescendants = true) { contentDescription = "Picked color $hex" }) {
+                        .semantics(mergeDescendants = true) { contentDescription = strings.getString(R.string.ui_picked_color_1_s, hex) }) {
                     Row(Modifier.padding(8.dp),verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Box(Modifier.size(40.dp).background(Color(color)).border(1.dp,MaterialTheme.colorScheme.outline))
                         Text(hex,style = MaterialTheme.typography.labelLarge)

@@ -54,6 +54,7 @@ internal fun SelectionRotationHandle(state: PaintUiState, model: PaintViewModel,
         (screenCorner.x+dx/length*distance).coerceIn(radius,max(radius,state.viewport.width-radius)),
         (screenCorner.y+dy/length*distance).coerceIn(radius,max(radius,state.viewport.height-radius)))
     val label = stringResource(if (preview?.tool?.isShape == true) R.string.ui_shape_rotation_handle else R.string.ui_rotation_handle)
+    val enterRotationLabel = stringResource(R.string.ui_enter_selection_rotation)
     val description = stringResource(R.string.ui_rotation_state,preview?.rotationDegrees ?: 0.0)
     Box(Modifier.absoluteOffset {
         IntOffset((position.x-radius).roundToInt(),(position.y-radius).roundToInt())
@@ -62,7 +63,7 @@ internal fun SelectionRotationHandle(state: PaintUiState, model: PaintViewModel,
         .semantics {
             contentDescription = label; stateDescription = description; role = Role.Button
             if (!enabled) disabled()
-            onClick("Enter selection rotation") { if (enabled) model.dialog(PaintDialog.Rotation); enabled }
+            onClick(enterRotationLabel) { if (enabled) model.dialog(PaintDialog.Rotation); enabled }
         }.onPreviewKeyEvent { event ->
             if (event.type != KeyEventType.KeyDown || !enabled) false
             else when (event.key) {

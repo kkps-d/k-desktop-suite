@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +29,7 @@ import kotlin.math.roundToInt
 /** A touch-sized grip supplements the precision edges around the native text editor. */
 @Composable
 internal fun TextMoveFrame(state: PaintUiState, preview: EditPreview, model: PaintViewModel, active: Boolean) {
+    val strings = LocalResources.current
     if (!active || state.busy || state.loading || state.saving) return
     val density = LocalDensity.current
     val context = LocalContext.current
@@ -62,8 +64,8 @@ internal fun TextMoveFrame(state: PaintUiState, preview: EditPreview, model: Pai
                 } else false
             }
             .semantics {
-                contentDescription = "Move text frame"
-                onClick("Enter text position") { model.dialog(PaintDialog.Transform); true }
+                contentDescription = strings.getString(R.string.ui_move_text_frame)
+                onClick(strings.getString(R.string.ui_enter_text_position)) { model.dialog(PaintDialog.Transform); true }
             }.pointerInput(preview.id,index) {
                 awaitEachGesture {
                     val down = awaitFirstDown()

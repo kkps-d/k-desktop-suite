@@ -12,7 +12,7 @@ internal data class RasterImage(val raster: Raster, val bitmap: ImageBitmap)
 
 /** Pixel conversion and first texture preparation never run in composition. */
 @Composable
-internal fun rememberRasterImage(raster: Raster?, onError: (String) -> Unit): RasterImage? {
+internal fun rememberRasterImage(raster: Raster?, onError: (Int) -> Unit): RasterImage? {
     val image by produceState<RasterImage?>(null,raster) {
         if (raster == null) value = null
         else try {
@@ -20,7 +20,7 @@ internal fun rememberRasterImage(raster: Raster?, onError: (String) -> Unit): Ra
                 val bitmap = raster.bitmap().apply { prepareToDraw() }
                 RasterImage(raster,bitmap.asImageBitmap())
             }
-        } catch (_: OutOfMemoryError) { onError("Not enough memory to display this image.") }
+        } catch (_: OutOfMemoryError) { onError(R.string.error_display_memory) }
     }
     return image
 }
@@ -33,7 +33,7 @@ internal fun EditPreview.selectionImageRequest() = SelectionImageRequest(require
     selectionTransform.then(RasterTransform.translation(-bounds.x.toDouble(),-bounds.y.toDouble())),bounds.width,bounds.height)
 
 @Composable
-internal fun rememberSelectionImage(request: SelectionImageRequest?, dragging: Boolean, onError: (String) -> Unit): SelectionImage? {
+internal fun rememberSelectionImage(request: SelectionImageRequest?, dragging: Boolean, onError: (Int) -> Unit): SelectionImage? {
     val image by produceState<SelectionImage?>(null,request,dragging) {
         if (request == null) value = null
         else if (!dragging && value?.request != request) {
@@ -49,7 +49,7 @@ internal fun rememberSelectionImage(request: SelectionImageRequest?, dragging: B
                     SelectionImage(request,bitmap.asImageBitmap())
                 }
                 unpublished = null
-            } catch (_: OutOfMemoryError) { onError("Not enough memory to preview this selection.") }
+            } catch (_: OutOfMemoryError) { onError(R.string.error_preview_memory) }
             finally { unpublished?.recycle() }
         }
     }

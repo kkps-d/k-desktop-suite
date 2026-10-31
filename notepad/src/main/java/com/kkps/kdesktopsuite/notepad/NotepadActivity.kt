@@ -7,7 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowInsetsController
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
@@ -29,7 +29,7 @@ internal class NotepadApplication : Application() {
     }
 }
 
-class NotepadActivity : ComponentActivity() {
+class NotepadActivity : AppCompatActivity() {
     internal lateinit var notepad: NotepadViewModel
         private set
     private var boundWindow = false

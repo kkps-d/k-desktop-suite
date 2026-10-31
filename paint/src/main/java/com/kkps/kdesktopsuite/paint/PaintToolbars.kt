@@ -11,6 +11,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +43,7 @@ private fun toolbarTextButtonColors(): ButtonColors = ButtonDefaults.textButtonC
 
 @Composable
 internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float) {
+    val strings = LocalResources.current
     val availableWidth = width / LocalDensity.current.fontScale
     val labels = availableWidth >= 840
     val enabled = !s.loading
@@ -56,13 +58,13 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
             PaintButton(PaintIcon.Cut,"${stringResource(R.string.ui_cut)} (Ctrl+X)",enabled && selected,busy = s.busy) { model.copy(true) }
             PaintButton(PaintIcon.Paste,"${stringResource(R.string.ui_paste)} (Ctrl+V)",enabled,busy = s.busy,action = model::paste)
             ToolbarDivider()
-            PaintButton(Tool.Select.icon,"Select",enabled = enabled,busy = s.busy,selected = s.options.tool == Tool.Select) { model.tool(Tool.Select) }
+            PaintButton(Tool.Select.icon,strings.getString(R.string.ui_tool_select),enabled = enabled,busy = s.busy,selected = s.options.tool == Tool.Select) { model.tool(Tool.Select) }
             TransformControls(s,model)
             ToolbarDivider()
             listOf(Tool.Pan,Tool.Pencil,Tool.Brush,Tool.Eraser,Tool.Fill,Tool.Text,Tool.Eyedropper).forEach { tool ->
-                PaintButton(tool.icon,tool.label,enabled = enabled,busy = s.busy,selected = s.options.tool == tool) { model.tool(tool) }
+                PaintButton(tool.icon,tool.displayLabel(),enabled = enabled,busy = s.busy,selected = s.options.tool == tool) { model.tool(tool) }
             }
-            PaintButton(shape.icon,"Shape",modifier = Modifier.testTag("paint-shape-tool"),
+            PaintButton(shape.icon,strings.getString(R.string.ui_shape),modifier = Modifier.testTag("paint-shape-tool"),
                 enabled = enabled,busy = s.busy,selected = s.options.tool.isShape) { model.tool(shape) }
             ToolbarDivider()
             ToolbarColor(s.options.foreground,stringResource(R.string.ui_foreground),!s.colorBackground,enabled && !s.busy) { model.selectColor(false) }
@@ -76,7 +78,7 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
                 if (availableWidth >= 600) {
                     val name = if (s.colorOptions) {
                         if (s.colorBackground) stringResource(R.string.ui_background) else stringResource(R.string.ui_foreground)
-                    } else if (s.options.tool.isShape) "Shape" else s.options.tool.label
+                    } else if (s.options.tool.isShape) strings.getString(R.string.ui_shape) else s.options.tool.displayLabel()
                     Text(name,Modifier.padding(horizontal = 12.dp),maxLines = 1,style = MaterialTheme.typography.labelLarge)
                     ToolbarDivider()
                 }
@@ -88,15 +90,15 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
                             Text(stringResource(R.string.ui_assign_to_custom_color),maxLines = 1)
                         }
                         if (s.assignCustomColor) s.preferences.customColors.forEachIndexed { index,color ->
-                            ColorSwatch(color,"Custom color ${index+1}",s.eyedropperSlot == index,enabled && !s.busy) { model.eyedropperSlot(index) }
+                            ColorSwatch(color,strings.getString(R.string.ui_custom_color_1_d, index + 1),s.eyedropperSlot == index,enabled && !s.busy) { model.eyedropperSlot(index) }
                         }
                     }
                     s.options.tool == Tool.Select -> {
                         PreviewActions(s,model)
-                        ToolbarCheck("Transparent",false,false,"Available in a future update") { }
+                        ToolbarCheck(strings.getString(R.string.ui_transparent),false,false,strings.getString(R.string.ui_available_in_a_future_update)) { }
                         ToolbarAction(PaintIcon.Crop,stringResource(R.string.ui_crop_to_selection),labels,enabled && !s.busy && selected,model::crop)
                         GeometryAction(s,model,labels)
-                        TextButton(onClick = model::selectAll,enabled = enabled && !s.busy,colors = toolbarTextButtonColors(),modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Select All" }) {
+                        TextButton(onClick = model::selectAll,enabled = enabled && !s.busy,colors = toolbarTextButtonColors(),modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = strings.getString(R.string.ui_select_all) }) {
                             Icon(PaintIcon.SelectAll.vector,null)
                             Spacer(Modifier.width(6.dp))
                             Text(stringResource(R.string.ui_select_all),maxLines = 1)
@@ -109,20 +111,20 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
                     s.options.tool == Tool.Text -> {
                         PreviewActions(s,model)
                         FontOptions(s,model)
-                        ToolbarCheck("Opaque background",s.options.opaqueText,enabled && !s.busy) { value -> model.options { it.copy(opaqueText = value) } }
+                        ToolbarCheck(strings.getString(R.string.ui_opaque_background),s.options.opaqueText,enabled && !s.busy) { value -> model.options { it.copy(opaqueText = value) } }
                         GeometryAction(s,model,labels)
                     }
                     s.options.tool.isShape -> {
                         PreviewActions(s,model)
                         val count = when { availableWidth < 600 -> 3; availableWidth < 840 -> 5; availableWidth < 1200 -> 8; else -> 10 }
                         commonShapes.take(count).forEach { tool ->
-                            PaintButton(tool.icon,tool.label,enabled = enabled,selected = s.options.tool == tool,
+                            PaintButton(tool.icon,tool.displayLabel(),enabled = enabled,selected = s.options.tool == tool,
                                 busy = s.busy,modifier = Modifier.testTag("paint-shape-shortcut-${tool.name}")) { model.tool(tool) }
                         }
                         ShapePicker(s,model,shape)
-                        ToolbarCheck("Outline",s.options.outline,enabled && !s.busy) { value -> model.options { it.copy(outline = value) } }
-                        ToolbarCheck("Fill",s.options.fill,enabled && !s.busy) { value -> model.options { it.copy(fill = value) } }
-                        ToolbarCheck("Keep aspect ratio",s.options.constrain,enabled && !s.busy) { value -> model.options { it.copy(constrain = value) } }
+                        ToolbarCheck(strings.getString(R.string.ui_outline),s.options.outline,enabled && !s.busy) { value -> model.options { it.copy(outline = value) } }
+                        ToolbarCheck(strings.getString(R.string.ui_tool_fill),s.options.fill,enabled && !s.busy) { value -> model.options { it.copy(fill = value) } }
+                        ToolbarCheck(strings.getString(R.string.ui_keep_aspect_ratio),s.options.constrain,enabled && !s.busy) { value -> model.options { it.copy(constrain = value) } }
                         WidthPicker(s,model)
                         GeometryAction(s,model,labels)
                     }
@@ -134,15 +136,16 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
 
 @Composable
 private fun TransformControls(s: PaintUiState, model: PaintViewModel) {
+    val strings = LocalResources.current
     val enabled = !s.busy && !s.loading && !s.saving
     PaintButton(PaintIcon.RotateLeft,stringResource(R.string.ui_rotate_left),!s.loading && !s.saving,busy = s.busy) { model.rotate(-90) }
     PaintButton(PaintIcon.Rotate,stringResource(R.string.ui_rotate_right),!s.loading && !s.saving,busy = s.busy) { model.rotate(90) }
-    PaintButton(PaintIcon.CustomRotate,"Custom rotate",!s.loading && !s.saving,busy = s.busy) { model.dialog(PaintDialog.Rotation) }
+    PaintButton(PaintIcon.CustomRotate,strings.getString(R.string.ui_custom_rotate),!s.loading && !s.saving,busy = s.busy) { model.dialog(PaintDialog.Rotation) }
     var flipOpen by remember { mutableStateOf(false) }
     Box {
-        ToolbarTooltip("Flip") {
+        ToolbarTooltip(strings.getString(R.string.ui_flip)) {
             TextButton(onClick = { flipOpen = true },enabled = enabled,colors = toolbarTextButtonColors(),
-                modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Flip" },contentPadding = PaddingValues(8.dp)) {
+                modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = strings.getString(R.string.ui_flip) },contentPadding = PaddingValues(8.dp)) {
                 Icon(PaintIcon.FlipHorizontal.vector,null)
                 Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
             }
@@ -202,9 +205,10 @@ private fun ToolbarCheck(label: String, checked: Boolean, enabled: Boolean, tool
 
 @Composable
 private fun PreviewActions(s: PaintUiState, model: PaintViewModel) {
+    val strings = LocalResources.current
     val enabled = !s.busy && !s.loading
     PaintButton(PaintIcon.Cancel,stringResource(R.string.ui_clear_selection),enabled && (s.preview != null || s.selection != null),action = model::clearSelection)
-    PaintButton(PaintIcon.Apply,"Commit",enabled && s.preview != null) { model.applyPreview() }
+    PaintButton(PaintIcon.Apply,strings.getString(R.string.ui_commit),enabled && s.preview != null) { model.applyPreview() }
     ToolbarDivider()
 }
 
@@ -242,15 +246,16 @@ internal fun ColorSwatch(color: Int, label: String, selected: Boolean = false, e
 
 @Composable
 private fun PaletteOptions(s: PaintUiState, model: PaintViewModel, width: Float) {
+    val strings = LocalResources.current
     val presets = if (width < 600) 5 else if (width < 1200) 10 else 15
     val custom = if (width < 600) 2 else if (width < 1200) 3 else 5
     val current = if (s.colorBackground) s.options.background else s.options.foreground
     presetColors.take(presets).forEachIndexed { index,color ->
-        ColorSwatch(color,"Preset color ${index+1}",current == color,!s.busy && !s.loading) { model.options { if (s.colorBackground) it.copy(background = color) else it.copy(foreground = color) } }
+        ColorSwatch(color,strings.getString(R.string.ui_preset_color_1_d, index + 1),current == color,!s.busy && !s.loading) { model.options { if (s.colorBackground) it.copy(background = color) else it.copy(foreground = color) } }
     }
     ToolbarDivider()
     s.preferences.customColors.take(custom).forEachIndexed { index,color ->
-        ColorSwatch(color,"Custom color ${index+1}",current == color,!s.busy && !s.loading) { model.options { if (s.colorBackground) it.copy(background = color) else it.copy(foreground = color) } }
+        ColorSwatch(color,strings.getString(R.string.ui_custom_color_1_d, index + 1),current == color,!s.busy && !s.loading) { model.options { if (s.colorBackground) it.copy(background = color) else it.copy(foreground = color) } }
     }
     PaintButton(PaintIcon.Chevron,stringResource(R.string.ui_edit_colors),!s.busy && !s.loading) { model.colors() }
     PaintButton(PaintIcon.Swap,stringResource(R.string.ui_swap_foreground_and_background),!s.busy && !s.loading) { model.options { it.copy(foreground = it.background,background = it.foreground) } }
@@ -258,16 +263,17 @@ private fun PaletteOptions(s: PaintUiState, model: PaintViewModel, width: Float)
 
 @Composable
 private fun FontOptions(s: PaintUiState, model: PaintViewModel) {
+    val strings = LocalResources.current
     var open by remember { mutableStateOf(false) }
     val enabled = !s.busy && !s.loading
     Box {
-        TextButton(onClick = { open = true },enabled = enabled,colors = toolbarTextButtonColors(),modifier = Modifier.heightIn(min = 48.dp).testTag("paint-font-picker").semantics { contentDescription = "Font family" }) {
-            Text(s.options.font,maxLines = 1)
+        TextButton(onClick = { open = true },enabled = enabled,colors = toolbarTextButtonColors(),modifier = Modifier.heightIn(min = 48.dp).testTag("paint-font-picker").semantics { contentDescription = strings.getString(R.string.ui_font_family) }) {
+            Text(fontDisplayLabel(s.options.font),maxLines = 1)
             Icon(PaintIcon.Chevron.vector,null)
         }
         AppDropdownMenu(open,{ open = false }) {
             PaintFonts.names.forEach { font ->
-                AppMenuItem({ Text(font,fontFamily = PaintFonts.family(font)) },{ model.options { it.copy(font = font) }; open = false },
+                AppMenuItem({ Text(fontDisplayLabel(font),fontFamily = PaintFonts.family(font)) },{ model.options { it.copy(font = font) }; open = false },
                     checked = s.options.font == font)
             }
         }
@@ -289,7 +295,7 @@ private fun FontOptions(s: PaintUiState, model: PaintViewModel) {
         CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
             OutlinedTextField(state = size,enabled = enabled,lineLimits = TextFieldLineLimits.SingleLine,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp).focusRequester(sizeFocus)
-                    .testTag("paint-font-size").semantics { contentDescription = "Font size (image pixels)" },
+                    .testTag("paint-font-size").semantics { contentDescription = strings.getString(R.string.ui_font_size_image_pixels) },
                 textStyle = MaterialTheme.typography.bodyMedium,
                 trailingIcon = { Text("px",Modifier.padding(end = 6.dp),style = MaterialTheme.typography.labelMedium) },
                 contentPadding = PaddingValues(horizontal = 8.dp,vertical = 2.dp),
@@ -299,10 +305,10 @@ private fun FontOptions(s: PaintUiState, model: PaintViewModel) {
                 },keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
         }
     }
-    PaintButton(PaintIcon.Bold,"Bold",enabled,selected = s.options.bold) { model.options { it.copy(bold = !it.bold) } }
-    PaintButton(PaintIcon.Italic,"Italic",enabled,selected = s.options.italic) { model.options { it.copy(italic = !it.italic) } }
-    PaintButton(PaintIcon.Underline,"Underline",enabled,selected = s.options.underline) { model.options { it.copy(underline = !it.underline) } }
-    PaintButton(PaintIcon.Strike,"Strikethrough",enabled,selected = s.options.strike) { model.options { it.copy(strike = !it.strike) } }
+    PaintButton(PaintIcon.Bold,strings.getString(R.string.ui_bold),enabled,selected = s.options.bold) { model.options { it.copy(bold = !it.bold) } }
+    PaintButton(PaintIcon.Italic,strings.getString(R.string.ui_italic),enabled,selected = s.options.italic) { model.options { it.copy(italic = !it.italic) } }
+    PaintButton(PaintIcon.Underline,strings.getString(R.string.ui_underline),enabled,selected = s.options.underline) { model.options { it.copy(underline = !it.underline) } }
+    PaintButton(PaintIcon.Strike,strings.getString(R.string.ui_strikethrough),enabled,selected = s.options.strike) { model.options { it.copy(strike = !it.strike) } }
     ToolbarDivider()
     AlignmentDropdown(stringResource(R.string.ui_horizontal_alignment),s.options.textAlignment,enabled,listOf(
         Triple(TextAlignment.Left,PaintIcon.AlignLeft,R.string.ui_align_left),
@@ -345,9 +351,11 @@ private fun <T> AlignmentDropdown(label: String, selected: T, enabled: Boolean,
 
 @Composable
 private fun BrushPicker(s: PaintUiState, model: PaintViewModel) {
+    val strings = LocalResources.current
     var open by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     val style = s.options.brushStyle
+    val styleLabel = style.displayLabel()
     val colors = toolbarTextButtonColors()
     val preserveEnabled = s.busy && !s.loading && !LocalPaintBusyVisible.current
     Box {
@@ -356,7 +364,7 @@ private fun BrushPicker(s: PaintUiState, model: PaintViewModel) {
                 disabledContentColor = colors.contentColor) else colors,
             contentPadding = PaddingValues(8.dp),
             modifier = Modifier.heightIn(min = 48.dp).testTag("paint-brush-picker")
-                .semantics { contentDescription = "Choose brush: ${style.label}" }) {
+                .semantics { contentDescription = strings.getString(R.string.ui_choose_brush_1_s, styleLabel) }) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 BrushPreview(style,Modifier.size(72.dp,28.dp))
                 Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
@@ -367,7 +375,7 @@ private fun BrushPicker(s: PaintUiState, model: PaintViewModel) {
                 if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) { open = false; true } else false
             }) {
                 BrushStyle.entries.forEach { brush ->
-                    AppMenuItem(text = { Text(brush.label) },onClick = { open = false; model.brush(brush) },
+                    AppMenuItem(text = { Text(brush.displayLabel()) },onClick = { open = false; model.brush(brush) },
                         leadingIcon = { BrushPreview(brush,Modifier.size(88.dp,36.dp)) },
                         trailingIcon = { if (brush == style) Icon(PaintIcon.Apply.vector,null,Modifier.size(20.dp)) },
                         modifier = (if (brush == style) Modifier.focusRequester(focus) else Modifier)
@@ -396,18 +404,19 @@ private fun BrushPreview(style: BrushStyle, modifier: Modifier) {
 
 @Composable
 private fun ShapePicker(s: PaintUiState, model: PaintViewModel, shape: Tool) {
+    val strings = LocalResources.current
     var open by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     Box {
         TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
-            tooltip = { PlainTooltip { Text("More shapes") } },state = rememberTooltipState()) {
+            tooltip = { PlainTooltip { Text(strings.getString(R.string.ui_more_shapes)) } },state = rememberTooltipState()) {
             IconButton(onClick = { open = true },enabled = !s.busy && !s.loading,
                 colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onSurface,
                     disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)).let { colors ->
                     if (s.busy && !s.loading && !LocalPaintBusyVisible.current) colors.copy(disabledContentColor = colors.contentColor) else colors
                 },
                 modifier = Modifier.size(width = 64.dp,height = 48.dp).testTag("paint-shape-picker")
-                    .semantics { contentDescription = "More shapes" }) {
+                    .semantics { contentDescription = strings.getString(R.string.ui_more_shapes) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(PaintIcon.More.vector,null)
                     Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
@@ -421,7 +430,7 @@ private fun ShapePicker(s: PaintUiState, model: PaintViewModel, shape: Tool) {
                 shapeTools.chunked(4).forEach { shapes ->
                     Row {
                         shapes.forEach { tool ->
-                            PaintButton(tool.icon,tool.label,selected = s.options.tool == tool,
+                            PaintButton(tool.icon,tool.displayLabel(),selected = s.options.tool == tool,
                                 modifier = (if (tool == shape) Modifier.focusRequester(focus) else Modifier)
                                     .focusProperties { canFocus = true }) {
                                 open = false; model.tool(tool)

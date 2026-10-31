@@ -21,7 +21,7 @@ internal data class PaintUiState(
     val title: String = "Untitled", val uri: String? = null, val mime: String = "image/png",
     val dirty: Boolean = false, val canUndo: Boolean = false, val canRedo: Boolean = false,
     val busy: Boolean = false, val saving: Boolean = false, val loading: Boolean = true, val dialog: PaintDialog? = null,
-    val message: String? = null, val picker: PickerRequest? = null, val platform: PlatformRequest? = null,
+    val message: PaintMessage? = null, val picker: PickerRequest? = null, val platform: PlatformRequest? = null,
     val preferences: PaintPreferences = PaintPreferences(), val focusMode: Boolean = false,
     val ribbonCollapsed: Boolean = false, val showInformation: Boolean = true, val colorBackground: Boolean = false,
     val settingsOpen: Boolean = false, val colorOptions: Boolean = false,
@@ -38,6 +38,7 @@ internal class PaintViewModel(
     private val windows: PaintWindows? = null, private val window: PaintWindow? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(PaintUiState(
+        settingsOpen = savedState["settingsOpen"] ?: false,
         colorOptions = savedState["colorOptions"] ?: false, colorBackground = savedState["colorBackground"] ?: false,
         assignCustomColor = savedState["assignCustomColor"] ?: false,
         lastShape = savedState.get<String>("lastShape")?.let { name -> shapeTools.firstOrNull { it.name == name } } ?: Tool.Rectangle))
@@ -90,7 +91,7 @@ internal class PaintViewModel(
 
     init {
         viewModelScope.launch {
-            settings.preferences.catch { message("Settings could not be read: ${it.message}") }.collect { preferences ->
+            settings.preferences.catch { failure(it, R.string.error_settings_read) }.collect { preferences ->
                 mutableState.update { it.copy(preferences = preferences) }
             }
         }
@@ -118,7 +119,7 @@ internal class PaintViewModel(
             } catch (error: Exception) {
                 recoveryWritable = false
                 window?.preserveRecovery = true
-                message(error.message ?: "Recovery could not be read.")
+                failure(error, R.string.error_recovery_read)
             }
             finishStartup()
         }
@@ -134,7 +135,7 @@ internal class PaintViewModel(
             lastShape = snapshot.options.tool.takeIf { tool -> tool.isShape } ?: it.lastShape,
             viewport = snapshot.viewport.resized(it.viewport.width,it.viewport.height,snapshot.raster.width,snapshot.raster.height,it.viewport.margin),
             uri = snapshot.uri, title = snapshot.name, mime = snapshot.mime, dirty = snapshot.dirty) }
-        if (snapshot.dirty) message("Recovered draft. Undo history starts again after relaunch.")
+        if (snapshot.dirty) message(R.string.message_draft_recovered)
     }
     private fun startBlankImage() {
         val preferences = state.value.preferences
@@ -161,7 +162,7 @@ internal class PaintViewModel(
                 } catch (cancel: CancellationException) { throw cancel }
                 catch (error: Exception) {
                     startupChoice = true
-                    message("The previous session is unchanged. ${error.message.orEmpty()}")
+                    failure(error, R.string.error_session_unchanged)
                     return@launch
                 }
                 try {
@@ -172,7 +173,7 @@ internal class PaintViewModel(
                 catch (error: Exception) {
                     recoveryWritable = false
                     window.preserveRecovery = true
-                    message(error.message ?: "Recovery could not be read. Its files have been preserved.")
+                    failure(error, R.string.error_recovery_read)
                 }
                 dialog(null)
                 finishStartup()
@@ -186,7 +187,12 @@ internal class PaintViewModel(
         finishStartup()
         checkpoint()
     }
-    fun message(text: String?) { mutableState.update { it.copy(message = text) } }
+    fun message(text: PaintMessage?) { mutableState.update { it.copy(message = text) } }
+    fun message(resourceId: Int, vararg arguments: Any) { message(PaintMessage(resourceId, arguments.toList())) }
+    fun failure(error: Throwable, resourceId: Int = R.string.error_operation) {
+        android.util.Log.e("Paint", "Paint operation failed", error)
+        message(if (error is PaintValidationException) error.problem.messageResource() else resourceId)
+    }
     fun dialog(value: PaintDialog?) { mutableState.update { it.copy(dialog = value) } }
     fun selectColor(background: Boolean) {
         if (state.value.busy || state.value.loading) return
@@ -225,7 +231,7 @@ internal class PaintViewModel(
         applicationScope.launch {
             try {
                 if (windows != null && window != null) windows.checkpoint(window, snapshot) else recovery.write(snapshot)
-            } catch (error: Exception) { message("Draft recovery failed: ${error.message}") }
+            } catch (error: Exception) { failure(error, R.string.error_recovery_write) }
         }
     }
     private fun operation(work: suspend (Raster) -> Raster, valid: () -> Boolean = { true }, affectedArea: PixelRect? = null, after: () -> Unit = {}) {
@@ -243,8 +249,8 @@ internal class PaintViewModel(
                     result?.let { history.commit(it) }; sync(); after()
                 }
             } catch (cancel: CancellationException) { throw cancel }
-            catch (_: OutOfMemoryError) { message("Not enough memory. The original image is unchanged.") }
-            catch (error: Exception) { message(error.message ?: "The operation could not be completed.") }
+            catch (_: OutOfMemoryError) { message(R.string.error_edit_memory) }
+            catch (error: Exception) { failure(error, R.string.error_operation) }
             finally { if (id == operationId) mutableState.update { it.copy(busy = false) } }
         }
     }
@@ -361,7 +367,7 @@ internal class PaintViewModel(
             mutableState.update { it.copy(preview = null) }; after(); return
         }
         if (preview.tool.isClosedShape && !s.options.outline && !s.options.fill) {
-            message("Choose an outline or fill before applying this shape."); return
+            message(R.string.error_shape_style); return
         }
         operation({
             val context = currentCoroutineContext()
@@ -444,8 +450,8 @@ internal class PaintViewModel(
                 else -> resizeImage(bounds.width,bounds.height,horizontalSkew,verticalSkew)
             }
             true
-        } catch (error: IllegalArgumentException) { message(error.message); false }
-        catch (_: OutOfMemoryError) { message("Not enough memory. The original image is unchanged."); false }
+        } catch (error: IllegalArgumentException) { failure(error); false }
+        catch (_: OutOfMemoryError) { message(R.string.error_edit_memory); false }
     }
 
     fun rotateSelection(degrees: Double, original: EditPreview? = null) {
@@ -453,8 +459,8 @@ internal class PaintViewModel(
         try {
             val preview = original ?: floatingSelection() ?: return
             setPreview(preview.rotatedSelection(degrees))
-        } catch (error: IllegalArgumentException) { message(error.message) }
-        catch (_: OutOfMemoryError) { message("Not enough memory. The original image is unchanged.") }
+        } catch (error: IllegalArgumentException) { failure(error) }
+        catch (_: OutOfMemoryError) { message(R.string.error_edit_memory) }
     }
 
     fun rotate(degrees: Int) = rotate(degrees.toDouble())
@@ -501,8 +507,8 @@ internal class PaintViewModel(
                     composed.transformed(transform,output,background = s.options.background,checkCancelled = { context.ensureActive() })
                 },valid = { state.value.preview == s.preview && state.value.selection == s.selection && state.value.options == s.options }) { clearSelection() }
             }
-        } catch (error: IllegalArgumentException) { message(error.message) }
-        catch (_: OutOfMemoryError) { message("Not enough memory. The original image is unchanged.") }
+        } catch (error: IllegalArgumentException) { failure(error) }
+        catch (_: OutOfMemoryError) { message(R.string.error_edit_memory) }
     }
     fun deleteSelection() {
         val s = state.value
@@ -518,7 +524,7 @@ internal class PaintViewModel(
         val s = state.value
         val rect = (s.preview?.takeIf { it.tool == Tool.Select }?.bounds ?: s.selection)
             ?.clipped(s.raster.width,s.raster.height) ?: return
-        if (rect.width == 0 || rect.height == 0) { message("The selection is outside the image."); return }
+        if (rect.width == 0 || rect.height == 0) { message(R.string.error_selection_outside); return }
         operation({ source ->
             val context = currentCoroutineContext()
             val composed = s.preview?.let { source.render(it,s.options,checkCancelled = { context.ensureActive() }) } ?: source
@@ -531,7 +537,7 @@ internal class PaintViewModel(
     fun resizeCanvas(bounds: PixelRect) {
         if (state.value.busy || state.value.loading) return
         try { checkImageSize(bounds.width,bounds.height) }
-        catch (invalid: IllegalArgumentException) { message(invalid.message); return }
+        catch (invalid: IllegalArgumentException) { failure(invalid); return }
         val background = state.value.options.background
         applyPreview {
             operation({ it.resizeCanvas(bounds,background) }) { clearSelection() }
@@ -551,7 +557,10 @@ internal class PaintViewModel(
     fun toggleRibbon() { mutableState.update { it.copy(ribbonCollapsed = !it.ribbonCollapsed) } }
     fun toggleInformation() { mutableState.update { it.copy(showInformation = !it.showInformation) } }
     fun toggleFocus() { mutableState.update { it.copy(focusMode = !it.focusMode) } }
-    fun showSettings(show: Boolean) { mutableState.update { it.copy(settingsOpen = show) } }
+    fun showSettings(show: Boolean) {
+        savedState["settingsOpen"] = show
+        mutableState.update { it.copy(settingsOpen = show) }
+    }
     fun back(): Boolean = when {
         state.value.dialog == PaintDialog.ReopenLastEdit -> { resolveStartup(false); true }
         state.value.dialog in setOf(PaintDialog.SaveFormat,PaintDialog.JpegWarning,PaintDialog.Conflict) -> { cancelSave(); true }
@@ -575,7 +584,7 @@ internal class PaintViewModel(
     fun newWindow() {
         if (state.value.loading || closing || state.value.closed) return
         try { window?.activity?.let { PaintWindows.launch(it) } }
-        catch (error: Exception) { message(error.message ?: "A new Paint window could not be opened.") }
+        catch (error: Exception) { failure(error, R.string.error_new_window) }
     }
     fun closeImage() = replace {
         closing = true
@@ -588,7 +597,7 @@ internal class PaintViewModel(
             } catch (error: Exception) {
                 closing = false
                 mutableState.update { it.copy(busy = false) }
-                message(error.message ?: "The window could not be closed. Its draft is retained.")
+                failure(error, R.string.error_close_window)
             }
         }
     }
@@ -602,7 +611,7 @@ internal class PaintViewModel(
             val owner = windows.owner(uri, window)
             if (owner != null) {
                 try { window.activity?.let { windows.show(it, owner) } }
-                catch (error: Exception) { message(error.message ?: "The image's window could not be opened. Its draft is retained.") }
+                catch (error: Exception) { failure(error, R.string.error_image_window) }
                 return
             }
             if (state.value.uri == uri) return
@@ -638,10 +647,10 @@ internal class PaintViewModel(
             PickerKind.Open -> openUri(uri)
             PickerKind.Insert -> importSelection(uri)
             PickerKind.Save -> {
-                if (pendingSave == null) { message("Save was interrupted by a process restart. Choose Save as again."); return }
+                if (pendingSave == null) { message(R.string.error_save_interrupted); return }
                 if (windows != null && window != null && !windows.reserve(window, uri)) {
                     cancelSave()
-                    message("This image is already open in another Paint window. Choose a different file with Save as.")
+                    message(R.string.error_file_already_open)
                     return
                 }
                 pendingSave = pendingSave?.copy(uri = uri, expected = null); writeSave()
@@ -654,8 +663,8 @@ internal class PaintViewModel(
         editJob = viewModelScope.launch {
             try { val result = images.read(uri); install(result.raster,result.name,uri,result.mime,result.fingerprint); recent(uri) }
             catch (cancel: CancellationException) { throw cancel }
-            catch (_: OutOfMemoryError) { message("This image needs more memory than is available.") }
-            catch (error: Exception) { message(error.message ?: "Could not open image.") }
+            catch (_: OutOfMemoryError) { message(R.string.error_image_memory) }
+            catch (error: Exception) { failure(error, R.string.error_open_image) }
             finally { window?.reservedUris?.remove(uri); mutableState.update { it.copy(busy = false) } }
         }
     }
@@ -700,17 +709,17 @@ internal class PaintViewModel(
                 val continuation = saveContinuation; saveContinuation = null
                 if (continuation != null && !unsaved()) continuation() else if (continuation != null) {
                     window?.reservedUris?.clear()
-                    message("Saved an earlier revision. Newer edits remain open.")
+                    message(R.string.message_newer_edits_open)
                 }
-                else message("Image saved.")
+                else message(R.string.message_image_saved)
             } catch (_: ImageChangedException) { dialog(PaintDialog.Conflict) }
-            catch (error: Exception) { window?.reservedUris?.clear(); pendingSave = null; saveContinuation = null; mutableState.update { it.copy(saving = false) }; message("Save failed. The private draft is safe. ${error.message}") }
+            catch (error: Exception) { window?.reservedUris?.clear(); pendingSave = null; saveContinuation = null; mutableState.update { it.copy(saving = false) }; failure(error, R.string.error_save) }
         }
     }
     private fun recent(uri: String) = preferences { it.copy(recent = (listOf(uri) + it.recent.filter { old -> old != uri }).take(10)) }
     fun preferences(change: (PaintPreferences) -> PaintPreferences) {
         mutableState.update { it.copy(preferences = change(it.preferences)) }
-        viewModelScope.launch { try { settings.update(change) } catch (error: Exception) { message("Settings could not be saved: ${error.message}") } }
+        viewModelScope.launch { try { settings.update(change) } catch (error: Exception) { failure(error, R.string.error_settings_save) } }
     }
     fun insertPicker() { applyPreview { launchPicker(PickerKind.Insert) } }
     private fun importSelection(uri: String) {
@@ -720,10 +729,10 @@ internal class PaintViewModel(
             try {
                 val raster = images.clipboardImage(uri)
                 if (documentId == document && history.revision == revision) insert(raster)
-                else message("The document changed during image import. Insert the image again when ready.")
+                else message(R.string.error_import_changed)
             } catch (cancel: CancellationException) { throw cancel }
-            catch (_: OutOfMemoryError) { message("This image needs more memory than is available.") }
-            catch (error: Exception) { message(error.message ?: "The image could not be inserted.") }
+            catch (_: OutOfMemoryError) { message(R.string.error_image_memory) }
+            catch (error: Exception) { failure(error, R.string.error_insert_image) }
         }
     }
     fun insert(raster: Raster) {
@@ -741,7 +750,7 @@ internal class PaintViewModel(
         val y = imagePoint.y.toInt().coerceIn(0,max(0,s.raster.height-raster.height))
         val outputWidth = if (expand) max(s.raster.width,x+raster.width) else s.raster.width
         val outputHeight = if (expand) max(s.raster.height,y+raster.height) else s.raster.height
-        try { checkImageSize(outputWidth,outputHeight) } catch (error: Exception) { message(error.message); return }
+        try { checkImageSize(outputWidth,outputHeight) } catch (error: Exception) { failure(error); return }
         tool(Tool.Select)
         setPreview(EditPreview(Tool.Select,PixelRect(x,y,raster.width,raster.height),payload = raster,
             outputWidth = outputWidth, outputHeight = outputHeight))
@@ -759,7 +768,7 @@ internal class PaintViewModel(
                 val staged = images.stage(content,"image/png",100)
                 mutableState.update { it.copy(platform = PlatformRequest(action = if (cut) "cut" else "copy", file = staged.file)) }
             } catch (cancel: CancellationException) { throw cancel }
-            catch (error: Exception) { message(error.message) }
+            catch (error: Exception) { failure(error) }
         }
     }
     fun share() {
@@ -776,7 +785,7 @@ internal class PaintViewModel(
                 val file = images.stage(raster,mime,quality).file
                 mutableState.update { it.copy(platform = PlatformRequest(action = "share",file = file,mime = mime)) }
             } catch (cancel: CancellationException) { throw cancel }
-            catch (error: Exception) { message(error.message) }
+            catch (error: Exception) { failure(error) }
             finally { mutableState.update { it.copy(busy = false) } }
         }
     }

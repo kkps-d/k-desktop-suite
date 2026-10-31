@@ -9,6 +9,12 @@ Run the `paint` configuration in Android Studio; see
 [Development](DEVELOPMENT.md) for setup and builds. Controls follow system
 appearance and dynamic color, with the suite's green fallback palette.
 
+Settings offers English, Burmese, and Follow system. Android 13+ opens the system
+app-language page and provides an in-app fallback; older versions use the in-app
+picker. The language applies to all Paint windows while preserving their images
+and pending edits. Burmese is a generated test translation. See
+[Localization](LOCALIZATION.md).
+
 ## Drawing and editing
 
 The core supports Pencil, nine brush styles, Fill, Eraser, Eyedropper, rectangular
