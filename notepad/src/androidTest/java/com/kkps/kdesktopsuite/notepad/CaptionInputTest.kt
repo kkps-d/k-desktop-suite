@@ -1,5 +1,7 @@
 package com.kkps.kdesktopsuite.notepad
 
+import com.kkps.kdesktopsuite.ui.CaptionInput
+
 import android.graphics.Rect as AndroidRect
 import android.view.View
 import androidx.compose.ui.geometry.Rect

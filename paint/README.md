@@ -63,6 +63,13 @@ controls change the canvas bounds separately from image scaling.
 Modern desktop and the common mobile view remain deferred, as do the extended
 tools listed in the [Android specification](../docs/KD_PAINT_ANDROID_SPEC.md).
 
+On systems with custom desktop captions, the menu/title/action row moves into
+an unobstructed caption span at least 500dp wide, scaled with system text size.
+Long document titles truncate with an ellipsis. System window buttons remain clear,
+and the title area allows window dragging. Narrow windows, short
+captions, and larger text keep the row below the system caption. Settings and
+focus mode retain the system caption clearance.
+
 Settings → On startup lets you reopen the last edited image or draft (the default),
 start a new image at the default canvas size, or ask each time a previous session
 exists. Android activity and process recreation resume the current session.

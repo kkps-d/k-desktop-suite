@@ -15,6 +15,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.*
@@ -23,6 +26,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.roundToInt
@@ -30,6 +34,12 @@ import kotlinx.coroutines.delay
 import com.kkps.kdesktopsuite.ui.AppDropdownMenu
 import com.kkps.kdesktopsuite.ui.AppMenuButton
 import com.kkps.kdesktopsuite.ui.AppMenuItem
+import com.kkps.kdesktopsuite.ui.DesktopCaption
+import com.kkps.kdesktopsuite.ui.CaptionInput
+import com.kkps.kdesktopsuite.ui.desktopCaptionSpan
+import com.kkps.kdesktopsuite.ui.rememberDesktopCaption
+import com.kkps.kdesktopsuite.ui.rememberCaptionInput
+import com.kkps.kdesktopsuite.ui.captionControl
 
 // Input is blocked immediately; brief operations need not flash disabled colors.
 internal val LocalPaintBusyVisible = compositionLocalOf { true }
@@ -64,7 +74,11 @@ internal fun PaintButton(icon: ImageVector, label: String, modifier: Modifier = 
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
-internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
+internal fun PaintScreen(
+    state: PaintUiState, model: PaintViewModel,
+    caption: DesktopCaption = rememberDesktopCaption(true),
+    contentInsets: WindowInsets = WindowInsets.safeDrawing.union(WindowInsets.ime),
+) {
     val snackbar = remember { SnackbarHostState() }
     var showBusy by remember { mutableStateOf(false) }
     LaunchedEffect(state.busy) {
@@ -80,16 +94,42 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
     BackHandler(!imeVisible && (debugOpen || state.settingsOpen || state.dialog != null || state.preview != null || state.selection != null || state.focusMode)) {
         if (debugOpen) debugOpen = false else model.back()
     }
+    val density = LocalDensity.current
+    var region by remember { mutableStateOf(Rect.Zero) }
+    val minHeaderHeight = with(density) {
+        (maxOf(MaterialTheme.typography.titleSmall.lineHeight.toDp(), MaterialTheme.typography.labelLarge.lineHeight.toDp()) + 8.dp)
+            .coerceAtLeast(32.dp).toPx()
+    }
+    val controls = if (state.settingsOpen || debugOpen || state.focusMode) null else
+        paintCaptionControls(caption, region, density.density, density.fontScale, minHeaderHeight)
+    val captionInput = rememberCaptionInput(controls)
+    // Keep status bars and cutouts protected even when they overlap the caption inset.
+    val layoutInsets = if (caption.height > 0f) contentInsets.exclude(WindowInsets(top = caption.height.roundToInt()))
+        .union(WindowInsets(top = caption.safeTop.roundToInt())) else contentInsets
     CompositionLocalProvider(LocalPaintBusyVisible provides showBusy) {
         Surface(Modifier.fillMaxSize()) {
-            BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.union(WindowInsets.ime))) {
+            BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(layoutInsets)
+                .onGloballyPositioned {
+                    // Clipping must not change the side padding of the measured header.
+                    val origin = it.positionInWindow()
+                    region = Rect(origin.x,origin.y,origin.x + it.size.width,origin.y + it.size.height)
+                }) {
                 val width = maxWidth
                 val portrait = maxHeight > maxWidth
                 Column(Modifier.fillMaxSize().onKeyEvent { event -> if (state.settingsOpen || debugOpen) false else handlePaintKey(event,state,model) }) {
+                    if (controls == null && caption.height > region.top) {
+                        Spacer(Modifier.fillMaxWidth().height(with(density) { (caption.height - region.top).toDp() }))
+                    }
                     if (debugOpen) PaintDebugScreen { debugOpen = false }
                     else if (state.settingsOpen) PaintSettingsScreen(state,model) else {
                         if (!state.focusMode) {
-                            PaintHeader(state,model,width.value,showBusy)
+                            val headerModifier = if (controls == null) Modifier else Modifier.absolutePadding(
+                                left = with(density) { (controls.left - region.left).toDp() },
+                                right = with(density) { (region.right - controls.right).toDp() },
+                            )
+                            PaintHeader(state,model,if (controls == null) width.value else with(density) { controls.width.toDp().value },
+                                showBusy,headerModifier,controls?.let { with(density) { it.height.toDp() } },
+                                if (controls == null) null else captionInput)
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                             PaintToolbars(state,model,width.value)
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -114,53 +154,74 @@ internal fun PaintScreen(state: PaintUiState, model: PaintViewModel) {
     }
 }
 
+// The title area stays available for window dragging without reserving a trailing gap.
+internal fun paintCaptionControls(
+    caption: DesktopCaption, region: Rect, density: Float, fontScale: Float, minHeight: Float,
+): Rect? {
+    val span = desktopCaptionSpan(caption, region) ?: return null
+    if (span.height < minHeight || span.width < 500f * fontScale * density) return null
+    return span
+}
+
 @Composable
-private fun PaintHeader(s: PaintUiState, model: PaintViewModel, width: Float, showBusy: Boolean) {
-    val compact = width < 700 * LocalDensity.current.fontScale
-    Column(Modifier.fillMaxWidth().testTag("paint-header")) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically) {
-            FileMenu(s,model)
-            ViewMenu(s,model)
-            HelpMenu(model)
-            VerticalDivider(Modifier.padding(horizontal = 8.dp).height(20.dp))
-            if (!compact) PaintHeaderActions(s,model,showBusy)
-            Row(Modifier.weight(1f).padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (s.dirty || s.preview?.hasContent == true) Box(Modifier.size(6.dp)
-                    .background(MaterialTheme.colorScheme.onSurfaceVariant,CircleShape).testTag("paint-unsaved-indicator")
-                    .semantics { contentDescription = "Unsaved changes" })
-                Text(s.title,modifier = Modifier.testTag("paint-document-title"),maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,style = MaterialTheme.typography.titleSmall)
-            }
-            TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
-                tooltip = { PlainTooltip { Text(stringResource(R.string.ui_settings)) } },state = rememberTooltipState()) {
-                IconButton(onClick = { model.showSettings(true) }) {
-                    Icon(painterResource(R.drawable.ic_settings),stringResource(R.string.ui_settings))
+private fun PaintHeader(
+    s: PaintUiState, model: PaintViewModel, width: Float, showBusy: Boolean,
+    modifier: Modifier = Modifier, captionHeight: Dp? = null, input: CaptionInput? = null,
+) {
+    val compact = captionHeight == null && width < 700 * LocalDensity.current.fontScale
+    val buttonHeight = (captionHeight ?: 48.dp).coerceAtMost(48.dp)
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides if (captionHeight == null) 48.dp else 0.dp) {
+        Column(modifier.fillMaxWidth().testTag("paint-header")) {
+            Row(Modifier.fillMaxWidth().then(if (captionHeight == null) Modifier.heightIn(min = 48.dp) else Modifier.height(captionHeight))
+                .padding(start = 8.dp,end = if (captionHeight == null) 8.dp else 0.dp),verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.captionControl(input,"menus"),verticalAlignment = Alignment.CenterVertically) {
+                    FileMenu(s,model)
+                    ViewMenu(s,model)
+                    HelpMenu(model)
+                }
+                VerticalDivider(Modifier.padding(horizontal = 8.dp).height(20.dp))
+                if (!compact) PaintHeaderActions(s,model,showBusy,Modifier.captionControl(input,"actions"),buttonHeight)
+                Row(Modifier.weight(1f).padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (s.dirty || s.preview?.hasContent == true) Box(Modifier.size(6.dp)
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant,CircleShape).testTag("paint-unsaved-indicator")
+                        .semantics { contentDescription = "Unsaved changes" })
+                    Text(s.title,modifier = Modifier.weight(1f).testTag("paint-document-title"),maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,style = MaterialTheme.typography.titleSmall)
+                }
+                TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+                    tooltip = { PlainTooltip { Text(stringResource(R.string.ui_settings)) } },state = rememberTooltipState()) {
+                    IconButton(onClick = { model.showSettings(true) },
+                        modifier = Modifier.width(48.dp).height(buttonHeight).captionControl(input,"settings")) {
+                        Icon(painterResource(R.drawable.ic_settings),stringResource(R.string.ui_settings))
+                    }
                 }
             }
+            if (compact) Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End) { PaintHeaderActions(s,model,showBusy) }
         }
-        if (compact) Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End) { PaintHeaderActions(s,model,showBusy) }
     }
 }
 
 @Composable
-private fun PaintHeaderActions(s: PaintUiState, model: PaintViewModel, showBusy: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically,modifier = Modifier.testTag("paint-header-actions")) {
-        PaintOperationProgress(s,model,showBusy)
-        PaintButton(PaintIcon.Save,"Save (Ctrl+S)",!s.loading && !s.saving,busy = s.busy) { model.save() }
-        PaintButton(PaintIcon.Undo,"Undo (Ctrl+Z)",s.canUndo || s.preview != null,busy = s.busy,action = model::undo)
-        PaintButton(PaintIcon.Redo,"Redo (Ctrl+Shift+Z)",s.canRedo,busy = s.busy,action = model::redo)
+private fun PaintHeaderActions(
+    s: PaintUiState, model: PaintViewModel, showBusy: Boolean, modifier: Modifier = Modifier, height: Dp = 48.dp,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically,modifier = modifier.testTag("paint-header-actions")) {
+        PaintOperationProgress(s,model,showBusy,height)
+        PaintButton(PaintIcon.Save.vector,"Save (Ctrl+S)",Modifier.height(height),!s.loading && !s.saving,busy = s.busy) { model.save() }
+        PaintButton(PaintIcon.Undo.vector,"Undo (Ctrl+Z)",Modifier.height(height),s.canUndo || s.preview != null,busy = s.busy,action = model::undo)
+        PaintButton(PaintIcon.Redo.vector,"Redo (Ctrl+Shift+Z)",Modifier.height(height),s.canRedo,busy = s.busy,action = model::redo)
         VerticalDivider(Modifier.padding(horizontal = 8.dp).height(20.dp))
     }
 }
 
 @Composable
-private fun PaintOperationProgress(s: PaintUiState, model: PaintViewModel, showBusy: Boolean) {
+private fun PaintOperationProgress(s: PaintUiState, model: PaintViewModel, showBusy: Boolean, height: Dp = 48.dp) {
     if (s.loading || (s.busy && showBusy) || s.saving) Row(Modifier.testTag("paint-operation-progress"),verticalAlignment = Alignment.CenterVertically) {
         CircularProgressIndicator(Modifier.padding(horizontal = 12.dp).size(20.dp)
             .semantics { contentDescription = if (s.loading) "Loading image" else if (s.saving) "Saving image" else "Editing image" },strokeWidth = 2.dp)
-        if (s.busy && !s.loading) PaintButton(PaintIcon.Cancel,"Cancel operation",action = model::cancelOperation)
+        if (s.busy && !s.loading) PaintButton(PaintIcon.Cancel.vector,"Cancel operation",Modifier.height(height),action = model::cancelOperation)
         VerticalDivider(Modifier.padding(horizontal = 8.dp).height(20.dp))
     }
 }

@@ -1,5 +1,7 @@
 package com.kkps.kdesktopsuite.notepad
 
+import com.kkps.kdesktopsuite.ui.DesktopCaption
+
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.geometry.Offset

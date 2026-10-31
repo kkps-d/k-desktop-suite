@@ -2,6 +2,8 @@
 
 package com.kkps.kdesktopsuite.notepad
 
+import com.kkps.kdesktopsuite.ui.DesktopCaption
+
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*

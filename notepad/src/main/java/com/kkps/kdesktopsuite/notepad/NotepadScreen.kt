@@ -2,6 +2,12 @@
 
 package com.kkps.kdesktopsuite.notepad
 
+import com.kkps.kdesktopsuite.ui.DesktopCaption
+import com.kkps.kdesktopsuite.ui.CaptionInput
+import com.kkps.kdesktopsuite.ui.rememberDesktopCaption
+import com.kkps.kdesktopsuite.ui.rememberCaptionInput
+import com.kkps.kdesktopsuite.ui.captionControl
+
 import android.content.ClipData
 import android.content.Intent
 import android.os.Build

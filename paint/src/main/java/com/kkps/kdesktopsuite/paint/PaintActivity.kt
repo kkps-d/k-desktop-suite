@@ -7,12 +7,15 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.luminance
 import androidx.core.content.FileProvider
 import androidx.lifecycle.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,6 +40,12 @@ class PaintActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (Build.VERSION.SDK_INT >= 35) {
+            window.insetsController?.setSystemBarsAppearance(
+                WindowInsetsController.APPEARANCE_TRANSPARENT_CAPTION_BAR_BACKGROUND,
+                WindowInsetsController.APPEARANCE_TRANSPARENT_CAPTION_BAR_BACKGROUND,
+            )
+        }
         setContent {
             val application = application as PaintApplication
             val model: PaintViewModel = viewModel(factory = object : ViewModelProvider.Factory {
@@ -112,7 +121,16 @@ class PaintActivity : ComponentActivity() {
                 onDispose { lifecycle.removeObserver(observer); model.flush() }
             }
             SideEffect { title = "${state.title} — KD Paint" }
-            PaintTheme(state.preferences.appearance) { PaintScreen(state, model) }
+            PaintTheme(state.preferences.appearance) {
+                val lightCaption = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+                SideEffect {
+                    if (Build.VERSION.SDK_INT >= 35) window.insetsController?.setSystemBarsAppearance(
+                        if (lightCaption) WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS else 0,
+                        WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS,
+                    )
+                }
+                PaintScreen(state, model)
+            }
         }
     }
 }
