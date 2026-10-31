@@ -207,19 +207,14 @@ class DualToolbarTest {
         compose.onNodeWithText("Move/resize").assertIsEnabled()
     }
 
-    @Test fun textToolbarToggleHidesOnlyPrimaryAndKeepsEditingState() {
+    @Test fun textSecondaryToolbarHasNoVisibilityToggle() {
         compose.runOnIdle { size = DpSize(1200.dp,400.dp); model.tool(Tool.Text); model.tap(Point(20f,20f)) }
         compose.onNodeWithTag("paint-text-overlay").performTextInput("Keep editing")
-        compose.onNode(hasText("Hide toolbar") and hasAnyAncestor(hasTestTag("paint-secondary-toolbar"))).performScrollTo().performClick()
-        compose.onNodeWithTag("paint-primary-toolbar").assertDoesNotExist()
+        compose.onNode(hasText("Hide toolbar") and hasAnyAncestor(hasTestTag("paint-secondary-toolbar"))).assertDoesNotExist()
+        compose.onNode(hasText("Show toolbar") and hasAnyAncestor(hasTestTag("paint-secondary-toolbar"))).assertDoesNotExist()
+        compose.onNodeWithTag("paint-primary-toolbar").assertIsDisplayed()
         compose.onNodeWithTag("paint-secondary-toolbar").assertIsDisplayed()
         compose.onNodeWithTag("paint-text-overlay").assertExists()
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        File(context.getExternalFilesDir(null),"text-primary-hidden.png").outputStream().use {
-            compose.onRoot().captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
-        }
-        compose.onNodeWithText("Show toolbar").performScrollTo().performClick()
-        compose.onNodeWithTag("paint-primary-toolbar").assertIsDisplayed()
         compose.runOnIdle { assertEquals("Keep editing",model.state.value.preview?.text); assertFalse(model.state.value.dirty) }
     }
 

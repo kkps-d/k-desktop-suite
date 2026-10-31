@@ -127,10 +127,6 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
                         GeometryAction(s,model,labels)
                     }
                 }
-                if (s.options.tool == Tool.Text) TextButton(onClick = model::toggleRibbon,
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("paint-text-toolbar-toggle")) {
-                    Text(stringResource(if (s.ribbonCollapsed) R.string.ui_show_toolbar else R.string.ui_hide_toolbar),maxLines = 1)
-                }
             }
         }
     }

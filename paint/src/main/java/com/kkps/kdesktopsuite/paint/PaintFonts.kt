@@ -2,6 +2,7 @@ package com.kkps.kdesktopsuite.paint
 
 import android.content.Context
 import android.graphics.Typeface
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import com.kkps.kdesktopsuite.ui.R as SharedR
 
@@ -19,5 +20,12 @@ internal object PaintFonts {
     }
 
     fun typeface(name: String): Typeface = faces[name] ?: Typeface.DEFAULT
-    fun family(name: String): FontFamily = FontFamily(typeface(name))
+
+    // Resource families let Compose synthesize bold and italic from the bundled fonts.
+    fun family(name: String): FontFamily = when (name) {
+        "Sans-serif" -> FontFamily(Font(SharedR.font.noto_sans))
+        "Serif" -> FontFamily(Font(SharedR.font.noto_serif))
+        "Monospace" -> FontFamily(Font(SharedR.font.noto_sans_mono))
+        else -> FontFamily.Default
+    }
 }

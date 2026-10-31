@@ -66,10 +66,11 @@ class ClassicEditorTest {
     }
 
     @Test fun textInputAndCommittedPixelsMatchForEveryFontAndStyle() {
+        val renderedStyles = mutableMapOf<String,MutableList<Raster>>()
         for (font in PaintFonts.names) for ((bold,italic) in listOf(false to false,true to false,false to true,true to true)) {
             compose.runOnIdle {
                 model.tool(Tool.Text)
-                model.options { it.copy(font = font,bold = bold,italic = italic,underline = bold,strike = italic) }
+                model.options { it.copy(font = font,bold = bold,italic = italic,underline = false,strike = false) }
                 model.tap(Point(10f,10f))
             }
             compose.onNodeWithTag("paint-text-overlay").performTextInput("One\nTwo café")
@@ -82,6 +83,10 @@ class ClassicEditorTest {
                 assertTrue(model.state.value.raster.pixels.all { it == WHITE })
                 val preview = requireNotNull(model.state.value.preview)
                 glyphs = requireNotNull(preview.textRaster)
+                val previousStyles = renderedStyles.getOrPut(font) { mutableListOf() }
+                assertTrue("$font bold=$bold italic=$italic must render distinct glyphs",
+                    previousStyles.none { it.width == glyphs.width && it.height == glyphs.height && it.pixels.contentEquals(glyphs.pixels) })
+                previousStyles.add(glyphs)
                 textBounds = preview.bounds
                 model.applyPreview()
             }
