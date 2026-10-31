@@ -95,5 +95,43 @@ third-party document-provider failures, and release-hardware performance need
 manual verification where the environment supports them. Record anything that
 could not be verified; do not substitute automated tests on remote ADB devices.
 
-The [Notepad tab specification](CHROME_ANDROID_TAB_SPEC.md) and
-[Paint specification](KD_PAINT_ANDROID_SPEC.md) contain detailed acceptance checks.
+### Tab and caption regressions
+
+Apply these checks to each tabbed app using the [document tab guidance](TABS.md).
+
+- Exercise 1, 2, 5, and 20 tabs, with long/duplicate/Unicode titles and unsaved,
+  saving, or error states. Check equal compression before scrolling, reachable
+  New/Close actions, selected-tab visibility, and the compact document selector.
+- Check caption integration and fallback with obstructed, missing, narrow, or
+  short geometry; include large fonts, RTL, density changes, and live resizing.
+  System window controls and blank dragging space must remain usable.
+- Check keyboard focus separately from selection, inactive-tab closing, active
+  neighbor selection, and the app's empty-window behavior after the final tab
+  closes. Notepad returns to Welcome.
+- Verify cancelled reorder/transfer operations leave documents intact. Successful
+  transfers preserve text, selection, scroll, and undo/redo; process recovery
+  restores retained documents without duplication or overwriting their files.
+
+Current Notepad coverage lives in
+[DesktopCaptionTest](../notepad/src/test/java/com/kkps/kdesktopsuite/notepad/DesktopCaptionTest.kt),
+[TabReorderingTest](../notepad/src/test/java/com/kkps/kdesktopsuite/notepad/TabReorderingTest.kt),
+[CaptionInputTest](../notepad/src/androidTest/java/com/kkps/kdesktopsuite/notepad/CaptionInputTest.kt),
+[TabWorkspaceTest](../notepad/src/androidTest/java/com/kkps/kdesktopsuite/notepad/TabWorkspaceTest.kt),
+and [TabWindowTest](../notepad/src/androidTest/java/com/kkps/kdesktopsuite/notepad/TabWindowTest.kt).
+These identify existing checks; they are not claims of complete manual coverage.
+
+### Paint document safety regressions
+
+- Check one undoable change per committed stroke, shape, text, or transform;
+  cancellation and no-op operations preserve pixels, dimensions, and dirty state.
+- Verify image-space coverage at different zooms/densities, stable brush textures,
+  selection alpha compositing, and matching text preview/export metrics.
+- Exercise editing during a save, failed/truncated provider writes, external
+  conflicts, cancelled replacement, and interrupted/corrupt recovery generations.
+  Preserve private drafts and keep newer edits unsaved when an older revision saves.
+- Verify picker cancellation/recreation, PNG round trips, EXIF-oriented JPEG,
+  readable share/clipboard URIs, and layout changes with pending edits.
+
+See the [development constraints](DEVELOPMENT.md) for the behavior these checks
+protect. Add acceptance checks for a deferred feature when its implementation is
+scoped; the [roadmap](ROADMAP.md) is not a claim of delivered functionality.

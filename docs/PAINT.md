@@ -78,9 +78,8 @@ The color dialog shows ten presets or custom slots per row, scrolling horizontal
 in narrow windows. Swap colors stays in the color toolbar.
 Selection content outside the canvas is clipped when applied. Canvas size
 controls change the canvas bounds separately from image scaling.
-Modern desktop and the common mobile view remain deferred. The
-[Android specification](KD_PAINT_ANDROID_SPEC.md) also describes planned tools
-beyond those available in the current editor.
+Modern desktop and the common mobile view remain deferred. See the
+[roadmap](ROADMAP.md) for features beyond those available in the current editor.
 
 ## Desktop windows and settings
 
@@ -120,7 +119,6 @@ original files.
 
 - [Development](DEVELOPMENT.md): setup, builds, and implementation ownership.
 - [Testing](TESTING.md): automated coverage and manual verification.
-- [Android specification](KD_PAINT_ANDROID_SPEC.md): implementation requirements
-  and planned features, including printing and additional codecs.
+- [Roadmap](ROADMAP.md): deferred editing tools, layouts, printing, and codecs.
 - [Layout references](references/kd-paint/README.md): design mockups and an earlier
   implementation reference.

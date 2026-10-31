@@ -82,6 +82,27 @@ Keep document and editing behavior in the owning app. Share platform-independent
 logic where useful and keep Android adapters in their appropriate modules.
 Extract shared UI when both apps demonstrate reuse.
 
+## Shared desktop UI constraints
+
+- Use the actual caption height, system control bounds, cutouts, and content
+  origin when integrating controls into a desktop title bar. Geometry is in
+  physical window pixels; RTL must not mirror system control positions.
+- Integrate only when controls and scaled text fit an unobstructed span. Keep
+  window buttons clear and reserve blank space for system dragging. Fall back
+  below the caption when geometry is missing, blocked, too short, or too narrow.
+- Exclude app controls from caption dragging only within their visible, clipped
+  bounds. Excluding the whole strip would prevent system window dragging.
+  Restore prior gesture exclusions when the controls leave composition.
+- Recompute on resizing, maximize/restore, display/density changes, and font
+  scaling. Layout changes must preserve the active document, edits, selection,
+  scroll position, and focus.
+- Keep caption geometry and input handling in the shared
+  [DesktopCaption implementation](../core/ui/src/main/java/com/kkps/kdesktopsuite/ui/DesktopCaption.kt).
+  Each app owns the content, minimum space, and fallback rules for its title bar.
+
+Apps that support document tabs should follow the shared
+[document tab guidance](TABS.md) for layout, input, state, and window transfers.
+
 ## KD Suite starter
 
 The starter provides:
@@ -115,8 +136,24 @@ instance state.
 - `ImageRepository` stages and validates content URI I/O; `PaintRecovery` writes
   PNG generations with atomic manifest switching; `PaintSettings` uses DataStore.
 
-See the [Paint specification](KD_PAINT_ANDROID_SPEC.md) for implementation
-requirements and the [Paint guide](PAINT.md) for current editor behavior.
+### Paint editing constraints
+
+- Viewport zoom, density, and app appearance do not alter stored image pixels.
+  Keep canvas bounds separate from image resampling and preview transforms.
+- Treat an edit as one transaction: cancellation restores its original state,
+  and applying creates one undoable change. Navigation and color selection
+  preserve pending edits; changing drawing tools follows the documented commit
+  behavior.
+- Serialize raster mutations and publish completed results. Asynchronous work
+  must not overwrite a newer edit or a different document. A save marks only the
+  revision actually encoded as saved, preserving any newer unsaved work.
+- Stage provider I/O and keep a private recovery copy when saving fails. Provider
+  replacement is not universally atomic. Recovery uses completed generations,
+  preserves preview cancellation, and never overwrites the external file.
+
+See the [Paint guide](PAINT.md) for current behavior and limitations and the
+[roadmap](ROADMAP.md) for deferred features. Use the existing implementation and
+tests to determine exact dimensions, supported operations, and defaults.
 
 ## Licenses and notices
 

@@ -6,5 +6,5 @@ files, and private draft recovery.
 - [Usage guide](../docs/PAINT.md)
 - [Development and build instructions](../docs/DEVELOPMENT.md)
 - [Testing](../docs/TESTING.md)
-- [Android implementation specification](../docs/KD_PAINT_ANDROID_SPEC.md)
+- [Deferred features](../docs/ROADMAP.md)
 - [Third-party notices](THIRD_PARTY_NOTICES.md)

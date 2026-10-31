@@ -62,6 +62,9 @@ scrolling in each document. These preferences persist across relaunch.
   or split-screen mode, including on older supported Android versions.
 - Closing unsaved tabs offers Save / Discard / Cancel. Opening an already-open
   file selects its existing tab. A cancelled or failed save keeps the draft open.
+- Closing an inactive tab keeps the active document selected. Closing the active
+  tab selects its right neighbor, falling back to its left; closing the last tab
+  opens Welcome.
 - Open and Save As use Android's document picker without broad storage access.
   Files must be UTF-8 plain text, optionally with a BOM. LF/CRLF conventions are
   retained; mixed line endings normalize to CRLF if any CRLF is present. New files
@@ -103,6 +106,7 @@ the compact Commands menu.
 Find/Replace, rich text, legacy encodings, and large-file optimizations are
 deferred.
 
-For implementation details, see the [tab specification](CHROME_ANDROID_TAB_SPEC.md).
-Build and verification instructions are in [Development](DEVELOPMENT.md) and
-[Testing](TESTING.md).
+For shared tab constraints, see [Document tabs](TABS.md). Build instructions are
+in [Development](DEVELOPMENT.md).
+Regression checks are in [Testing](TESTING.md); deferred features are in the
+[roadmap](ROADMAP.md).

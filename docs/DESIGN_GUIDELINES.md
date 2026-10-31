@@ -29,10 +29,12 @@ Name apps **KD [App]**, where **KD** means **K Desktop**: **KD Notepad** (K Desk
 
 ## Documents and tabs
 
+Follow the shared [document tab guidance](TABS.md) for apps that use tabs.
+
 - Each tab owns its document, file association, selection, scroll position, and undo history. Preserve working state across tab switches, resizing, and activity recreation; keep focus predictable.
 - Show document titles, unsaved indicators, and save/error states. Closing or replacing unsaved content offers Save / Discard / Cancel; failed or cancelled saves preserve the document.
 - Recover drafts and the tab session from durable private storage on relaunch. Recovery must not overwrite original files; keep document bodies out of saved instance state and perform file I/O off the UI thread.
-- Establish behavior in KD Notepad first; extract shared theme, controls, and tab behavior when KD Paint demonstrates reuse. Keep editor-specific behavior inside each app.
+- Reuse established tab behavior across tabbed apps. Extract shared controls when another app demonstrates reuse; keep document-specific behavior inside each app.
 
 ## Verification
 

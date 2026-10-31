@@ -11,16 +11,19 @@
 - [Development](DEVELOPMENT.md): setup, builds, module structure, and implementation notes.
 - [Testing](TESTING.md): local emulator tests and manual verification.
 - [Design guidelines](DESIGN_GUIDELINES.md): branding, appearance, adaptive layout, and input.
+- [Document tabs](TABS.md): shared tab layout, input, document state, and window transfers.
+- [Roadmap](ROADMAP.md): deferred features and ideas, separate from current behavior.
 
 ## Specifications and references
 
-Specifications describe implementation requirements and planned behavior. See the
-app guides above for current capabilities and limitations.
+Use the app guides for current behavior, [Development](DEVELOPMENT.md) for general
+constraints, and [Document tabs](TABS.md) for tabbed apps. Specs are optional; if
+one is written, keep it focused on a concrete scope. Historical layout references
+do not define current app behavior.
 
-- [Notepad tabs](CHROME_ANDROID_TAB_SPEC.md)
-- [Paint Android implementation](KD_PAINT_ANDROID_SPEC.md)
-- [Windows 7 Paint baseline](WINDOWS_7_PAINT_SPEC.md)
+- [Windows 7 Paint baseline](WINDOWS_7_PAINT_SPEC.md) (original reference proposal)
 - [Explorer specification](KD_EXPLORER_SPEC.md) (planned app)
+- [Tab visual references](references/chrome-android-tabs/) (historical Chrome examples)
 - [Paint layout references](references/kd-paint/README.md)
 
 Android platform references:

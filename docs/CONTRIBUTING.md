@@ -18,6 +18,10 @@
 - Keep the root README focused on the apps, getting started, and user-visible
   limitations. Put detailed usage, implementation rules, and verification notes
   under `docs/`, and link them from the [documentation index](README.md).
-- Update the relevant app guide when behavior changes. Specifications describe
-  implementation requirements and planned behavior; distinguish those from
-  delivered features.
+- Update the relevant app guide when behavior changes. Keep constraints and their
+  reasoning in [Development](DEVELOPMENT.md) or the [document tab guide](TABS.md),
+  with regression checks in [Testing](TESTING.md). Keep deferred ideas in the
+  [roadmap](ROADMAP.md).
+- Specs are optional. If a spec is written, keep it focused on a concrete scope.
+  After delivery, fold enduring decisions into the guides, code, and tests, and
+  retire the spec so it does not become a competing source of current behavior.
