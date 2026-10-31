@@ -1,4 +1,22 @@
-# Material Symbols
+# Third-party notices
+
+Original app code is MIT licensed; see the root `LICENSE`. Third-party
+components retain their respective licenses. All texts below are available
+offline in **About KD Paint > Open-source licenses**.
+
+- `src/main/assets/licenses/Runtime-NOTICES.txt` contains the release dependency
+  inventory, Apache 2.0 text, copyright notices, and additional upstream terms,
+  including DataStore's BSD-licensed Protocol Buffers component.
+- `src/main/assets/licenses/MaterialSymbols-NOTICE.txt` and
+  `MaterialSymbols-LICENSE.txt` contain the icon attribution and license.
+- `core/ui/src/main/assets/licenses/` supplies the app MIT license and the
+  Noto Sans, Noto Serif, and Noto Sans Mono copyright notices and SIL Open Font
+  License 1.1 texts to both apps.
+
+Update the runtime inventory and upstream notices when release dependencies
+change. Build tools and test-only dependencies are not part of this inventory.
+
+## Material Symbols
 
 The `src/main/res/drawable/ms_*.xml` assets are Material Symbols by Google,
 licensed under the Apache License, Version 2.0. The license is bundled in

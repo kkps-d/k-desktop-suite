@@ -1,0 +1,9 @@
+<resources>
+    <string name="open_source_licenses">Open-source licenses</string>
+    <string name="licenses_back">Back</string>
+    <string name="licenses_description">Licenses and acknowledgments for this app and its third-party components.</string>
+    <string name="license_app_source">App source code</string>
+    <string name="license_dependencies">Runtime libraries</string>
+    <string name="license_dependencies_summary">AndroidX, Kotlin, and third-party notices</string>
+    <string name="license_load_error">The bundled license could not be loaded. Please reopen this page to try again.</string>
+</resources>

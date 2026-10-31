@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 import com.kkps.kdesktopsuite.ui.AppAboutDialog
 
 @Composable
-internal fun NotepadAboutDialog(onDismiss: () -> Unit) {
+internal fun NotepadAboutDialog(onDismiss: () -> Unit, onLicensesClick: () -> Unit = {}) {
     val uriHandler = LocalUriHandler.current
     val sourceUrl = stringResource(R.string.source_code_url)
     AppAboutDialog(title = stringResource(R.string.about_notepad),
@@ -20,7 +20,8 @@ internal fun NotepadAboutDialog(onDismiss: () -> Unit) {
         developer = stringResource(R.string.about_developer),sourceLabel = stringResource(R.string.source_code),
         dismissLabel = stringResource(R.string.dismiss),
         icon = { Image(painterResource(R.drawable.ic_notepad),null,Modifier.size(48.dp)) },
-        onSourceClick = { uriHandler.openUri(sourceUrl) },onDismiss = onDismiss)
+        onSourceClick = { uriHandler.openUri(sourceUrl) },onDismiss = onDismiss,
+        onLicensesClick = onLicensesClick)
 }
 
 @Preview(name = "About phone", widthDp = 400, heightDp = 800)

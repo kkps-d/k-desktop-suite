@@ -288,6 +288,12 @@ dropdown, choose a device, and run. Manually verify physical stylus/palm
 handling, TalkBack/Switch Access, caption dragging, IME, external displays, provider
 failures, and performance on the release devices.
 
+## License
+
+Original K Desktop Suite code is licensed under the [MIT License](LICENSE).
+Third-party libraries, icons, and fonts retain their respective licenses.
+Both apps provide bundled notices under **About > Open-source licenses**.
+
 ## References
 
 - [Adaptive app development](https://developer.android.com/develop/adaptive-apps/guides/get-started-with-adaptive-apps)

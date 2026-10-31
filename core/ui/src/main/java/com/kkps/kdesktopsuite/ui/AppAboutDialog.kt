@@ -10,12 +10,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun AppAboutDialog(
     title: String, version: String, developer: String, sourceLabel: String, dismissLabel: String,
     icon: @Composable () -> Unit, onSourceClick: () -> Unit, onDismiss: () -> Unit,
+    onLicensesClick: () -> Unit,
 ) {
     val dismissFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { dismissFocus.requestFocus() }
@@ -26,7 +28,16 @@ fun AppAboutDialog(
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(version)
                 Text(developer,color = MaterialTheme.colorScheme.onSurfaceVariant)
-                TextButton(onClick = onSourceClick) { Text(sourceLabel) }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(onClick = onSourceClick,
+                        contentPadding = PaddingValues(horizontal = 8.dp,vertical = 4.dp)) {
+                        Text(sourceLabel,style = MaterialTheme.typography.labelMedium)
+                    }
+                    TextButton(onClick = onLicensesClick,
+                        contentPadding = PaddingValues(horizontal = 8.dp,vertical = 4.dp)) {
+                        Text(stringResource(R.string.open_source_licenses),style = MaterialTheme.typography.labelMedium)
+                    }
+                }
             }
         },confirmButton = {
             TextButton(onClick = onDismiss,modifier = Modifier.focusRequester(dismissFocus)) { Text(dismissLabel) }

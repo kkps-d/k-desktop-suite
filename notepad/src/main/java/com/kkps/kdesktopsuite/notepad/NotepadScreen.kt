@@ -101,6 +101,7 @@ import com.kkps.kdesktopsuite.ui.AppDropdownMenu
 import com.kkps.kdesktopsuite.ui.AppMenuButton
 import com.kkps.kdesktopsuite.ui.AppMenuDimensions
 import com.kkps.kdesktopsuite.ui.AppMenuItem
+import com.kkps.kdesktopsuite.ui.AppLicensesPage
 
 internal object TabBarDimensions {
     val topPadding = 8.dp
@@ -142,20 +143,27 @@ internal fun NotepadScreen(
     val active = notepad.active
     val focusManager = LocalFocusManager.current
     var aboutOpen by rememberSaveable { mutableStateOf(false) }
+    var licensesOpen by rememberSaveable { mutableStateOf(false) }
+    var selectedLicense by rememberSaveable { mutableStateOf<Int?>(null) }
+    val licenseBack = {
+        if (selectedLicense != null) selectedLicense = null
+        else { licensesOpen = false; aboutOpen = true }
+    }
     var moveDocumentId by rememberSaveable { mutableStateOf<String?>(null) }
     val view = LocalView.current
     DisposableEffect(notepad.window, focusManager) {
         notepad.window.prepareTransfer = { focusManager.clearFocus(force = true) }
         onDispose { notepad.window.prepareTransfer = {} }
     }
-    SideEffect { notepad.window.modalOpen = aboutOpen }
+    SideEffect { notepad.window.modalOpen = aboutOpen || licensesOpen }
     BackHandler(enabled = notepad.workspace.dragging != null) {
         notepad.workspace.dragging?.let { notepad.workspace.cancelTransfer(it.token) }
         view.cancelDragAndDrop()
     }
     BackHandler(enabled = notepad.settingsOpen) { notepad.showSettings(false) }
+    BackHandler(enabled = licensesOpen, onBack = licenseBack)
     val tabs = rememberLazyListState()
-    val headerColor = if (notepad.settingsOpen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh
+    val headerColor = if (notepad.settingsOpen || licensesOpen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh
     SideEffect {
         if (activity != null && Build.VERSION.SDK_INT >= 35) {
             activity.window.insetsController?.setSystemBarsAppearance(
@@ -256,8 +264,8 @@ internal fun NotepadScreen(
         }
     }
 
-    LaunchedEffect(notepad.focusRequest, notepad.settingsOpen, aboutOpen) {
-        if (editorFocused && active != null && !notepad.settingsOpen && !aboutOpen) {
+    LaunchedEffect(notepad.focusRequest, notepad.settingsOpen, aboutOpen, licensesOpen) {
+        if (editorFocused && active != null && !notepad.settingsOpen && !aboutOpen && !licensesOpen) {
             // Keep shortcuts available without keeping the text field (and IME) active.
             commandFocus.requestFocus()
         }
@@ -297,6 +305,8 @@ internal fun NotepadScreen(
                         notepad.workspace.dragging?.let { notepad.workspace.cancelTransfer(it.token) }
                         view.cancelDragAndDrop()
                         true
+                    } else if (licensesOpen) {
+                        false
                     } else if (notepad.settingsOpen) {
                         if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
                             notepad.showSettings(false)
@@ -354,6 +364,10 @@ internal fun NotepadScreen(
                     Spacer(Modifier.height(with(density) { (caption.height - origin.y - region.top).coerceAtLeast(0f).toDp() }))
                     LinearProgressIndicator(Modifier.fillMaxWidth())
                     Text(stringResource(R.string.loading), Modifier.padding(NotepadSpacing.medium))
+                } else if (licensesOpen) {
+                    Spacer(Modifier.height(with(density) { (caption.height - origin.y - region.top).coerceAtLeast(0f).toDp() }))
+                    AppLicensesPage(selectedLicense, onSelect = { selectedLicense = it },
+                        onBack = licenseBack, modifier = Modifier.weight(1f))
                 } else if (notepad.settingsOpen) {
                     // Keep settings below desktop caption controls and retain the system drag area.
                     Spacer(Modifier.height(with(density) { (caption.height - origin.y - region.top).coerceAtLeast(0f).toDp() }))
@@ -431,7 +445,8 @@ internal fun NotepadScreen(
         }
     }
 
-    if (aboutOpen) NotepadAboutDialog(onDismiss = { aboutOpen = false })
+    if (aboutOpen) NotepadAboutDialog(onDismiss = { aboutOpen = false },
+        onLicensesClick = { aboutOpen = false; licensesOpen = true })
 
     moveDocumentId?.let { id ->
         AlertDialog(

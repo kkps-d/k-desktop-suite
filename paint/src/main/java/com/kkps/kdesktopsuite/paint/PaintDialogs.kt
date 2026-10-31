@@ -23,7 +23,7 @@ import kotlin.math.roundToInt
 import com.kkps.kdesktopsuite.ui.AppAboutDialog
 
 @Composable
-internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenDebug: () -> Unit) {
+internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenLicenses: () -> Unit, onOpenDebug: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     when (s.dialog) {
         null -> Unit
@@ -79,7 +79,7 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenDebug: (
             },
             onSourceClick = { runCatching { uriHandler.openUri("https://github.com/kkps-d/k-desktop-suite") }
                 .onFailure { model.message("No browser is available to open the source repository.") } },
-            onDismiss = { model.dialog(null) })
+            onDismiss = { model.dialog(null) },onLicensesClick = onOpenLicenses)
         PaintDialog.Properties -> AlertDialog(onDismissRequest = { model.dialog(null) },title = { Text(stringResource(R.string.ui_image_properties)) },
             text = { Text("${s.title}\n\n${s.raster.width} × ${s.raster.height} pixels\nOpaque sRGB, 32-bit working raster\n${if (s.mime == "image/jpeg") "JPEG" else "PNG"}\n\n${if (s.uri == null) "Not saved to a file" else s.uri}\n\n${if (s.dirty) "Unsaved changes" else "Saved revision"}") },
             confirmButton = { TextButton(onClick = { model.dialog(null) }) { Text(stringResource(R.string.ui_close)) } })

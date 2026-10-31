@@ -34,6 +34,7 @@ import kotlinx.coroutines.delay
 import com.kkps.kdesktopsuite.ui.AppDropdownMenu
 import com.kkps.kdesktopsuite.ui.AppMenuButton
 import com.kkps.kdesktopsuite.ui.AppMenuItem
+import com.kkps.kdesktopsuite.ui.AppLicensesPage
 import com.kkps.kdesktopsuite.ui.DesktopCaption
 import com.kkps.kdesktopsuite.ui.CaptionInput
 import com.kkps.kdesktopsuite.ui.desktopCaptionSpan
@@ -89,18 +90,25 @@ internal fun PaintScreen(
     var selectionDrag by remember { mutableStateOf<PixelRect?>(null) }
     var canvasResize by remember { mutableStateOf<PixelRect?>(null) }
     var debugOpen by rememberSaveable { mutableStateOf(false) }
+    var licensesOpen by rememberSaveable { mutableStateOf(false) }
+    var selectedLicense by rememberSaveable { mutableStateOf<Int?>(null) }
+    val licenseBack = {
+        if (selectedLicense != null) selectedLicense = null
+        else { licensesOpen = false; model.dialog(PaintDialog.About) }
+    }
     LaunchedEffect(state.message) { state.message?.let { snackbar.showSnackbar(it); model.message(null) } }
     val imeVisible = WindowInsets.isImeVisible
     BackHandler(!imeVisible && (debugOpen || state.settingsOpen || state.dialog != null || state.preview != null || state.selection != null || state.focusMode)) {
         if (debugOpen) debugOpen = false else model.back()
     }
+    BackHandler(enabled = licensesOpen, onBack = licenseBack)
     val density = LocalDensity.current
     var region by remember { mutableStateOf(Rect.Zero) }
     val minHeaderHeight = with(density) {
         (maxOf(MaterialTheme.typography.titleSmall.lineHeight.toDp(), MaterialTheme.typography.labelLarge.lineHeight.toDp()) + 8.dp)
             .coerceAtLeast(32.dp).toPx()
     }
-    val controls = if (state.settingsOpen || debugOpen || state.focusMode) null else
+    val controls = if (state.settingsOpen || debugOpen || licensesOpen || state.focusMode) null else
         paintCaptionControls(caption, region, density.density, density.fontScale, minHeaderHeight)
     val captionInput = rememberCaptionInput(controls)
     // Keep status bars and cutouts protected even when they overlap the caption inset.
@@ -116,11 +124,12 @@ internal fun PaintScreen(
                 }) {
                 val width = maxWidth
                 val portrait = maxHeight > maxWidth
-                Column(Modifier.fillMaxSize().onKeyEvent { event -> if (state.settingsOpen || debugOpen) false else handlePaintKey(event,state,model) }) {
+                Column(Modifier.fillMaxSize().onKeyEvent { event -> if (state.settingsOpen || debugOpen || licensesOpen) false else handlePaintKey(event,state,model) }) {
                     if (controls == null && caption.height > region.top) {
                         Spacer(Modifier.fillMaxWidth().height(with(density) { (caption.height - region.top).toDp() }))
                     }
-                    if (debugOpen) PaintDebugScreen { debugOpen = false }
+                    if (licensesOpen) AppLicensesPage(selectedLicense, onSelect = { selectedLicense = it }, onBack = licenseBack)
+                    else if (debugOpen) PaintDebugScreen { debugOpen = false }
                     else if (state.settingsOpen) PaintSettingsScreen(state,model) else {
                         if (!state.focusMode) {
                             val headerModifier = if (controls == null) Modifier else Modifier.absolutePadding(
@@ -145,7 +154,10 @@ internal fun PaintScreen(
                     }
                 }
                 SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter))
-                if (!debugOpen) PaintDialogs(state,model) {
+                if (!debugOpen && !licensesOpen) PaintDialogs(state,model,onOpenLicenses = {
+                    model.dialog(null)
+                    licensesOpen = true
+                }) {
                     model.dialog(null)
                     debugOpen = true
                 }
