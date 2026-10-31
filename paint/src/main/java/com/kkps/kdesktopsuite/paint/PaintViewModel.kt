@@ -28,12 +28,14 @@ internal data class PaintUiState(
     val lastShape: Tool = Tool.Rectangle,
     val eyedropperSlot: Int = 0,
     val assignCustomColor: Boolean = false,
+    val closed: Boolean = false,
 )
 
 internal class PaintViewModel(
     private val images: ImageRepository, private val recovery: PaintRecovery,
     private val settings: PaintSettings, private val savedState: SavedStateHandle,
     private val applicationScope: CoroutineScope, private val compute: CoroutineDispatcher = Dispatchers.Default,
+    private val windows: PaintWindows? = null, private val window: PaintWindow? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(PaintUiState(
         colorOptions = savedState["colorOptions"] ?: false, colorBackground = savedState["colorBackground"] ?: false,
@@ -44,6 +46,8 @@ internal class PaintViewModel(
     private var fingerprint: String? = null
     private var recoveryWritable = true
     private var pendingRecovery: RecoverySnapshot? = null
+    private var closing = false
+    private var startupChoice = false
     private var checkpointJob: Job? = null
     private var editJob: Job? = null
     private var nextAction: (() -> Unit)? = null
@@ -57,6 +61,10 @@ internal class PaintViewModel(
     private var operationId = 0L
     private var layoutInitialized = false
     private var textEditor: Pair<String, TextFieldState>? = null
+    override fun onCleared() {
+        window?.reservedUris?.clear()
+        super.onCleared()
+    }
     fun textEditor(preview: EditPreview): TextFieldState {
         textEditor?.takeIf { it.first == preview.id }?.let { return it.second }
         return TextFieldState(preview.text,TextRange(preview.textSelectionStart.coerceIn(0,preview.text.length),
@@ -90,22 +98,34 @@ internal class PaintViewModel(
             try {
                 val preferences = settings.preferences.catch { emit(PaintPreferences()) }.first()
                 mutableState.update { it.copy(preferences = preferences) }
+                if (window?.askStartup == true) {
+                    startupChoice = true
+                    dialog(PaintDialog.ReopenLastEdit)
+                    return@launch
+                }
                 // Android process recreation resumes the current session regardless of the launch preference.
                 val behavior = if (savedState.get<Boolean>("sessionStarted") == true || savedState.contains("pickerKind"))
                     PaintStartupBehavior.ReopenLastEdit else preferences.startupBehavior
-                val snapshot = if (behavior == PaintStartupBehavior.NewImage) null else recovery.read()
-                if (snapshot != null && behavior == PaintStartupBehavior.AskEveryTime) {
+                val snapshot = if (window != null) {
+                    if (window.hasDraft) recovery.read() else null
+                } else if (behavior == PaintStartupBehavior.NewImage) null else recovery.read()
+                if (window == null && snapshot != null && behavior == PaintStartupBehavior.AskEveryTime) {
                     pendingRecovery = snapshot
                     dialog(PaintDialog.ReopenLastEdit)
                     return@launch
                 }
                 if (snapshot != null) restoreSnapshot(snapshot) else startBlankImage()
-            } catch (error: Exception) { recoveryWritable = false; message(error.message ?: "Recovery could not be read.") }
+            } catch (error: Exception) {
+                recoveryWritable = false
+                window?.preserveRecovery = true
+                message(error.message ?: "Recovery could not be read.")
+            }
             finishStartup()
         }
         viewModelScope.launch { while (isActive) { delay(5000); if (checkpointJob?.isActive == true) flush() } }
     }
     private fun restoreSnapshot(snapshot: RecoverySnapshot) {
+        window?.uri = snapshot.uri
         layoutInitialized = true
         history = RasterHistory(snapshot.raster).apply { if (snapshot.dirty) savedRevision = null }
         fingerprint = snapshot.fingerprint
@@ -130,8 +150,35 @@ internal class PaintViewModel(
         savedState.get<String>("pickerKind")?.let { kind ->
             mutableState.update { it.copy(picker = PickerRequest(kind = PickerKind.valueOf(kind), launched = true)) }
         }
+        checkpoint()
     }
     fun resolveStartup(reopen: Boolean) {
+        if (startupChoice) {
+            startupChoice = false
+            viewModelScope.launch {
+                try {
+                    requireNotNull(windows).resolveStartup(requireNotNull(window), reopen)
+                } catch (cancel: CancellationException) { throw cancel }
+                catch (error: Exception) {
+                    startupChoice = true
+                    message("The previous session is unchanged. ${error.message.orEmpty()}")
+                    return@launch
+                }
+                try {
+                    val window = requireNotNull(window)
+                    val snapshot = if (reopen && window.hasDraft) recovery.read() else null
+                    if (snapshot != null) restoreSnapshot(snapshot) else startBlankImage()
+                } catch (cancel: CancellationException) { throw cancel }
+                catch (error: Exception) {
+                    recoveryWritable = false
+                    window.preserveRecovery = true
+                    message(error.message ?: "Recovery could not be read. Its files have been preserved.")
+                }
+                dialog(null)
+                finishStartup()
+            }
+            return
+        }
         val snapshot = pendingRecovery ?: return
         pendingRecovery = null
         if (reopen) restoreSnapshot(snapshot) else startBlankImage()
@@ -173,10 +220,12 @@ internal class PaintViewModel(
         checkpointJob = viewModelScope.launch { delay(500); flush() }
     }
     fun flush() {
-        if (!recoveryWritable || state.value.loading) return
+        if (!recoveryWritable || state.value.loading || closing || state.value.closed) return
         val snapshot = snapshot().copy(sequence = recovery.nextSequence())
         applicationScope.launch {
-            try { recovery.write(snapshot) } catch (error: Exception) { message("Draft recovery failed: ${error.message}") }
+            try {
+                if (windows != null && window != null) windows.checkpoint(window, snapshot) else recovery.write(snapshot)
+            } catch (error: Exception) { message("Draft recovery failed: ${error.message}") }
         }
     }
     private fun operation(work: suspend (Raster) -> Raster, valid: () -> Boolean = { true }, affectedArea: PixelRect? = null, after: () -> Unit = {}) {
@@ -516,19 +565,57 @@ internal class PaintViewModel(
     }
     private fun unsaved() = history.dirty || state.value.preview?.hasContent == true
     private fun replace(action: () -> Unit) {
-        if (state.value.busy || state.value.saving) return
+        if (state.value.busy || state.value.saving || state.value.loading || state.value.closed) return
         if (unsaved()) { nextAction = action; dialog(PaintDialog.Unsaved) } else action()
     }
     fun newImage() = replace {
         val preferences = state.value.preferences
         install(Raster.blank(preferences.defaultCanvasWidth,preferences.defaultCanvasHeight), "Untitled", null, "image/png", null)
     }
-    fun open() = replace { launchPicker(PickerKind.Open) }
-    fun openRecent(uri: String) = replace { load(uri) }
+    fun newWindow() {
+        if (state.value.loading || closing || state.value.closed) return
+        try { window?.activity?.let { PaintWindows.launch(it) } }
+        catch (error: Exception) { message(error.message ?: "A new Paint window could not be opened.") }
+    }
+    fun closeImage() = replace {
+        closing = true
+        checkpointJob?.cancel()
+        mutableState.update { it.copy(busy = true) }
+        viewModelScope.launch {
+            try {
+                if (windows != null && window != null) windows.close(window)
+                mutableState.update { it.copy(closed = true) }
+            } catch (error: Exception) {
+                closing = false
+                mutableState.update { it.copy(busy = false) }
+                message(error.message ?: "The window could not be closed. Its draft is retained.")
+            }
+        }
+    }
+    fun open() {
+        if (!state.value.busy && !state.value.saving && !state.value.loading) launchPicker(PickerKind.Open)
+    }
+    fun openRecent(uri: String) = openUri(uri)
+    private fun openUri(uri: String) {
+        if (state.value.busy || state.value.saving || state.value.loading) return
+        if (windows != null && window != null) {
+            val owner = windows.owner(uri, window)
+            if (owner != null) {
+                try { window.activity?.let { windows.show(it, owner) } }
+                catch (error: Exception) { message(error.message ?: "The image's window could not be opened. Its draft is retained.") }
+                return
+            }
+            if (state.value.uri == uri) return
+            if (!windows.reserve(window, uri)) return
+        }
+        replace { load(uri) }
+    }
     fun discard() { val action = nextAction; nextAction = null; dialog(null); action?.invoke() }
-    fun cancelReplace() { nextAction = null; saveContinuation = null; dialog(null) }
+    fun cancelReplace() { window?.reservedUris?.clear(); nextAction = null; saveContinuation = null; dialog(null) }
     fun saveThenContinue() { saveContinuation = nextAction; nextAction = null; dialog(null); save() }
     private fun install(raster: Raster, title: String, uri: String?, mime: String, fingerprint: String?) {
+        window?.uri = uri
+        window?.reservedUris?.clear()
         documentId = UUID.randomUUID().toString()
         textEditor = null
         history = RasterHistory(raster); this.fingerprint = fingerprint
@@ -548,10 +635,15 @@ internal class PaintViewModel(
         savedState.remove<String>("pickerKind"); mutableState.update { it.copy(picker = null) }
         if (uri == null) { cancelSave(); return }
         when (request.kind) {
-            PickerKind.Open -> load(uri)
+            PickerKind.Open -> openUri(uri)
             PickerKind.Insert -> importSelection(uri)
             PickerKind.Save -> {
                 if (pendingSave == null) { message("Save was interrupted by a process restart. Choose Save as again."); return }
+                if (windows != null && window != null && !windows.reserve(window, uri)) {
+                    cancelSave()
+                    message("This image is already open in another Paint window. Choose a different file with Save as.")
+                    return
+                }
                 pendingSave = pendingSave?.copy(uri = uri, expected = null); writeSave()
             }
         }
@@ -564,7 +656,7 @@ internal class PaintViewModel(
             catch (cancel: CancellationException) { throw cancel }
             catch (_: OutOfMemoryError) { message("This image needs more memory than is available.") }
             catch (error: Exception) { message(error.message ?: "Could not open image.") }
-            finally { mutableState.update { it.copy(busy = false) } }
+            finally { window?.reservedUris?.remove(uri); mutableState.update { it.copy(busy = false) } }
         }
     }
     fun save(asNew: Boolean = false) {
@@ -582,7 +674,7 @@ internal class PaintViewModel(
         mutableState.update { it.copy(saving = true) }
         if (mime == "image/jpeg") dialog(PaintDialog.JpegWarning) else continueSave()
     }
-    fun cancelSave() { pendingSave = null; saveContinuation = null; mutableState.update { it.copy(saving = false) }; dialog(null) }
+    fun cancelSave() { window?.reservedUris?.clear(); pendingSave = null; saveContinuation = null; mutableState.update { it.copy(saving = false) }; dialog(null) }
     fun continueSave() {
         dialog(null)
         if (pendingSave?.uri == null) launchPicker(PickerKind.Save, pendingSave?.mime ?: "image/png") else writeSave()
@@ -599,21 +691,26 @@ internal class PaintViewModel(
                 images.write(uri,staged,job.expected)
                 if (documentId != savedDocument) return@launch
                 fingerprint = staged.fingerprint; history.savedRevision = job.revision
+                window?.uri = uri
+                window?.reservedUris?.remove(uri)
                 mutableState.update { it.copy(uri = uri, title = it.title, mime = job.mime) }
                 images.name(uri)?.let { name -> mutableState.update { it.copy(title = name) } }
                 sync(); recent(uri); pendingSave = null
                 mutableState.update { it.copy(saving = false) }
                 val continuation = saveContinuation; saveContinuation = null
-                if (continuation != null && !unsaved()) continuation() else if (continuation != null) message("Saved an earlier revision. Newer edits remain open.")
+                if (continuation != null && !unsaved()) continuation() else if (continuation != null) {
+                    window?.reservedUris?.clear()
+                    message("Saved an earlier revision. Newer edits remain open.")
+                }
                 else message("Image saved.")
             } catch (_: ImageChangedException) { dialog(PaintDialog.Conflict) }
-            catch (error: Exception) { pendingSave = null; saveContinuation = null; mutableState.update { it.copy(saving = false) }; message("Save failed. The private draft is safe. ${error.message}") }
+            catch (error: Exception) { window?.reservedUris?.clear(); pendingSave = null; saveContinuation = null; mutableState.update { it.copy(saving = false) }; message("Save failed. The private draft is safe. ${error.message}") }
         }
     }
     private fun recent(uri: String) = preferences { it.copy(recent = (listOf(uri) + it.recent.filter { old -> old != uri }).take(10)) }
     fun preferences(change: (PaintPreferences) -> PaintPreferences) {
-        val value = change(state.value.preferences); mutableState.update { it.copy(preferences = value) }
-        viewModelScope.launch { try { settings.save(value) } catch (error: Exception) { message("Settings could not be saved: ${error.message}") } }
+        mutableState.update { it.copy(preferences = change(it.preferences)) }
+        viewModelScope.launch { try { settings.update(change) } catch (error: Exception) { message("Settings could not be saved: ${error.message}") } }
     }
     fun insertPicker() { applyPreview { launchPicker(PickerKind.Insert) } }
     private fun importSelection(uri: String) {

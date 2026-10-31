@@ -136,23 +136,28 @@ internal data class PaintPreferences(val appearance: String = "System", val jpeg
 internal class PaintSettings(context: Context) {
     private val store = context.paintPreferences
     private val key = stringPreferencesKey("settings")
-    val preferences = store.data.map { data ->
-        val json = runCatching { JSONObject(data[key] ?: "{}") }.getOrDefault(JSONObject())
+    val preferences = store.data.map { data -> decode(data[key]) }
+    private fun decode(value: String?): PaintPreferences {
+        val json = runCatching { JSONObject(value ?: "{}") }.getOrDefault(JSONObject())
         val width = json.optInt("canvasWidth",800).coerceIn(1,8192)
         val height = json.optInt("canvasHeight",600).coerceIn(1,8192)
         val validSize = width.toLong() * height <= MAX_PIXELS
-        PaintPreferences(json.optString("appearance", "System"), json.optInt("quality", 90).coerceIn(1, 100),
+        return PaintPreferences(json.optString("appearance", "System"), json.optInt("quality", 90).coerceIn(1, 100),
             List(10) { json.optJSONArray("colors")?.optInt(it, WHITE) ?: WHITE },
             json.optJSONArray("recent")?.let { array -> List(array.length()) { array.getString(it) } } ?: emptyList(),
             if (validSize) width else 800,if (validSize) height else 600,
             PaintStartupBehavior.entries.firstOrNull { it.name == json.optString("startupBehavior") }
                 ?: PaintStartupBehavior.ReopenLastEdit)
     }
-    suspend fun save(value: PaintPreferences) {
-        store.edit { it[key] = JSONObject().put("appearance", value.appearance).put("quality", value.jpegQuality)
-            .put("canvasWidth",value.defaultCanvasWidth).put("canvasHeight",value.defaultCanvasHeight)
-            .put("startupBehavior",value.startupBehavior.name)
-            .put("colors", JSONArray(value.customColors)).put("recent", JSONArray(value.recent)).toString() }
+    suspend fun save(value: PaintPreferences) = update { value }
+    suspend fun update(change: (PaintPreferences) -> PaintPreferences) {
+        store.edit {
+            val value = change(decode(it[key]))
+            it[key] = JSONObject().put("appearance", value.appearance).put("quality", value.jpegQuality)
+                .put("canvasWidth",value.defaultCanvasWidth).put("canvasHeight",value.defaultCanvasHeight)
+                .put("startupBehavior",value.startupBehavior.name)
+                .put("colors", JSONArray(value.customColors)).put("recent", JSONArray(value.recent)).toString()
+        }
     }
 }
 
@@ -166,9 +171,10 @@ internal class PaintRecovery(private val root: File, private val io: CoroutineDi
     private var latestSequence = -1L
     private val sequence = AtomicLong()
     private var validManifest: ByteArray? = null
+    private var retired = false
     fun nextSequence(): Long = sequence.incrementAndGet()
     suspend fun write(snapshot: RecoverySnapshot) = withContext(io) { mutex.withLock {
-        if (snapshot.sequence < latestSequence) return@withLock
+        if (retired || snapshot.sequence < latestSequence) return@withLock
         root.mkdirs()
         val generation = File(root, UUID.randomUUID().toString()).apply { mkdirs() }
         fun saveRaster(raster: Raster, name: String) {
@@ -217,6 +223,11 @@ internal class PaintRecovery(private val root: File, private val io: CoroutineDi
         }
         if (failure != null) throw IOException("Recovery could not be read. Its files have been preserved.", failure)
         null
+    } }
+    suspend fun retire(removeFiles: Boolean) = withContext(io) { mutex.withLock {
+        retired = true
+        if (removeFiles) runCatching { root.deleteRecursively() }
+        Unit
     } }
     private fun writeAtomic(file: File, bytes: ByteArray) {
         val atomic = AtomicFile(file); val output = atomic.startWrite()

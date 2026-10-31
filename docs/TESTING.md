@@ -26,6 +26,13 @@ Always set `ANDROID_SERIAL` explicitly to that serial before running connected
 tests, especially when other devices are connected. The serial below is an
 example; replace it with the one belonging to Small Desktop.
 
+Some Paint Compose fixtures request a 1200 × 800 dp surface. Give their host
+window enough space; a smaller freeform window clips the fixture and can cause
+false input, screenshot, or status-bar failures. A temporary larger display size
+on Small Desktop can provide this space; restore the original display settings
+afterward. Check real narrow and short windows separately using the adaptive
+and window lifecycle tests and the manual checks below.
+
 PowerShell:
 
 ```powershell
@@ -88,6 +95,12 @@ Check the affected flows on the local Small Desktop emulator:
   drops, and recovery after editing multiple windows.
 - Paint: active tool access, preview/commit/cancel behavior, pan/zoom, caption
   clearance, focus mode, and unsaved replacement or provider-conflict decisions.
+  Open multiple windows through File → New window, Ctrl+Shift+N, and system New
+  window. Check independent undo, pending text/shapes, picker results, settings,
+  and titles; opening an already-owned file must focus its owner without replacing
+  the source draft. Check Ctrl+W Save / Discard / Cancel, failed saves, closing
+  during edits, and system-close recovery. Recreate and restart multiple windows;
+  restore each draft once, with the last focused window in front.
 
 TalkBack/Switch Access, physical stylus/palm handling, trackpad pinch, predictive
 Back gestures, cross-app drops, freeform window dragging, folds, external displays,
@@ -131,6 +144,13 @@ These identify existing checks; they are not claims of complete manual coverage.
   Preserve private drafts and keep newer edits unsaved when an older revision saves.
 - Verify picker cancellation/recreation, PNG round trips, EXIF-oriented JPEG,
   readable share/clipboard URIs, and layout changes with pending edits.
+- `PaintWindowSessionTest` covers per-window recovery and pending text, close/save
+  decisions, delayed checkpoints after close, URI reservations, failed loads,
+  Save as conflicts, legacy migration, startup choices, corrupt-entry isolation,
+  simultaneous settings updates, and opening another window while a PNG
+  checkpoint is blocked. `PaintWindowTest` exercises actual separate
+  tasks, File/New window and keyboard commands, recreation with undo, duplicate
+  launches, system-style new instances, and focusing an already-owned image.
 
 See the [development constraints](DEVELOPMENT.md) for the behavior these checks
 protect. Add acceptance checks for a deferred feature when its implementation is

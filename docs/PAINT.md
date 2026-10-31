@@ -1,7 +1,7 @@
 # KD Paint
 
 An independently launchable Android app (`com.kkps.kdesktopsuite.paint`) with one
-image open at a time. There are no document or ribbon tabs. File/View are menus;
+image per window and support for multiple independent windows. There are no document or ribbon tabs. File/View are menus;
 two single-row drawing toolbars scroll horizontally in narrow windows. The canvas centers
 each axis on which the image fits; larger images pan within the viewport.
 
@@ -83,6 +83,26 @@ Modern desktop and the common mobile view remain deferred. See the
 
 ## Desktop windows and settings
 
+**File → New window** or **Ctrl+Shift+N** opens a blank image in a separate Android
+task, using the default canvas size. Supported systems also offer New window in
+their window controls. Each window keeps its own edits, undo history, pending
+text/shapes, viewport, and file picker. Settings and recent files are shared.
+Android controls window placement; systems without desktop windowing can show
+the tasks full screen or in split screen.
+
+**New image / Ctrl+N** and **Open / Ctrl+O** still replace the image in the current
+window. Opening a file already open in another Paint window brings that window
+forward and preserves the current image. Save as cannot target a file owned by
+another Paint window. File identity follows the content URI supplied by the
+provider; different provider URIs for the same underlying file may still require
+the existing save-conflict decision.
+
+**Close image / Ctrl+W** closes only the current window, offering Save / Discard /
+Cancel for unsaved pixels or pending edits. Cancelled or failed saves keep it open;
+newer edits made during a save also keep it open. A confirmed close removes that
+window from recovery. Android's system Close or task removal can bypass app
+confirmation; Paint retains its latest checkpoint for recovery in that case.
+
 On systems with custom desktop captions, the menu/title/action row moves into
 an unobstructed caption span at least 500dp wide, scaled with system text size.
 Long document titles truncate with an ellipsis. System window buttons remain clear,
@@ -90,9 +110,13 @@ and the title area allows window dragging. Narrow windows, short
 captions, and larger text keep the row below the system caption. Settings and
 focus mode retain the system caption clearance.
 
-Settings → On startup lets you reopen the last edited image or draft (the default),
+Settings → On startup lets you reopen previous windows and drafts (the default),
 start a new image at the default canvas size, or ask each time a previous session
-exists. Android activity and process recreation resume the current session.
+exists. Reopening restores each retained image in its own window and returns to
+the last focused window. Ask presents one decision for the previous session;
+Start new image starts a fresh session. Android activity and process recreation
+resume the matching window regardless of the startup preference. Undo survives
+activity recreation but resets after process restart.
 Default canvas dimensions save automatically when valid; Reset beside the inputs
 restores 800 × 600. These defaults apply to new images only.
 
@@ -113,7 +137,11 @@ Private recovery uses PNG generations, a 500 ms debounce, a five-second maximum
 checkpoint interval during editing, and best-effort background flushing. Process
 termination can lose changes after the last successful checkpoint. Undo survives
 activity recreation but resets after process restart. Recovery never overwrites
-original files.
+original files. Each window has a separate recovery directory, with an atomic
+session index tracking membership. Existing single-image recovery migrates once;
+its original files remain intact. Corrupt window drafts remain preserved while
+healthy windows can reopen. A window that fails to launch retains its recovery
+entry for the next launch.
 
 ## Further documentation
 

@@ -257,6 +257,7 @@ private fun FileMenu(s: PaintUiState, model: PaintViewModel) {
         AppDropdownMenu(open,{ open = false }) {
             fun close(action: () -> Unit) { open = false; action() }
             AppMenuItem({ Text(stringResource(R.string.ui_new_image_ctrl_n)) },{ close(model::newImage) },enabled = !s.busy,shortcut = "Ctrl+N")
+            AppMenuItem({ Text(stringResource(R.string.ui_new_window)) },{ close(model::newWindow) },enabled = !s.loading,shortcut = "Ctrl+Shift+N")
             AppMenuItem({ Text(stringResource(R.string.ui_open_image_ctrl_o)) },{ close(model::open) },enabled = !s.busy,shortcut = "Ctrl+O")
             AppMenuItem({ Text(stringResource(R.string.ui_save_ctrl_s)) },{ close { model.save() } },enabled = !s.busy,shortcut = "Ctrl+S")
             AppMenuItem({ Text(stringResource(R.string.ui_save_as_ctrl_shift_s)) },{ close { model.save(true) } },enabled = !s.busy,shortcut = "Ctrl+Shift+S")
@@ -284,7 +285,7 @@ private fun FileMenu(s: PaintUiState, model: PaintViewModel) {
             AppMenuItem({ Text(stringResource(R.string.ui_insert_image)) },{ close(model::insertPicker) },enabled = !s.busy)
             AppMenuItem({ Text(stringResource(R.string.ui_share_this_image)) },{ close(model::share) },enabled = !s.busy)
             AppMenuItem({ Text(stringResource(R.string.ui_image_properties)) },{ close { model.dialog(PaintDialog.Properties) } })
-            AppMenuItem({ Text(stringResource(R.string.ui_close_image_ctrl_w)) },{ close(model::newImage) },enabled = !s.busy,shortcut = "Ctrl+W")
+            AppMenuItem({ Text(stringResource(R.string.ui_close_image_ctrl_w)) },{ close(model::closeImage) },enabled = !s.busy && !s.saving,shortcut = "Ctrl+W")
         }
     }
 }
@@ -404,8 +405,8 @@ internal fun handlePaintKey(event: KeyEvent, s: PaintUiState, model: PaintViewMo
         return false
     }
     when (event.key) {
-        Key.N -> model.newImage(); Key.O -> model.open(); Key.S -> model.save(event.isShiftPressed)
-        Key.W -> model.newImage(); Key.Z -> if (event.isShiftPressed) model.redo() else model.undo()
+        Key.N -> if (event.isShiftPressed) model.newWindow() else model.newImage(); Key.O -> model.open(); Key.S -> model.save(event.isShiftPressed)
+        Key.W -> model.closeImage(); Key.Z -> if (event.isShiftPressed) model.redo() else model.undo()
         Key.Y -> model.redo(); Key.A -> model.selectAll(); Key.C -> model.copy(); Key.X -> model.copy(true); Key.V -> model.paste()
         Key.Zero -> model.viewport(s.viewport.actual())
         Key.Equals, Key.Plus, Key.NumPadAdd -> model.viewport(s.viewport.zoomed(s.viewport.scale + 0.1f))

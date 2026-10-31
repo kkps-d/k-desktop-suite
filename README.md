@@ -10,7 +10,7 @@ windows, including Googlebook. Built with Kotlin, Jetpack Compose, and Material 
   multiple windows, keyboard shortcuts, appearance and font settings, and draft
   recovery.
 - **[KD Paint](docs/PAINT.md)** — A drawing and image editor with brushes, shapes,
-  selections, text, image transforms, PNG/JPEG files, and draft recovery.
+  selections, text, image transforms, PNG/JPEG files, multiple windows, and draft recovery.
 - **KD Suite** — An adaptive starter with a sample document list and editor.
 
 The apps support Android 8.0 / API 26 and newer, touch, keyboard, mouse, and

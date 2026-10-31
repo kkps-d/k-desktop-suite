@@ -135,6 +135,17 @@ instance state.
   the single writer. Published rasters are not mutated by render consumers.
 - `ImageRepository` stages and validates content URI I/O; `PaintRecovery` writes
   PNG generations with atomic manifest switching; `PaintSettings` uses DataStore.
+- `PaintWindows` owns stable window identities, activity attachment, file URI
+  reservations, and the atomic window-session index in `paint-windows`. Each
+  activity owns its editor ViewModel and recovery writer. The legacy
+  `paint-recovery` directory is retained after migration and must not contain
+  window directories: its generation cleanup removes unrelated subdirectories.
+- Each window serializes its own PNG recovery writes; membership and checkpoint
+  index commits serialize through the coordinator without holding up other
+  windows during image encoding.
+  Confirmed closing commits removal before finishing the task; later checkpoints
+  cannot re-add it. System task removal keeps the last checkpoint. Shared settings
+  changes must transform the latest preferences inside the DataStore transaction.
 
 ### Paint editing constraints
 

@@ -27,7 +27,6 @@ current code before implementing it. The [Notepad guide](NOTEPAD.md) and
   animation frames/pages or reduced color before advertising support.
 - Modern desktop and a shared mobile presentation. Keep document editing and
   viewport behavior independent of the surrounding controls.
-- Multiple document tasks, with coordinated recovery and explicit ownership.
 - Pressure/tilt brushes and reusable custom tool presets.
 - Measured performance work, including large-document handling, Baseline Profiles,
   and Macrobenchmark coverage when traces justify it.

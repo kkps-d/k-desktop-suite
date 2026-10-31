@@ -1,10 +1,10 @@
 package com.kkps.kdesktopsuite.paint
 
 import android.app.Application
+import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowInsetsController
@@ -15,12 +15,16 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.luminance
 import androidx.core.content.FileProvider
 import androidx.lifecycle.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 
 internal class PaintApplication : Application() {
     override fun onCreate() {
@@ -30,6 +34,7 @@ internal class PaintApplication : Application() {
 
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val recovery by lazy { PaintRecovery(java.io.File(noBackupFilesDir, "paint-recovery")) }
+    val windows by lazy { PaintWindows(java.io.File(noBackupFilesDir, "paint-windows"), recovery) }
     val settings by lazy { PaintSettings(this) }
     val images by lazy { ImageRepository(this) }
 }
@@ -37,6 +42,7 @@ internal class PaintApplication : Application() {
 class PaintActivity : ComponentActivity() {
     internal lateinit var paintModel: PaintViewModel
         private set
+    private var paintWindow: PaintWindow? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -46,16 +52,64 @@ class PaintActivity : ComponentActivity() {
                 WindowInsetsController.APPEARANCE_TRANSPARENT_CAPTION_BAR_BACKGROUND,
             )
         }
+        val application = application as PaintApplication
+        lifecycleScope.launch {
+            try {
+                val preferences = application.settings.preferences.first()
+                val window = application.windows.acquire(
+                    savedInstanceState?.getString(PaintWindows.windowExtra) ?: intent.getStringExtra(PaintWindows.windowExtra),
+                    resume = savedInstanceState != null,
+                    newWindow = intent.getBooleanExtra(PaintWindows.newWindowExtra, false) ||
+                        (savedInstanceState == null && intent.getStringExtra(PaintWindows.windowExtra) == null &&
+                            application.windows.windows.values.any { it.activity != null }),
+                    behavior = preferences.startupBehavior,
+                )
+                if (window.closed) {
+                    finishAndRemoveTask()
+                    return@launch
+                }
+                if (window.activity != null && window.activity !== this@PaintActivity) {
+                    window.activity?.bringWindowToFront()
+                    finishAndRemoveTask()
+                    return@launch
+                }
+                paintWindow = window
+                window.activity = this@PaintActivity
+                paintModel = ViewModelProvider(this@PaintActivity, object : ViewModelProvider.Factory {
+                    @Suppress("UNCHECKED_CAST")
+                    override fun <T : ViewModel> create(modelClass: Class<T>, extras: androidx.lifecycle.viewmodel.CreationExtras): T =
+                        PaintViewModel(application.images, window.recovery, application.settings,
+                            extras.createSavedStateHandle(), application.applicationScope,
+                            windows = application.windows, window = window) as T
+                })[PaintViewModel::class.java]
+                showEditor(application, window)
+                if (hasWindowFocus()) recordWindowFocus()
+            } catch (cancel: CancellationException) {
+                throw cancel
+            } catch (error: Exception) {
+                android.util.Log.e("PaintActivity", "The Paint window could not be initialized", error)
+                setContent {
+                    PaintTheme {
+                        Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp)) {
+                            Text("Paint recovery could not be read. Its files have been preserved. ${error.message.orEmpty()}")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showEditor(application: PaintApplication, window: PaintWindow) {
+        val model = paintModel
+        lifecycleScope.launch {
+            model.state.first { it.closed }
+            finishAndRemoveTask()
+        }
         setContent {
-            val application = application as PaintApplication
-            val model: PaintViewModel = viewModel(factory = object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>, extras: androidx.lifecycle.viewmodel.CreationExtras): T =
-                    PaintViewModel(application.images, application.recovery, application.settings,
-                        extras.createSavedStateHandle(), application.applicationScope) as T
-            })
             val state by model.state.collectAsStateWithLifecycle()
-            SideEffect { paintModel = model }
+            LaunchedEffect(state.loading) {
+                if (!state.loading && !state.closed) application.windows.restoreOthers(this@PaintActivity, window, model::message)
+            }
             val picker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 val data = result.data
                 val uri = data?.data?.takeIf { result.resultCode == RESULT_OK }
@@ -115,16 +169,11 @@ class PaintActivity : ComponentActivity() {
                     finally { model.platformDone(request.id, succeeded, pasteUri) }
                 }
             }
-            DisposableEffect(lifecycle, model) {
-                val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) model.flush() }
-                lifecycle.addObserver(observer)
-                onDispose { lifecycle.removeObserver(observer); model.flush() }
-            }
             SideEffect { title = "${state.title} — KD Paint" }
             PaintTheme(state.preferences.appearance) {
                 val lightCaption = MaterialTheme.colorScheme.surface.luminance() > 0.5f
                 SideEffect {
-                    if (Build.VERSION.SDK_INT >= 35) window.insetsController?.setSystemBarsAppearance(
+                    if (Build.VERSION.SDK_INT >= 35) this@PaintActivity.window.insetsController?.setSystemBarsAppearance(
                         if (lightCaption) WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS else 0,
                         WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS,
                     )
@@ -132,5 +181,64 @@ class PaintActivity : ComponentActivity() {
                 PaintScreen(state, model)
             }
         }
+    }
+
+    internal fun bringWindowToFront() {
+        @Suppress("DEPRECATION")
+        val task = getSystemService(ActivityManager::class.java).appTasks.find {
+            val info = it.taskInfo
+            (if (Build.VERSION.SDK_INT >= 29) info?.taskId else info?.id) == taskId
+        }
+        task?.moveToFront()
+    }
+
+    override fun onKeyShortcut(keyCode: Int, event: android.view.KeyEvent): Boolean {
+        if (::paintModel.isInitialized && event.action == android.view.KeyEvent.ACTION_DOWN &&
+            event.isCtrlPressed && !event.isAltPressed) {
+            val state = paintModel.state.value
+            if (state.dialog == null && !state.settingsOpen) {
+                when {
+                    keyCode == android.view.KeyEvent.KEYCODE_N && event.isShiftPressed -> {
+                        if (event.repeatCount == 0) paintModel.newWindow()
+                        return true
+                    }
+                    keyCode == android.view.KeyEvent.KEYCODE_W && !event.isShiftPressed -> {
+                        if (event.repeatCount == 0) paintModel.closeImage()
+                        return true
+                    }
+                }
+            }
+        }
+        return super.onKeyShortcut(keyCode, event)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        paintWindow?.let { outState.putString(PaintWindows.windowExtra, it.id) }
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) recordWindowFocus()
+    }
+
+    private fun recordWindowFocus() {
+        paintWindow?.let { window ->
+            lifecycleScope.launch {
+                try { (application as PaintApplication).windows.focus(window) }
+                catch (cancel: CancellationException) { throw cancel }
+                catch (error: Exception) { if (::paintModel.isInitialized) paintModel.message("Window recovery failed: ${error.message}") }
+            }
+        }
+    }
+
+    override fun onStop() {
+        if (::paintModel.isInitialized) paintModel.flush()
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        paintWindow?.takeIf { it.activity === this }?.activity = null
+        super.onDestroy()
     }
 }
