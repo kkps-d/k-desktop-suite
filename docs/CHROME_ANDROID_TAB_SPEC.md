@@ -2,7 +2,7 @@
 
 Updated 24 October 2026. Status: implementation requirements.
 
-Apply the relevant Chrome Android tab-strip patterns to KD Notepad using the [design guidelines](../DESIGN_GUIDELINES.md). Values below are KD Notepad design decisions. The linked screenshots illustrate visual relationships, not exact implementation measurements.
+Apply the relevant Chrome Android tab-strip patterns to KD Notepad using the [design guidelines](DESIGN_GUIDELINES.md). Values below are KD Notepad design decisions. The linked screenshots illustrate visual relationships, not exact implementation measurements.
 
 ## Layout and appearance
 
@@ -37,7 +37,7 @@ Draw the selected tab above inactive neighbors. Keep its feet within its slot bo
 
 Give inactive tabs subtle rounded hover feedback matching the selected tab's body width, inset by its 12dp feet on either side, with a 4dp bottom gap. Center separators between adjacent bodies in their overlapping feet. Keep tab layout and content alignment unchanged by hovering. Close/New have independent, tightly bounded circular feedback. Use native ripple/state feedback, retain visible focus on selected tabs, and respect reduced motion.
 
-Keep the File/Edit/View toolbar 48dp high at normal font size, with 32dp controls and 8dp vertical clearance; grow for larger fonts. Place a 20dp cogwheel button at the trailing edge. Settings is a visual placeholder with no action yet. Icon tooltips appear after 500ms of continuous hover or keyboard focus and cancel when the pointer or focus leaves. Tabs and the document selector have no tooltips.
+Keep the File/Edit/View toolbar 48dp high at normal font size, with 32dp controls and 8dp vertical clearance; grow for larger fonts. Place a 20dp cogwheel button at the trailing edge. It opens a settings page with a Back button, connected Light / Dark / Auto appearance choices, Monospace / Serif / Sans-serif font choices, and a live preview. Apply and persist changes immediately; stack choices in narrow windows or at large font sizes. Back, system Back, and Escape return to the active draft. Icon tooltips appear after 500ms of continuous hover or keyboard focus and cancel when the pointer or focus leaves. Tabs and the document selector have no tooltips.
 
 Dropdown items have a 44dp minimum height, growing for multiline text or large fonts. Menus are at least 200dp wide and grow up to 320dp, constrained by the available window width. Popup content has no top or bottom padding. View contains Zoom in, Zoom out, Reset zoom, Word wrap, and Status bar. The last two items expose checked states. Compact windows consolidate these commands into the Commands menu.
 
@@ -55,7 +55,7 @@ Calculate usable space from the current window, caption exclusions, insets, and 
 4. When minimum-width tabs no longer fit, scroll the tabs horizontally while keeping New outside the scrolling content and reachable. Keep Close available on inactive tabs too.
 5. Scroll the selected tab into view after selection, creation, closing, or resizing.
 
-If the usable caption region cannot fit a 120dp tab, New, and the required dragging clearance, move the strip below the caption. Also move it below when caption height cannot accommodate the required controls. If the standalone row cannot fit a tab plus New, show an active-document selector alongside New.
+Reserve 8dp of caption space for window dragging. If the usable caption region cannot fit a 120dp tab, New, and that clearance (176dp total), move the strip below the caption. Also move it below when caption height cannot accommodate the required controls or scaled text. If the standalone row is narrower than 168dp and cannot fit a tab plus New, show an active-document selector alongside New.
 
 The selector displays the active document's title and opens a scrollable document list with full titles, selection, dirty/save/error states, and individual close actions. Allow long list titles to wrap. Preserve the document session when switching between layout modes.
 
