@@ -36,7 +36,7 @@ class NotepadLifecycleTest {
         compose.onNodeWithTag("search-replacement").assertTextContains("dog")
         assertTrue(compose.activity.notepad.search.matchCase)
         assertEquals(selected, model.active!!.editor.selection)
-        compose.onNodeWithText("Close search").performClick()
+        compose.onNodeWithContentDescription("Close search").performClick()
         compose.onNodeWithTag("document-editor").assertIsFocused()
         assertEquals(selected, model.active!!.editor.selection)
     }

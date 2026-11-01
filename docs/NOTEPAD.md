@@ -140,8 +140,14 @@ single-line editor selection as the query when available.
   search command. Transfers never move search state. Activity recreation retains
   the panel state, but durable document recovery stores no search history.
   Closing the final document hides the panel; a new window starts with no query.
-- Controls reflow in narrow windows and scroll within a bounded panel in short
-  windows, leaving space for the editor.
+- Compact fields show placeholders instead of floating labels. Icon buttons have
+  accessible names and tooltips; the Aa toggle controls Match case. A wide panel
+  shows query, result count, Match case, Previous, Next, and Close on one line.
+  In narrow windows, query/Previous/Next stay on the first line; the result count
+  starts the second line, with Match case and Close at its end. Replacement uses
+  a compact field followed by Replace and Replace all icons. Controls retain
+  48dp touch targets and scroll within a bounded panel in short windows, leaving
+  space for the editor. Layout order mirrors in RTL.
 
 ## Current limitations
 

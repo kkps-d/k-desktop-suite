@@ -13,6 +13,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.geometry.Rect
@@ -97,6 +99,74 @@ class NotepadUiTest {
     }
 
     @Test
+    fun searchWidePanelUsesOneCompactRowAndAccessibleIconActions() {
+        showEditor()
+        compose.onNodeWithTag("document-editor").performTextReplacement("cat cat cat")
+        compose.runOnIdle { notepad.search.open(replace = true) }
+        val query = compose.onNodeWithTag("search-query")
+        query.assertTextContains("Find text").getUnclippedBoundsInRoot().height.assertIsEqualTo(40.dp, "query height", 1.dp)
+        compose.onNodeWithTag("search-replacement").assertTextContains("Replace with")
+            .getUnclippedBoundsInRoot().height.assertIsEqualTo(40.dp, "replacement height", 1.dp)
+        query.performTextReplacement("cat")
+        awaitSearch(3)
+        compose.onNodeWithContentDescription("Find text").assertIsFocused()
+        val row = listOf(query, compose.onNodeWithTag("search-status"),
+            compose.onNodeWithContentDescription("Match case"), compose.onNodeWithContentDescription("Find previous"),
+            compose.onNodeWithContentDescription("Find next"), compose.onNodeWithContentDescription("Close search"))
+        val bounds = row.map { it.getUnclippedBoundsInRoot() }
+        bounds.zipWithNext().forEach { (before, after) ->
+            org.junit.Assert.assertTrue(before.right <= after.left)
+            org.junit.Assert.assertEquals((before.top + before.bottom).value / 2, (after.top + after.bottom).value / 2, 2f)
+        }
+        row.drop(2).forEach {
+            val target = it.getUnclippedBoundsInRoot()
+            target.width.assertIsEqualTo(48.dp, "icon target width", 2.dp)
+            target.height.assertIsEqualTo(48.dp, "icon target height", 2.dp)
+        }
+        compose.onNodeWithTag("find-replace-panel").getUnclippedBoundsInRoot().height.assertIsEqualTo(104.dp, "panel height", 2.dp)
+        compose.onNodeWithTag("search-replacement").performTextReplacement("dog")
+        compose.onNodeWithContentDescription("Replace").performClick()
+        compose.onNodeWithTag("document-editor").assertTextEquals("dog cat cat")
+        awaitSearch(2)
+        compose.onNodeWithContentDescription("Replace all").performClick()
+        compose.onNodeWithTag("document-editor").assertTextEquals("dog dog dog")
+        compose.onNodeWithTag("search-status").assertTextEquals("Replacements: 2")
+    }
+
+    @Test
+    fun searchNarrowPanelReflowsIntoTwoRowsWithoutLosingFieldFocusOrSelection() {
+        showEditor()
+        compose.runOnIdle { notepad.search.open() }
+        val query = compose.onNodeWithTag("search-query")
+        query.performTextReplacement("retained query")
+        query.performTextInputSelection(androidx.compose.ui.text.TextRange(2, 7))
+        compose.runOnIdle { windowSize = DpSize(400.dp, 700.dp) }
+        query.assertIsFocused()
+        val field = query.getUnclippedBoundsInRoot()
+        val previous = compose.onNodeWithContentDescription("Find previous").getUnclippedBoundsInRoot()
+        val next = compose.onNodeWithContentDescription("Find next").getUnclippedBoundsInRoot()
+        val status = compose.onNodeWithTag("search-status").getUnclippedBoundsInRoot()
+        val matchCase = compose.onNodeWithContentDescription("Match case").getUnclippedBoundsInRoot()
+        val close = compose.onNodeWithContentDescription("Close search").getUnclippedBoundsInRoot()
+        org.junit.Assert.assertTrue(field.right <= previous.left && previous.right <= next.left)
+        org.junit.Assert.assertEquals((field.top + field.bottom).value / 2, (previous.top + previous.bottom).value / 2, 1f)
+        org.junit.Assert.assertEquals((previous.top + previous.bottom).value / 2, (next.top + next.bottom).value / 2, 1f)
+        org.junit.Assert.assertTrue(status.top >= field.bottom)
+        org.junit.Assert.assertEquals(field.left, status.left)
+        org.junit.Assert.assertTrue(status.right <= matchCase.left && matchCase.right <= close.left)
+        org.junit.Assert.assertEquals((status.top + status.bottom).value / 2, (matchCase.top + matchCase.bottom).value / 2, 1f)
+        org.junit.Assert.assertEquals((matchCase.top + matchCase.bottom).value / 2, (close.top + close.bottom).value / 2, 1f)
+        org.junit.Assert.assertEquals(next.right, close.right)
+        compose.onNodeWithTag("find-replace-panel").getUnclippedBoundsInRoot().height.assertIsEqualTo(104.dp, "panel height", 2.dp)
+        compose.runOnIdle { windowSize = DpSize(1200.dp, 900.dp) }
+        query.assertIsFocused().assertTextContains("retained query")
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals(androidx.compose.ui.text.TextRange(2, 7), notepad.search.query.selection)
+        }
+        compose.onNodeWithTag("find-replace-panel").getUnclippedBoundsInRoot().height.assertIsEqualTo(56.dp, "panel height", 2.dp)
+    }
+
+    @Test
     fun searchBurmeseLabelsReflowInShortRtlWindowsWithLargeFonts() {
         windowSize = DpSize(400.dp, 400.dp)
         showEditor(largeFontRtl = true, language = "my")
@@ -104,11 +174,11 @@ class NotepadUiTest {
         compose.runOnIdle { notepad.search.open(replace = true) }
         compose.onNodeWithTag("search-query").performTextReplacement("မြန်မာ")
         awaitSearch(2)
-        compose.onNodeWithText("ရှာမည့် စာသား").assertIsDisplayed()
+        compose.onNodeWithContentDescription("ရှာမည့် စာသား").assertIsDisplayed()
         compose.onNodeWithTag("search-replacement").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("အစားထိုးမည့် စာသား").assertIsDisplayed()
+        compose.onNodeWithContentDescription("အစားထိုးမည့် စာသား").assertIsDisplayed()
         compose.onNodeWithTag("document-editor").assertIsDisplayed()
-        compose.onNodeWithText("ရှာဖွေမှု ပိတ်ရန်").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("ရှာဖွေမှု ပိတ်ရန်").performScrollTo().performClick()
         compose.onNodeWithTag("document-editor").assertIsFocused()
     }
 
@@ -119,7 +189,7 @@ class NotepadUiTest {
         compose.runOnIdle { notepad.search.open(replace = true) }
         compose.onNodeWithTag("search-query").assertIsFocused()
         compose.onNodeWithTag("document-editor").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
-        compose.onNodeWithText("Close search").performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription("Close search").performScrollTo().assertIsDisplayed().performClick()
     }
 
     @Test
@@ -275,18 +345,18 @@ class NotepadUiTest {
         org.junit.Assert.assertEquals(4, layouts.last().layoutInput.text.spanStyles.single {
             it.item.textDecoration == androidx.compose.ui.text.style.TextDecoration.Underline
         }.start)
-        compose.onNodeWithText("Match case").performClick()
+        compose.onNodeWithContentDescription("Match case").performClick().assertIsOn()
         awaitSearch(2)
         compose.runOnIdle { notepad.active!!.editor.edit { replace(0, length, "cat cat cat cat") } }
         awaitSearch(4)
         compose.onNodeWithTag("search-query").performTextReplacement("missing")
         awaitSearch(0)
         compose.onNodeWithTag("search-status").assertTextEquals("No results")
-        compose.onNodeWithText("Find next").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Find next").assertIsNotEnabled()
         compose.onNodeWithTag("search-query").performTextReplacement("")
         awaitSearch(0)
         compose.onNodeWithTag("search-status").assertTextEquals("Enter text to find")
-        compose.onNodeWithText("Close search").performClick()
+        compose.onNodeWithContentDescription("Close search").performClick()
         layouts.clear()
         editor.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
         org.junit.Assert.assertTrue(layouts.last().layoutInput.text.spanStyles.isEmpty())
@@ -323,9 +393,9 @@ class NotepadUiTest {
         editor.assertTextEquals("dog cat")
         compose.onNodeWithTag("search-replacement").assertIsFocused()
         compose.runOnIdle { notepad.active!!.readOnly = true }
-        compose.onNodeWithText("Replace", substring = false).assertIsNotEnabled()
-        compose.onNodeWithText("Replace all").assertIsNotEnabled()
-        compose.onNodeWithText("Find next").assertIsEnabled()
+        compose.onNodeWithContentDescription("Replace").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Replace all").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Find next").assertIsEnabled()
         compose.onNodeWithTag("search-replacement").performKeyInput { pressKey(Key.Enter) }
         editor.assertTextEquals("dog cat")
     }
@@ -339,7 +409,7 @@ class NotepadUiTest {
         editor.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.F); keyUp(Key.CtrlLeft) }
         awaitSearch(2)
         compose.onNodeWithTag("search-query").assertTextContains("seed")
-        compose.onNodeWithText("Close search").performClick()
+        compose.onNodeWithContentDescription("Close search").performClick()
         editor.assertIsFocused()
         compose.runOnIdle { org.junit.Assert.assertEquals(androidx.compose.ui.text.TextRange(0, 4), notepad.active!!.editor.selection)
             notepad.active!!.editor.edit { selection = androidx.compose.ui.text.TextRange(0, 10) } }
@@ -357,7 +427,7 @@ class NotepadUiTest {
         compose.onNodeWithTag("search-query").performTextReplacement("မြန်မာ")
         awaitSearch(2)
         compose.onNodeWithTag("document-editor").assertIsDisplayed()
-        compose.onNodeWithText("Close search").performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription("Close search").performScrollTo().assertIsDisplayed().performClick()
         compose.onNodeWithTag("find-replace-panel").assertDoesNotExist()
         compose.onNodeWithTag("document-editor").assertIsFocused()
     }

@@ -86,6 +86,9 @@ single-step undo/redo, deletion/no-op edits, stale-result/read-only guards,
 window-local saved UI state, tab switches/transfers, menu/shortcut parity,
 field-local clipboard/undo, IME composing Enter, live counts/styling, offscreen reveal with wrapping
 disabled and zoom, selection-preserving dismissal, and Welcome behavior.
+Compact-panel checks assert one-line control ordering at wide widths, two-line
+ordering at narrow widths, field focus/selection across live resizing, 48dp icon
+targets, placeholders with persistent accessible names, and icon replacement actions.
 
 For focused instrumented state checks, explicitly select Small Desktop:
 
@@ -103,13 +106,18 @@ and navigating on one tab must not move another tab's selection/scroll.
 Find/Replace verification on 31 October 2026: 20 Notepad JVM tests and 55 selected
 instrumented regressions passed on local Small Desktop (`emulator-5554`). Debug
 build, lint, test-APK compilation, and all 432 localization resource checks passed;
-lint reported no errors and 17 existing/toolchain warnings. The native clipboard
-round-trip test was attempted but blocked by foreground-access denial under the
-emulator's System User (0), and was excluded from the final focused run. Rerun
-`NotepadUiTest.searchFieldClipboardAndUndoShortcutsNeverEditTheDocument` after
-signing in to the regular desktop user. Real software-keyboard Back dismissal
-still needs manual verification; composition commits are separately covered by
-`NotepadSearchImeTest` using a controlled InputConnection.
+lint reported no errors and 17 existing/toolchain warnings.
+
+Compact-panel verification on 1 November 2026: all 20 Notepad JVM tests and 26
+focused instrumented regressions passed on local Small Desktop (`emulator-5554`)
+under its regular desktop user (10). This includes wide/narrow layout ordering,
+live-resize focus/selection retention, icon actions, Burmese/large-font/RTL and
+short-window coverage, and the native clipboard round trip previously blocked
+under System User (0). Debug build, lint, test-APK compilation, and all 432
+localization checks passed; lint still reported no errors and 17 existing/toolchain
+warnings. Real software-keyboard Back dismissal still needs manual verification;
+composition commits are separately covered by `NotepadSearchImeTest` using a
+controlled InputConnection.
 
 ### Paint
 
