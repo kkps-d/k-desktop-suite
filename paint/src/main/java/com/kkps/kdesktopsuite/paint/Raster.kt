@@ -33,6 +33,22 @@ internal data class PixelRect(val x: Int, val y: Int, val width: Int, val height
 internal class Raster(val width: Int, val height: Int, internal val pixels: IntArray) {
     init { require(width > 0 && height > 0 && pixels.size == width * height) }
     fun pixel(x: Int, y: Int) = pixels[y * width + x]
+
+    /** Apply the color key before sampling so filtered edges retain their alpha. */
+    fun colorKeyed(key: Int?, checkCancelled: () -> Unit = {}): Raster {
+        if (key == null) return this
+        val rgb = key and 0xFFFFFF
+        val output = IntArray(pixels.size)
+        for (y in 0 until height) {
+            checkCancelled()
+            for (x in 0 until width) {
+                val index = y * width + x
+                val color = pixels[index]
+                output[index] = if (color and 0xFFFFFF == rgb) 0 else color
+            }
+        }
+        return Raster(width,height,output)
+    }
     fun strokeBounds(points: List<Point>, size: Float): PixelRect {
         if (points.isEmpty()) return PixelRect(0,0,0,0)
         // Include pixel alignment and antialiasing outside the nominal brush radius.

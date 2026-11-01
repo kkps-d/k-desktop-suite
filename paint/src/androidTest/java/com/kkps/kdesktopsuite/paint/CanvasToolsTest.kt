@@ -9,6 +9,10 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
+import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -30,6 +34,7 @@ import kotlin.math.roundToInt
 class CanvasToolsTest {
     @get:Rule val compose = createComposeRule()
     private lateinit var model: PaintViewModel
+    private lateinit var inputModeManager: InputModeManager
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var size by mutableStateOf(DpSize(1200.dp,800.dp))
 
@@ -40,6 +45,8 @@ class CanvasToolsTest {
                 (context.applicationContext as PaintApplication).settings,SavedStateHandle(),scope)
         }
         compose.setContent {
+            val inputMode = LocalInputModeManager.current
+            SideEffect { inputModeManager = inputMode }
             val state by model.state.collectAsStateWithLifecycle()
             PaintTheme { Box(Modifier.requiredSize(size)) { PaintScreen(state,model) } }
         }
@@ -348,6 +355,64 @@ class CanvasToolsTest {
         assertCanvasColors(sample)
         compose.runOnIdle { model.undo() }
         assertCanvasColors(Point(260f,220f) to WHITE)
+    }
+
+    @Test fun colorKeyCheckboxUpdatesSettledAndDraggingPreviewsAndCommitsAtZoom() {
+        val blue = 0xFF0000FF.toInt()
+        val pink = 0x80FF0000.toInt()
+        compose.runOnIdle {
+            model.insert(Raster.blank(800,600,blue))
+            model.applyPreview()
+        }
+        compose.waitUntil(15000) { !model.state.value.busy }
+        compose.runOnIdle {
+            model.insert(Raster(40,40,IntArray(1600) { if (it%40 < 20) WHITE else pink }))
+            model.movePreview(PixelRect(220,180,80,80))
+            model.viewport(model.state.value.viewport.zoomed(1.25f))
+        }
+        val transparent = compose.onNode(hasText("Transparent") and hasClickAction()).performScrollTo()
+        transparent.assertIsEnabled().assertIsOff().performClick().assertIsOn()
+        val blended = composite(pink,blue)
+        assertCanvasColors(Point(240f,220f) to blue,Point(280f,220f) to blended)
+        transparent.performClick().assertIsOff()
+        assertCanvasColors(Point(240f,220f) to WHITE,Point(280f,220f) to blended)
+        transparent.performClick().assertIsOn()
+        compose.onNodeWithTag("paint-canvas").performTouchInput {
+            down(screenPoint(Point(260f,220f)))
+            moveTo(screenPoint(Point(340f,280f)))
+        }
+        assertCanvasColors(Point(320f,280f) to blue,Point(360f,280f) to blended)
+        compose.onNodeWithTag("paint-canvas").performTouchInput { up() }
+        assertCanvasColors(Point(320f,280f) to blue,Point(360f,280f) to blended)
+        compose.runOnIdle { model.applyPreview() }
+        compose.waitUntil(15000) { !model.state.value.busy }
+        assertCanvasColors(Point(320f,280f) to blue,Point(360f,280f) to blended)
+        compose.runOnIdle { model.undo() }
+        assertCanvasColors(Point(360f,280f) to blue)
+    }
+
+    @Test fun transparentCheckboxSupportsKeyboardAndTouchInNarrowToolbar() {
+        compose.runOnIdle {
+            size = DpSize(360.dp,640.dp)
+            model.tool(Tool.Select)
+            model.createPreview(Point(0f,0f),Point(20f,20f))
+        }
+        val transparent = compose.onNode(hasText("Transparent") and hasClickAction()).performScrollTo()
+        // Synthetic Compose key events do not leave Android's touch mode.
+        compose.runOnIdle { assertTrue(inputModeManager.requestInputMode(InputMode.Keyboard)) }
+        transparent.assertIsDisplayed().assertIsEnabled().assertIsOff()
+            .performSemanticsAction(SemanticsActions.RequestFocus) { it() }
+        transparent.assertIsFocused()
+        transparent.performKeyInput { pressKey(Key.Spacebar) }
+        transparent.assertIsOn()
+        transparent.performTouchInput { click() }
+        transparent.assertIsOff()
+        compose.runOnIdle {
+            assertNotNull(model.state.value.selection)
+            assertNull(model.state.value.preview)
+            assertFalse(model.state.value.dirty)
+            assertFalse(model.state.value.canUndo)
+        }
     }
 
     @Test fun handIsAvailableInBothToolbarWidths() {

@@ -108,7 +108,8 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
                     }
                     s.options.tool == Tool.Select -> {
                         PreviewActions(s,model)
-                        ToolbarCheck(strings.getString(R.string.ui_transparent),false,false,strings.getString(R.string.ui_available_in_a_future_update)) { }
+                        ToolbarCheck(strings.getString(R.string.ui_transparent),s.options.transparentSelection,enabled && !s.busy,
+                            onChange = model::transparentSelection)
                         ToolbarAction(PaintIcon.Crop,stringResource(R.string.ui_crop_to_selection),labels,enabled && !s.busy && selected,model::crop)
                         GeometryAction(s,model,labels)
                         TextButton(onClick = model::selectAll,enabled = enabled && !s.busy,colors = toolbarTextButtonColors(),modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = strings.getString(R.string.ui_select_all) }) {

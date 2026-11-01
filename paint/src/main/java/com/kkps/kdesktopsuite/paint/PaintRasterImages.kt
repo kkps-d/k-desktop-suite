@@ -28,8 +28,27 @@ internal fun rememberRasterImage(raster: Raster?, onError: (Int) -> Unit): Raste
 internal data class SelectionImageRequest(val payload: Raster, val transform: RasterTransform, val width: Int, val height: Int)
 internal data class SelectionImage(val request: SelectionImageRequest, val bitmap: ImageBitmap)
 
+private data class SelectionPayload(val original: Raster, val key: Int?, val raster: Raster)
+
+/** Keying is independent of position/transform and is shared by both preview paths. */
+@Composable
+internal fun rememberSelectionPayload(payload: Raster?, key: Int?, onError: (Int) -> Unit): Raster? {
+    val prepared by produceState<SelectionPayload?>(null,payload,key) {
+        if (payload == null || key == null) value = null
+        else try {
+            value = withContext(Dispatchers.Default) {
+                val raster = payload.colorKeyed(key) { ensureActive() }
+                ensureActive()
+                SelectionPayload(payload,key,raster)
+            }
+        } catch (_: OutOfMemoryError) { onError(R.string.error_preview_memory) }
+    }
+    if (key == null) return payload
+    return prepared?.takeIf { it.original === payload && it.key == key }?.raster
+}
+
 /** Integer moves reuse the same sampled pixels: only their canvas position changes. */
-internal fun EditPreview.selectionImageRequest() = SelectionImageRequest(requireNotNull(payload),
+internal fun EditPreview.selectionImageRequest(preparedPayload: Raster = requireNotNull(payload)) = SelectionImageRequest(preparedPayload,
     selectionTransform.then(RasterTransform.translation(-bounds.x.toDouble(),-bounds.y.toDouble())),bounds.width,bounds.height)
 
 @Composable

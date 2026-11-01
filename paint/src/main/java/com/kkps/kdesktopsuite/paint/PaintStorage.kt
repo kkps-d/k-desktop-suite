@@ -252,6 +252,7 @@ private fun RecoverySnapshot.json(): JSONObject {
         .put("brushStyle", options.brushStyle.name)
         .put("textAlignment", options.textAlignment.name)
         .put("verticalTextAlignment", options.verticalTextAlignment.name)
+        .put("transparentSelection", options.transparentSelection)
         .put("brushWidths", JSONObject(options.brushWidths.mapKeys { it.key.name }))
     val json = JSONObject().put("options", opts).put("uri", uri).put("name", name).put("mime", mime)
         .put("fingerprint", fingerprint).put("dirty", dirty).put("selection", selection?.json())
@@ -264,6 +265,7 @@ private fun RecoverySnapshot.json(): JSONObject {
         .put("rotationDegrees", p.rotationDegrees)
         .put("rotationCenter", p.rotationCenter?.let { JSONArray(listOf(it.x,it.y)) })
         .put("shapeBounds", p.shapeBounds?.json())
+        .put("transparencyKey", p.transparencyKey)
         .put("textSelectionStart", p.textSelectionStart).put("textSelectionEnd", p.textSelectionEnd)
         .put("textRaster", p.textRaster != null && p.textLayoutKey == textLayoutKey(p.text,p.bounds.width,options))
         .put("outputWidth", p.outputWidth).put("outputHeight", p.outputHeight)) }
@@ -282,7 +284,8 @@ private fun snapshotFromJson(json: JSONObject, raster: Raster, payload: Raster?,
             o.optJSONObject("brushWidths")?.optInt(style.name,0)?.takeIf { it in 1..100 }?.let { style to it }
         }.toMap(),
         textAlignment = TextAlignment.entries.firstOrNull { it.name == o.optString("textAlignment") } ?: TextAlignment.Left,
-        verticalTextAlignment = VerticalTextAlignment.entries.firstOrNull { it.name == o.optString("verticalTextAlignment") } ?: VerticalTextAlignment.Top)
+        verticalTextAlignment = VerticalTextAlignment.entries.firstOrNull { it.name == o.optString("verticalTextAlignment") } ?: VerticalTextAlignment.Top,
+        transparentSelection = o.optBoolean("transparentSelection"))
     // Older drafts cached direction-relative text; rebuild it with the recovered physical alignment.
     val alignedTextRaster = textRaster?.takeIf { o.optString("textAlignment") == options.textAlignment.name }
     val preview = json.optJSONObject("preview")?.let { p -> EditPreview(recoveredTool(p.getString("tool")), p.getJSONArray("bounds").rect(),
@@ -305,7 +308,10 @@ private fun snapshotFromJson(json: JSONObject, raster: Raster, payload: Raster?,
                 }
         },rotationDegrees = p.optDouble("rotationDegrees",0.0),
         rotationCenter = p.optJSONArray("rotationCenter")?.let { Point(it.getDouble(0).toFloat(),it.getDouble(1).toFloat()) },
-        shapeBounds = p.optJSONArray("shapeBounds")?.rect()) }
+        shapeBounds = p.optJSONArray("shapeBounds")?.rect(),
+        transparencyKey = if (payload != null) {
+            if (p.has("transparencyKey")) p.getInt("transparencyKey") else options.background
+        } else null) }
     return RecoverySnapshot(raster, options, preview, json.optJSONArray("selection")?.rect(),
         Viewport(imageWidth = raster.width, imageHeight = raster.height, scale = json.getDouble("scale").toFloat().coerceIn(0.1f,5f),
             center = Point(json.getDouble("cx").toFloat(), json.getDouble("cy").toFloat()), fit = json.getBoolean("fit")),

@@ -7,6 +7,37 @@ import org.junit.Test
 import kotlin.math.abs
 
 class CanvasRasterTransformTest {
+    @Test fun selectionKeysBeforeFilteringAndRetainsTheKeyThroughTransforms() {
+        val key = 0xFFFF0000.toInt()
+        val blue = 0xFF0000FF.toInt()
+        val green = 0xFF00FF00.toInt()
+        val payload = Raster(2,1,intArrayOf(key,blue))
+        val original = EditPreview(Tool.Select,PixelRect(0,0,2,1),payload = payload,transparencyKey = key)
+        val resized = original.withBounds(PixelRect(2,2,3,1))
+        val middle = resized.selectionPixels(true).pixel(1,0)
+        assertTrue(abs((middle ushr 24)-128) <= 2)
+        assertEquals(0,middle ushr 16 and 255)
+        assertEquals(255,middle and 255)
+        val options = ToolOptions(background = WHITE,transparentSelection = true)
+        val base = Raster.blank(8,8,green)
+        val result = base.render(resized,options)
+        assertEquals(green,result.pixel(2,2))
+        assertEquals(0,result.pixel(3,2) ushr 16 and 255)
+        assertEquals(blue,result.pixel(4,2))
+        for (next in listOf(resized.rotatedSelection(33.0),resized.rotatedSelection(90.0),
+            resized.resizedSelection(resized.bounds,true,true),
+            resized.transformedSelection(RasterTransform(c = 0.25)))) {
+            assertEquals(key,next.transparencyKey)
+            assertSame(payload,next.payload)
+            assertTrue(next.selectionPixels(true).pixels.all { it ushr 16 and 255 == 0 })
+            assertTrue(base.render(next,options).pixels.all { it ushr 16 and 255 == 0 })
+        }
+        val clipped = base.render(resized.withBounds(PixelRect(-1,2,3,1)),options)
+        assertEquals(0,clipped.pixel(0,2) ushr 16 and 255)
+        assertEquals(blue,clipped.pixel(1,2))
+        assertArrayEquals(intArrayOf(key,blue),payload.pixels)
+    }
+
     @Test fun canvasMapsOpaqueQuarterTurnsAndBothFlipsWithoutFiltering() {
         for ((width,height) in listOf(2 to 3,3 to 4,3 to 3,4 to 4)) {
             val source = Raster(width,height,IntArray(width*height) { BLACK or (it+1) })

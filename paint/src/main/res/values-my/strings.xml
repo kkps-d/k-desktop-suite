@@ -199,7 +199,6 @@
     <string name="ui_font_system">စနစ်သတ်မှတ်ချက်</string>
     <string name="ui_shape">ပုံသဏ္ဌာန်</string>
     <string name="ui_transparent">ဖောက်ထွင်းမြင်နိုင်မှု</string>
-    <string name="ui_available_in_a_future_update">နောင်မွမ်းမံမှုတွင် အသုံးပြုနိုင်မည်</string>
     <string name="ui_opaque_background">အလင်းပိတ် နောက်ခံ</string>
     <string name="ui_outline">အနားသတ်</string>
     <string name="ui_keep_aspect_ratio">အချိုးအစား ထိန်းထားရန်</string>

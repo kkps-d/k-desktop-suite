@@ -114,8 +114,12 @@ internal fun PaintCanvas(
         }
     }
     val selectionPreview = displayedState.preview?.takeIf { it.payload != null }
-    val payloadImage = rememberRasterImage(selectionPreview?.payload,{ model.message(it) })
-    val selectionRequest = remember(selectionPreview) { selectionPreview?.selectionImageRequest() }
+    val selectionKey = selectionPreview?.transparencyKey.takeIf { displayedState.options.transparentSelection }
+    val selectionPayload = rememberSelectionPayload(selectionPreview?.payload,selectionKey,{ model.message(it) })
+    val payloadImage = rememberRasterImage(selectionPayload,{ model.message(it) })
+    val selectionRequest = remember(selectionPreview,selectionPayload) {
+        selectionPayload?.let { selectionPreview?.selectionImageRequest(it) }
+    }
     val selectionImage = rememberSelectionImage(selectionRequest,movingSelection || rotatingSelection,{ model.message(it) })
     val selectionMatrix = remember(selectionPreview) {
         selectionPreview?.selectionTransform?.let { transform -> android.graphics.Matrix().apply {
@@ -413,14 +417,14 @@ internal fun PaintCanvas(
                             filterQuality = if (view.scale >= 1) FilterQuality.None else FilterQuality.Low)
                     }
                     selectionPreview?.let { preview ->
-                        if (selectionImage == null && payloadImage?.raster !== preview.payload) return@let
+                        if (selectionPayload == null || selectionImage == null && payloadImage?.raster !== selectionPayload) return@let
                         preview.source?.let { source ->
                             drawRect(Color(displayedState.options.background or BLACK),Offset(source.x.toFloat(),source.y.toFloat()),Size(source.width.toFloat(),source.height.toFloat()))
                         }
                         if (selectionImage != null) {
                             drawImage(selectionImage.bitmap,dstOffset = IntOffset(preview.bounds.x,preview.bounds.y),
                                 filterQuality = if (view.scale >= 1) FilterQuality.None else FilterQuality.Low)
-                        } else payloadImage?.takeIf { it.raster === preview.payload }?.let { payload ->
+                        } else payloadImage?.takeIf { it.raster === selectionPayload }?.let { payload ->
                             // During interaction, move the cached texture instead of rebuilding its pixels.
                             drawIntoCanvas { canvas ->
                                 canvas.save()

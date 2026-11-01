@@ -305,6 +305,10 @@ internal class PaintViewModel(
         if (state.value.options.tool == Tool.Pencil) return
         options { if (it.tool == Tool.Eraser) it.copy(eraserWidth = value) else it.copy(width = value) }
     }
+    fun transparentSelection(enabled: Boolean) {
+        if (state.value.busy || state.value.loading) return
+        options { it.copy(transparentSelection = enabled) }
+    }
     fun brush(style: BrushStyle) {
         if (state.value.busy || state.value.loading) return
         savedState["colorOptions"] = false
@@ -432,14 +436,14 @@ internal class PaintViewModel(
         val s = state.value
         if (s.busy) return
         checkImageSize(bounds.width, bounds.height)
-        val preview = s.preview ?: s.selection?.let { EditPreview(Tool.Select, it, source = it, payload = s.raster.extract(it)) } ?: return
+        val preview = s.preview ?: floatingSelection() ?: return
         setPreview(preview.withBounds(bounds))
     }
 
     fun floatingSelection(): EditPreview? {
         val s = state.value
         return s.preview?.takeIf { it.canTransform } ?: s.selection?.let {
-            EditPreview(Tool.Select,it,source = it,payload = s.raster.extract(it))
+            EditPreview(Tool.Select,it,source = it,payload = s.raster.extract(it),transparencyKey = s.options.background)
         }
     }
 
@@ -471,7 +475,8 @@ internal class PaintViewModel(
                         val local = preview.withBounds(PixelRect(padding,padding,bounds.width,bounds.height)).copy(constructing = false)
                         val pixels = Raster.blank(bounds.width+padding*2,bounds.height+padding*2,0)
                             .render(local,s.options,checkCancelled = { context.ensureActive() })
-                        converted = EditPreview(Tool.Select,PixelRect(bounds.x-padding,bounds.y-padding,pixels.width,pixels.height),payload = pixels)
+                        converted = EditPreview(Tool.Select,PixelRect(bounds.x-padding,bounds.y-padding,pixels.width,pixels.height),payload = pixels,
+                            transparencyKey = s.options.background)
                             .transformedSelection(skew)
                         raster
                     },valid = { state.value.preview?.id == preview.id && state.value.options == s.options }) {
@@ -809,7 +814,7 @@ internal class PaintViewModel(
         try { checkImageSize(outputWidth,outputHeight) } catch (error: Exception) { failure(error); return }
         tool(Tool.Select)
         setPreview(EditPreview(Tool.Select,PixelRect(x,y,raster.width,raster.height),payload = raster,
-            outputWidth = outputWidth, outputHeight = outputHeight))
+            outputWidth = outputWidth, outputHeight = outputHeight,transparencyKey = s.options.background))
     }
     fun copy(cut: Boolean = false) {
         val s = state.value; val rect = s.preview?.bounds ?: s.selection ?: return
@@ -819,7 +824,8 @@ internal class PaintViewModel(
             try {
                 val content = withContext(compute) {
                     val context = currentCoroutineContext()
-                    s.preview?.takeIf { it.payload != null }?.selectionPixels { context.ensureActive() } ?: s.raster.extract(rect)
+                    s.preview?.takeIf { it.payload != null }?.selectionPixels(s.options.transparentSelection) { context.ensureActive() }
+                        ?: s.raster.extract(rect).colorKeyed(s.options.background.takeIf { s.options.transparentSelection }) { context.ensureActive() }
                 }
                 val staged = images.stage(content,"image/png",100)
                 mutableState.update { it.copy(platform = PlatformRequest(action = if (cut) "cut" else "copy", file = staged.file)) }

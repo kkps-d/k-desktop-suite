@@ -13,6 +13,31 @@ class PaintStorageTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private fun uri(file: File) = FileProvider.getUriForFile(context,"${context.packageName}.images",file).toString()
 
+    @Test fun recoveryRetainsSelectionTransparencyAndDefaultsOlderDraftsSafely() = runBlocking {
+        val root = File(context.cacheDir,"transparent-recovery-${UUID.randomUUID()}")
+        try {
+            val key = 0xFF00FF00.toInt()
+            val options = ToolOptions(background = BLACK,transparentSelection = true)
+            val preview = EditPreview(Tool.Select,PixelRect(2,1,2,1),source = PixelRect(0,0,2,1),
+                payload = Raster(2,1,intArrayOf(key,0x80FF0000.toInt())),transparencyKey = key)
+            val store = PaintRecovery(root)
+            store.write(RecoverySnapshot(Raster.blank(4,4),options,preview,null,Viewport(),null,"Transparent","image/png",null,false))
+            val recovered = requireNotNull(store.read())
+            assertTrue(recovered.options.transparentSelection)
+            assertEquals(key,recovered.preview!!.transparencyKey)
+            assertArrayEquals(preview.payload!!.pixels,recovered.preview.payload!!.pixels)
+            assertArrayEquals(preview.selectionPixels(true).pixels,recovered.preview.selectionPixels(true).pixels)
+            val manifest = File(root,"current.json")
+            val json = org.json.JSONObject(manifest.readText())
+            json.getJSONObject("options").remove("transparentSelection")
+            json.getJSONObject("preview").remove("transparencyKey")
+            manifest.writeText(json.toString())
+            val legacy = requireNotNull(PaintRecovery(root).read())
+            assertFalse(legacy.options.transparentSelection)
+            assertEquals(BLACK,legacy.preview!!.transparencyKey)
+        } finally { root.deleteRecursively() }
+    }
+
     @Test fun recoveryPreservesBrushStyleAndWidthsAndReadsOlderDrafts() = runBlocking {
         val root = File(context.cacheDir,"brush-recovery-${UUID.randomUUID()}")
         try {

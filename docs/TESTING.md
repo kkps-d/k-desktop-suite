@@ -189,6 +189,14 @@ These identify existing checks; they are not claims of complete manual coverage.
 
 ### Paint document safety regressions
 
+- Transparent selection coverage lives in `TransparentSelectionTest`,
+  `RasterTest`, `CanvasRasterTransformTest`, `RasterImagesTest`, `CanvasToolsTest`,
+  `PaintWindowTest`, and `PaintStorageTest`. It checks exact RGB keys independent of alpha, key capture
+  while disabled, secondary-color changes, reversible toggling, prefilter keying,
+  drag/settled/committed preview parity, source clearing, undo/redo, clipboard PNG
+  alpha and failed cuts, current/legacy recovery, narrow-toolbar keyboard/touch
+  activation, and activity recreation with independent window options. Also check
+  these interactions manually, including paste over contrasting colors.
 - `ToolbarOverflowTest` checks end-state arrows, scrolling in both directions,
   resize/content-fit transitions, and RTL placement. `DualToolbarTest` also checks
   active tool/color reveal and secondary option access in narrow windows.
@@ -206,6 +214,17 @@ debug build, lint, test-APK compilation, and all 437 localization resource check
 passed. Lint retains two existing bitmap KTX warnings. Instrumented execution and
 visual verification remain pending: local Small Desktop was held by another
 agent-device session (`DEVICE_IN_USE`), which was not reused or closed.
+
+Transparent-selection verification on 1 November 2026: all 51 Paint JVM tests,
+debug build, lint, test-APK compilation, and all 436 localization resource checks
+passed. Lint retains two existing bitmap KTX warnings. On local Small Desktop
+(`emulator-5554`, regular user 10), 66 of 67 selected instrumented tests passed,
+including all new transparency checks. The existing
+`RasterTransformTest.fusedSelectionMatchesSeparateClearTransformAndPasteWithAlphaAndClipping`
+failed its visible-color comparison; the same failure was reproduced from an
+isolated copy of committed revision `34ba809`, without the transparency changes.
+Manual visual review remains pending; preview checks used captured canvas pixels.
+Small Desktop's temporary display-size override was restored after testing.
 
 
 - Check one undoable change per committed stroke, shape, text, or transform;

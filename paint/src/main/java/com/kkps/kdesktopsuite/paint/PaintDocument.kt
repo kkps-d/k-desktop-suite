@@ -58,6 +58,7 @@ internal data class ToolOptions(
     val brushWidths: Map<BrushStyle,Int> = emptyMap(),
     val textAlignment: TextAlignment = TextAlignment.Left,
     val verticalTextAlignment: VerticalTextAlignment = VerticalTextAlignment.Top,
+    val transparentSelection: Boolean = false,
 ) {
     val strokeWidth get() = when (tool) {
         Tool.Pencil -> 1
@@ -78,6 +79,7 @@ internal data class EditPreview(
     val transform: RasterTransform? = null, val rotationDegrees: Double = 0.0,
     val rotationCenter: Point? = null,
     val shapeBounds: PixelRect? = null,
+    val transparencyKey: Int? = null,
 ) {
     val hasContent get() = payload != null || tool.isShape || text.isNotEmpty()
     val canTransform get() = payload != null || tool.isShape && !constructing
@@ -100,7 +102,10 @@ internal data class EditPreview(
         .then(RasterTransform.translation(bounds.x.toDouble(),bounds.y.toDouble()))
     val selectionCorners get() = selectionTransform.corners(transformWidth,transformHeight)
     val selectionCenter get() = rotationCenter ?: Point(bounds.x+bounds.width/2f,bounds.y+bounds.height/2f)
-    fun selectionPixels(checkCancelled: () -> Unit = {}) = requireNotNull(payload).transformed(selectionTransform,bounds,checkCancelled)
+    fun selectionPayload(transparent: Boolean, checkCancelled: () -> Unit = {}) =
+        requireNotNull(payload).colorKeyed(transparencyKey.takeIf { transparent },checkCancelled)
+    fun selectionPixels(transparent: Boolean = false, checkCancelled: () -> Unit = {}) =
+        selectionPayload(transparent,checkCancelled).transformed(selectionTransform,bounds,checkCancelled)
     fun affectedSelectionArea(width: Int, height: Int): PixelRect {
         val original = source ?: bounds
         val left = min(original.x,bounds.x); val top = min(original.y,bounds.y)
@@ -175,7 +180,8 @@ internal fun Bitmap.raster(): Raster = Raster(width, height, IntArray(width * he
 internal fun Raster.render(preview: EditPreview, options: ToolOptions, mask: PixelRect? = null,
     checkCancelled: () -> Unit = {}): Raster {
     if (preview.tool == Tool.Select) {
-        return preview.payload?.let { payload ->
+        return preview.payload?.let {
+            val payload = preview.selectionPayload(options.transparentSelection,checkCancelled)
             renderSelection(payload,preview.selectionTransform,preview.bounds,preview.source,
                 preview.outputWidth ?: width,preview.outputHeight ?: height,options.background,checkCancelled)
         } ?: this

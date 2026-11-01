@@ -10,6 +10,45 @@ import org.junit.Test
 class RasterImagesTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun keyedPayloadIsReusedWhileMovingAndNeverPublishesForAnOldKey() {
+        val red = 0xFFFF0000.toInt()
+        val blue = 0xFF0000FF.toInt()
+        val payload = Raster(40,20,IntArray(800) { if (it%40 < 20) red else blue })
+        var key by mutableStateOf<Int?>(red)
+        var preview by mutableStateOf(EditPreview(Tool.Select,PixelRect(10,20,40,20),payload = payload))
+        var prepared: Raster? = null
+        var displayed: SelectionImage? = null
+        compose.setContent {
+            val source = rememberSelectionPayload(payload,key) { fail("Key preparation failed: $it") }
+            val request = source?.let { preview.selectionImageRequest(it) }
+            val image = rememberSelectionImage(request,false) { fail("Preview preparation failed: $it") }
+            SideEffect { prepared = source; displayed = image }
+        }
+        compose.waitUntil(5000) { displayed != null }
+        val keyed = requireNotNull(prepared)
+        val initial = displayed
+        compose.runOnIdle { preview = preview.withBounds(preview.bounds.copy(x = 30,y = 40)) }
+        compose.runOnIdle {
+            assertSame(keyed,prepared)
+            assertSame(initial,displayed)
+            key = blue
+        }
+        compose.waitUntil(5000) { displayed?.request?.payload?.pixel(30,0) == 0 }
+        compose.runOnIdle {
+            assertEquals(red,prepared!!.pixel(0,0))
+            assertEquals(0,prepared!!.pixel(30,0))
+            // Rapid replacements must not allow an older worker result to reappear.
+            key = red
+        }
+        compose.runOnIdle { key = null }
+        compose.waitUntil(5000) { displayed?.request?.payload === payload }
+        compose.runOnIdle {
+            assertSame(payload,prepared)
+            assertEquals(red,prepared!!.pixel(0,0))
+            assertEquals(blue,prepared!!.pixel(30,0))
+        }
+    }
+
     @Test fun integerMovesReusePixelsAndDraggingDefersResamplingUntilRelease() {
         val payload = Raster(40,20,IntArray(800) { if (it%40 < 20) 0x80FF0000.toInt() else 0xFF0000FF.toInt() })
         val original = payload.pixels.copyOf()

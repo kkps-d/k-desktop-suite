@@ -122,6 +122,39 @@ class PaintWindowTest {
         }
     }
 
+    @Test fun recreationRetainsTransparentSelectionAndOptionsStayWindowLocal() {
+        val root = ready()
+        val window = newWindow(root::newWindow)
+        try {
+            val original = requireNotNull(window.activity)
+            val model = ready(original)
+            val key = 0xFF00FF00.toInt()
+            val rootOption = root.state.value.options.transparentSelection
+            compose.runOnIdle {
+                assertFalse(model.state.value.options.transparentSelection)
+                model.setColor(key,background = true)
+                model.insert(Raster(2,1,intArrayOf(key,BLACK)))
+                model.setColor(WHITE,background = true)
+                model.transparentSelection(true)
+                assertEquals(rootOption,root.state.value.options.transparentSelection)
+                original.recreate()
+            }
+            compose.waitUntil(15_000) { window.activity != null && window.activity !== original && original.isDestroyed }
+            val recreated = ready(requireNotNull(window.activity))
+            assertSame(model,recreated)
+            assertTrue(recreated.state.value.options.transparentSelection)
+            val preview = requireNotNull(recreated.state.value.preview)
+            assertEquals(key,preview.transparencyKey)
+            assertArrayEquals(intArrayOf(key,BLACK),preview.payload!!.pixels)
+            assertArrayEquals(intArrayOf(0,BLACK),preview.selectionPixels(true).pixels)
+            compose.runOnIdle { recreated.cancelPreview() }
+            assertFalse(recreated.state.value.dirty)
+        } finally {
+            close(window)
+            compose.runOnIdle { host.bringWindowToFront() }
+        }
+    }
+
     @Test fun systemNewInstanceStartsBlankAndOwnedFileBringsExistingTaskForward() {
         val root = ready()
         val first = newWindow(root::newWindow)

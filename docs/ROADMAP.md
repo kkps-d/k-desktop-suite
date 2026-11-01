@@ -12,9 +12,8 @@ current code before implementing it. The [Notepad guide](NOTEPAD.md) and
 
 ## KD Paint
 
-- Selection: free-form masks, inverse selection, and background-color-key
-  compositing. Define mask, clipboard alpha, and cancellation behavior before
-  enabling the currently disabled Transparent option.
+- Selection: free-form masks and inverse selection. Define nonrectangular mask,
+  clipboard alpha, and cancellation behavior before extending rectangular selection.
 - Shape styles: textured outline/fill choices beyond the current controls.
 - Image modes and metadata: monochrome conversion, physical units/DPI, and
   expanded image properties.

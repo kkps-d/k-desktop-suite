@@ -204,7 +204,6 @@
     <string name="ui_font_system">System</string>
     <string name="ui_shape">Shape</string>
     <string name="ui_transparent">Transparent</string>
-    <string name="ui_available_in_a_future_update">Available in a future update</string>
     <string name="ui_opaque_background">Opaque background</string>
     <string name="ui_outline">Outline</string>
     <string name="ui_keep_aspect_ratio">Keep aspect ratio</string>

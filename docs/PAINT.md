@@ -61,7 +61,14 @@ its secondary row, including while editing and choosing colors.
 Tool names hide below 600dp and optional labels below 840dp, adjusted for font scale.
 Shape shortcuts adapt from three to ten; all 23 remain in More shapes. Controls never wrap. Color selection
 is independent of drawing-tool selection and preserves floating shapes, text, and images.
-The Transparent checkbox is visible but disabled until its raster behavior is implemented.
+Select's Transparent checkbox skips pixels whose RGB exactly matches the secondary
+color captured when a selection is first moved/transformed or an image is pasted/inserted.
+Changing the secondary color later keeps that key. Toggling Transparent updates the
+floating preview; turning it off restores its original pixels and alpha. The option
+defaults to off and is remembered per window, including recovered drafts. It also
+applies to Copy/Cut PNG output; an untouched selection captures the current secondary
+color when copying begins. Moving, cutting, and deleting still clear the entire source
+rectangle with the current secondary color. Document backgrounds remain opaque.
 
 ### Brushes and shapes
 

@@ -4,6 +4,42 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class RasterTest {
+    @Test fun colorKeyMatchesExactRgbAtEveryAlphaWithoutChangingSourcePixels() {
+        val colors = intArrayOf(0xFF00FF00.toInt(),0x8000FF00.toInt(),0x0000FF00,
+            0xFF00FE00.toInt(),0x80FF0000.toInt(),0x00123456)
+        val source = Raster(3,2,colors.copyOf())
+        val keyed = source.colorKeyed(0x1200FF00)
+        assertArrayEquals(intArrayOf(0,0,0,colors[3],colors[4],colors[5]),keyed.pixels)
+        assertArrayEquals(colors,source.pixels)
+        assertSame(source,source.colorKeyed(null))
+    }
+
+    @Test fun cancelledKeyPreparationKeepsTheOriginalRaster() {
+        val source = Raster.blank(3,3)
+        var rows = 0
+        assertThrows(java.util.concurrent.CancellationException::class.java) {
+            source.colorKeyed(WHITE) { if (++rows == 2) throw java.util.concurrent.CancellationException() }
+        }
+        assertTrue(source.pixels.all { it == WHITE })
+    }
+
+    @Test fun keyedSelectionClearsTheWholeSourceAndBlendsOnlyNonmatchingPixels() {
+        val key = 0xFF00FF00.toInt()
+        val blue = 0xFF0000FF.toInt()
+        val payload = Raster(2,1,intArrayOf(key,0x80FF0000.toInt()))
+        val base = Raster.blank(6,2,blue)
+        val preview = EditPreview(Tool.Select,PixelRect(3,0,2,1),source = PixelRect(0,0,2,1),
+            payload = payload,transparencyKey = key)
+        val options = ToolOptions(background = WHITE,transparentSelection = true)
+        val result = base.render(preview,options)
+        assertEquals(WHITE,result.pixel(0,0))
+        assertEquals(WHITE,result.pixel(1,0))
+        assertEquals(blue,result.pixel(3,0))
+        assertEquals(composite(payload.pixel(1,0),blue),result.pixel(4,0))
+        assertEquals(key,base.render(preview,options.copy(transparentSelection = false)).pixel(3,0))
+        assertEquals(key,payload.pixel(0,0))
+    }
+
     @Test fun canvasResizePreservesPixelsAndFillsOnlyAddedSpace() {
         val original = Raster(2,2,intArrayOf(BLACK,WHITE,WHITE,BLACK))
         val background = 0xFF00FF00.toInt()
