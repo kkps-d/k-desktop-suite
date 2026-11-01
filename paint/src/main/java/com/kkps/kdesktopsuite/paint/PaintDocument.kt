@@ -246,7 +246,7 @@ internal fun Canvas.drawShapePreview(preview: EditPreview, options: ToolOptions)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         strokeWidth = options.width.toFloat()
         strokeCap = Paint.Cap.ROUND
-        strokeJoin = Paint.Join.ROUND
+        strokeJoin = Paint.Join.MITER
     }
     if (!preview.tool.isShape) return
     val path = preview.shapePath()

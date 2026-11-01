@@ -70,7 +70,7 @@ internal val Tool.icon: ImageVector
             ImageVector.Builder(label,24.dp,24.dp,120f,120f).apply {
                 addGroup(translationX = 10f,translationY = 10f)
                 addPath(addPathNodes(shapePathData),fill = null,stroke = SolidColor(Color.Black),
-                    strokeLineWidth = 7f,strokeLineCap = StrokeCap.Round,strokeLineJoin = StrokeJoin.Round)
+                    strokeLineWidth = 7f,strokeLineCap = StrokeCap.Round,strokeLineJoin = StrokeJoin.Miter)
                 clearGroup()
             }.build()
         }

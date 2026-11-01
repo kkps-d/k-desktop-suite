@@ -75,6 +75,8 @@ The Shapes icon dropdown offers lines, curves, basic geometry, arrows, stars,
 callouts, a heart, and lightning. Drag to create a preview; for curves, place two
 bend points; for polygons, add vertices and choose Commit to finish and apply in one action. Previews support
 move/resize, stroke width, outline/fill colors, Enter to apply, and Escape to cancel.
+Outline corners use sharp joins in the gallery, live preview, and committed image;
+curved shape geometry, such as rounded rectangles, stays curved.
 Finished shapes also support the selection rotation handle, rotation/flip commands,
 and resizing past either origin to mirror the geometry. Shapes remain editable until committed.
 
