@@ -246,7 +246,8 @@ internal fun PixelRect.json() = JSONArray(listOf(x, y, width, height))
 private fun JSONArray.rect() = PixelRect(getInt(0), getInt(1), getInt(2), getInt(3))
 private fun RecoverySnapshot.json(): JSONObject {
     val opts = JSONObject().put("tool", options.tool.name).put("foreground", options.foreground).put("background", options.background)
-        .put("width", options.width).put("eraserWidth", options.eraserWidth).put("outline", options.outline).put("fill", options.fill)
+        .put("width", options.width).put("eraserWidth", options.eraserWidth).put("outline", options.outline != null).put("fill", options.fill != null)
+        .put("outlineStyle", options.outline?.name ?: "None").put("fillStyle", options.fill?.name ?: "None")
         .put("constrain", options.constrain).put("font", options.font).put("fontSize", options.fontSize).put("bold", options.bold)
         .put("italic", options.italic).put("underline", options.underline).put("strike", options.strike).put("opaqueText", options.opaqueText)
         .put("brushStyle", options.brushStyle.name)
@@ -273,11 +274,16 @@ private fun RecoverySnapshot.json(): JSONObject {
 }
 private fun recoveredTool(name: String) = if (name == "Zoom") Tool.Pan else Tool.valueOf(name)
 
+private fun JSONObject.shapeStyle(property: String): BrushStyle? {
+    if (!has("${property}Style")) return if (getBoolean(property)) BrushStyle.Solid else null
+    return BrushStyle.entries.firstOrNull { it.name == optString("${property}Style") }
+}
+
 private fun snapshotFromJson(json: JSONObject, raster: Raster, payload: Raster?, textRaster: Raster?): RecoverySnapshot {
     val o = json.getJSONObject("options")
     val options = ToolOptions(recoveredTool(o.getString("tool")), o.getInt("foreground"), o.getInt("background"),
-        o.getInt("width").coerceIn(1,100), o.getInt("eraserWidth").coerceIn(1,100), o.getBoolean("outline"),
-        o.getBoolean("fill"), o.getBoolean("constrain"), o.getString("font"), o.getInt("fontSize").coerceIn(1,512),
+        o.getInt("width").coerceIn(1,100), o.getInt("eraserWidth").coerceIn(1,100), o.shapeStyle("outline"),
+        o.shapeStyle("fill"), o.getBoolean("constrain"), o.getString("font"), o.getInt("fontSize").coerceIn(1,512),
         o.getBoolean("bold"), o.getBoolean("italic"), o.getBoolean("underline"), o.getBoolean("strike"), o.getBoolean("opaqueText"),
         brushStyle = BrushStyle.entries.firstOrNull { it.name == o.optString("brushStyle") } ?: BrushStyle.Solid,
         brushWidths = BrushStyle.entries.mapNotNull { style ->

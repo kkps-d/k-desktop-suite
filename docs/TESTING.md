@@ -200,6 +200,13 @@ These identify existing checks; they are not claims of complete manual coverage.
 - `ToolbarOverflowTest` checks end-state arrows, scrolling in both directions,
   resize/content-fit transitions, and RTL placement. `DualToolbarTest` also checks
   active tool/color reveal and secondary option access in narrow windows.
+- Shape dropdown coverage lives in `ShapePaintTest`, `DualToolbarTest`,
+  `CanvasToolsTest`, `StrokeSizeTest`, and `PaintStorageTest`. It checks independent
+  Outline/Fill choices, No fill/Solid color/all brush styles, wide and compact
+  menus with large text/RTL, selected-item focus, keyboard selection/Escape,
+  sharp joins, color and selection clipping, preview/commit parity, one-step
+  undo/redo, Size preview updates, and current/legacy draft recovery. Also check
+  the dropdowns manually with TalkBack and Burmese labels.
 - `InputInteractionTest` checks outside touch/mouse taps clearing untouched
   selections without pixel, dirty-state, or undo changes; inside/resize-handle taps
   preserve them, and outside taps still commit edited selections as one undo step.
@@ -225,6 +232,17 @@ failed its visible-color comparison; the same failure was reproduced from an
 isolated copy of committed revision `34ba809`, without the transparency changes.
 Manual visual review remains pending; preview checks used captured canvas pixels.
 Small Desktop's temporary display-size override was restored after testing.
+
+Shape dropdown verification on 1 November 2026: all 51 Paint JVM tests, debug
+build, lint, test-APK compilation, and 439 localization checks passed. Lint retains
+the two existing bitmap KTX warnings. On local Small Desktop (`emulator-5554`),
+66 selected instrumented regressions passed; a final 14 focused shape/size checks
+also passed explicitly under regular desktop user 10. Shape textures and wide/
+compact dropdown screenshots were visually reviewed. The existing
+`DualToolbarTest.compactRowsScrollIndependentlyAndKeepThreeShapesAtLargeTextAndRtl`
+still expects Transparent to be disabled with no selection; the same failure
+reproduced from an isolated copy of unchanged revision `d4bdc11`. TalkBack and
+Burmese wording still need manual review. The display-size override was restored.
 
 
 - Check one undoable change per committed stroke, shape, text, or transform;

@@ -206,6 +206,40 @@ class CanvasToolsTest {
         }
     }
 
+    @Test fun texturedShapePreviewMatchesCommitAndRemainsOneUndoableEdit() {
+        compose.runOnIdle { model.tool(Tool.Rectangle); model.viewport(model.state.value.viewport.actual()) }
+        for (style in BrushStyle.entries) {
+            compose.runOnIdle {
+                model.options { it.copy(width = 16,outline = style,fill = style,foreground = BLACK,background = 0xFF3366CC.toInt()) }
+                model.createPreview(Point(100f,100f),Point(200f,180f))
+            }
+            val before = compose.onNodeWithTag("paint-canvas").captureToImage().toPixelMap()
+            compose.runOnIdle {
+                assertFalse(model.state.value.dirty)
+                assertTrue(model.state.value.raster.pixels.all { it == WHITE })
+                model.applyPreview()
+            }
+            compose.waitUntil(15000) { !model.state.value.busy && model.state.value.preview == null }
+            val after = compose.onNodeWithTag("paint-canvas").captureToImage().toPixelMap()
+            // Sample fill and outline inside the frame, away from the editing handles.
+            for (y in 103..177) for (x in 115..135) {
+                val point = screenPoint(Point(x.toFloat(),y.toFloat()))
+                val old = before[point.x.roundToInt(),point.y.roundToInt()].toArgb()
+                val new = after[point.x.roundToInt(),point.y.roundToInt()].toArgb()
+                for (shift in listOf(0,8,16)) assertTrue("$style at $x,$y channel $shift",
+                    kotlin.math.abs((old ushr shift and 255)-(new ushr shift and 255)) <= 1)
+            }
+            compose.runOnIdle {
+                val pixels = model.state.value.raster.pixels.copyOf()
+                model.undo()
+                assertTrue(model.state.value.raster.pixels.all { it == WHITE })
+                model.redo()
+                assertArrayEquals(pixels,model.state.value.raster.pixels)
+                model.undo()
+            }
+        }
+    }
+
     @Test fun curveBendsThenMovesAndResizesAsOneUndoableEdit() {
         compose.runOnIdle {
             model.tool(Tool.Curve)
@@ -239,7 +273,7 @@ class CanvasToolsTest {
         val blue = 0xFF0000FF.toInt()
         compose.runOnIdle {
             model.tool(Tool.Polygon)
-            model.options { it.copy(fill = true,background = blue,constrain = false) }
+            model.options { it.copy(fill = BrushStyle.Solid,background = blue,constrain = false) }
             model.viewport(model.state.value.viewport.actual())
         }
         compose.onNodeWithTag("paint-canvas").performTouchInput {
@@ -287,7 +321,7 @@ class CanvasToolsTest {
     @Test fun constrainedReverseDragMatchesTheReleasedShape() {
         compose.runOnIdle {
             model.tool(Tool.Rectangle)
-            model.options { it.copy(width = 8,fill = true,foreground = BLACK,background = 0xFFFF0000.toInt(),constrain = true) }
+            model.options { it.copy(width = 8,fill = BrushStyle.Solid,foreground = BLACK,background = 0xFFFF0000.toInt(),constrain = true) }
             model.viewport(model.state.value.viewport.actual())
         }
         compose.onNodeWithTag("paint-canvas").performTouchInput {

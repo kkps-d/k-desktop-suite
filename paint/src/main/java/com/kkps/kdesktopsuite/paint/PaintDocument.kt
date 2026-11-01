@@ -49,8 +49,8 @@ internal enum class VerticalTextAlignment {
 
 internal data class ToolOptions(
     val tool: Tool = Tool.Brush, val foreground: Int = BLACK, val background: Int = WHITE,
-    val width: Int = 3, val eraserWidth: Int = 8, val outline: Boolean = true,
-    val fill: Boolean = false, val constrain: Boolean = false,
+    val width: Int = 3, val eraserWidth: Int = 8, val outline: BrushStyle? = BrushStyle.Solid,
+    val fill: BrushStyle? = null, val constrain: Boolean = false,
     val font: String = "Sans-serif", val fontSize: Int = 24, val bold: Boolean = false,
     val italic: Boolean = false, val underline: Boolean = false, val strike: Boolean = false,
     val opaqueText: Boolean = false,
@@ -256,13 +256,16 @@ internal fun Canvas.drawShapePreview(preview: EditPreview, options: ToolOptions)
     }
     if (!preview.tool.isShape) return
     val path = preview.shapePath()
-    fun drawShape() = drawPath(path,paint)
-    if (options.fill && preview.tool.isClosedShape && !preview.constructing) {
-        paint.style = Paint.Style.FILL; paint.color = options.background; drawShape()
+    fun drawShape(style: BrushStyle, color: Int, mode: Paint.Style) {
+        paint.style = mode
+        paint.color = if (style == BrushStyle.Solid) color else WHITE
+        paint.shader = if (style == BrushStyle.Solid) null else shapeBrushShader(style,color)
+        drawPath(path,paint)
     }
-    if (options.outline || !preview.tool.isClosedShape || preview.constructing) {
-        paint.style = Paint.Style.STROKE; paint.color = options.foreground; drawShape()
+    if (preview.tool.isClosedShape && !preview.constructing) {
+        options.fill?.let { drawShape(it,options.background,Paint.Style.FILL) }
     }
+    options.outline?.let { drawShape(it,options.foreground,Paint.Style.STROKE) }
 }
 
 internal val presetColors = listOf(

@@ -82,6 +82,14 @@ The Shapes icon dropdown offers lines, curves, basic geometry, arrows, stars,
 callouts, a heart, and lightning. Drag to create a preview; for curves, place two
 bend points; for polygons, add vertices and choose Commit to finish and apply in one action. Previews support
 move/resize, stroke width, outline/fill colors, Enter to apply, and Escape to cancel.
+Outline and Fill are independent dropdowns offering No fill, Solid color, and the
+same textured styles as Brushes. Outline uses the primary color; Fill uses the
+secondary color. Brush textures stay at image-pixel scale through zoom changes.
+Lines and curves use only Outline. Choose a visible outline or fill before
+committing a closed shape; lines and curves require a visible outline. Changing
+styles preserves the floating shape and applies with it as one undoable edit.
+Draft recovery retains both choices; older checkbox-based drafts restore solid
+color for enabled parts and No fill for disabled parts.
 Outline corners use sharp joins in the gallery, live preview, and committed image;
 curved shape geometry, such as rounded rectangles, stays curved.
 Finished shapes also support the selection rotation handle, rotation/flip commands,

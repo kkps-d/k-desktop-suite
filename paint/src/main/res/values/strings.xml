@@ -205,6 +205,9 @@
     <string name="ui_shape">Shape</string>
     <string name="ui_transparent">Transparent</string>
     <string name="ui_opaque_background">Opaque background</string>
+    <string name="ui_no_fill">No fill</string>
+    <string name="ui_solid_color">Solid color</string>
+    <string name="ui_shape_paint_property">%1$s: %2$s</string>
     <string name="ui_outline">Outline</string>
     <string name="ui_keep_aspect_ratio">Keep aspect ratio</string>
     <string name="ui_custom_rotate">Custom rotate</string>

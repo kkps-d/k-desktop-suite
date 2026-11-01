@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.*
@@ -125,8 +126,9 @@ class DualToolbarTest {
         }
         compose.onNodeWithTag("paint-shape-tool").performScrollTo().performClick()
         compose.runOnIdle { assertFalse(model.state.value.colorOptions); assertEquals(before.preview,model.state.value.preview) }
-        compose.onNodeWithText("Outline").performScrollTo().assertIsOn()
-        compose.onNodeWithText("Fill").performScrollTo().performClick().assertIsOn()
+        compose.onNodeWithTag("paint-shape-outline-picker").performScrollTo().assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription,"Solid color"))
+        compose.onNodeWithTag("paint-shape-fill-picker").performScrollTo().performClick()
+        compose.onNodeWithTag("paint-shape-fill-Solid").performScrollTo().performClick()
         compose.onNodeWithText("Move/resize/skew").performScrollTo().assertIsEnabled()
         compose.onNodeWithContentDescription("Commit").performScrollTo().performClick()
         compose.waitUntil(15000) { !model.state.value.busy && model.state.value.preview == null }
@@ -234,6 +236,76 @@ class DualToolbarTest {
         compose.runOnIdle { model.tool(Tool.Rectangle) }
         compose.onNodeWithTag("paint-shape-picker").assert(SemanticsMatcher.keyNotDefined(androidx.compose.ui.semantics.SemanticsProperties.Selected))
         compose.onNodeWithTag("paint-size-picker").assert(SemanticsMatcher.keyNotDefined(androidx.compose.ui.semantics.SemanticsProperties.Selected))
+        compose.onNodeWithTag("paint-shape-outline-picker").assert(SemanticsMatcher.keyNotDefined(androidx.compose.ui.semantics.SemanticsProperties.Selected))
+        compose.onNodeWithTag("paint-shape-fill-picker").assert(SemanticsMatcher.keyNotDefined(androidx.compose.ui.semantics.SemanticsProperties.Selected))
+    }
+
+    @Test fun shapePaintDropdownsOfferAllStylesIndependentlyAtWideAndCompactWidths() {
+        compose.runOnIdle { model.tool(Tool.Rectangle); model.createPreview(Point(40f,40f),Point(200f,160f)) }
+        val original = model.state.value
+        for (width in listOf(1200.dp,360.dp)) {
+            compose.runOnIdle { size = DpSize(width,640.dp); fontScale = if (width == 360.dp) 2f else 1f; rtl = width == 360.dp }
+            for (property in listOf("outline","fill")) {
+                val other = if (property == "outline") model.state.value.options.fill else model.state.value.options.outline
+                for (style in listOf(null) + BrushStyle.entries) {
+                    compose.onNodeWithTag("paint-shape-$property-picker").performScrollTo().performClick()
+                    compose.onNodeWithText("No fill").assertExists()
+                    compose.onNodeWithText("Solid color").assertExists()
+                    if (style == null) {
+                        val context = InstrumentationRegistry.getInstrumentation().targetContext
+                        File(context.cacheDir,"shape-$property-picker-${width.value.toInt()}.png").outputStream().use {
+                            compose.onNodeWithTag("dropdown-menu").captureToImage().asAndroidBitmap()
+                                .compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
+                        }
+                    }
+                    val selected = if (property == "outline") model.state.value.options.outline else model.state.value.options.fill
+                    compose.onNodeWithTag("paint-shape-$property-${selected?.name ?: "None"}").assertIsSelected().assertIsFocused()
+                    compose.onNodeWithTag("paint-shape-$property-${style?.name ?: "None"}").performScrollTo().performClick()
+                    compose.onNodeWithTag("dropdown-menu").assertDoesNotExist()
+                    compose.runOnIdle {
+                        val state = model.state.value
+                        assertEquals(style,if (property == "outline") state.options.outline else state.options.fill)
+                        assertEquals(other,if (property == "outline") state.options.fill else state.options.outline)
+                        assertEquals(original.options.brushStyle,state.options.brushStyle)
+                        assertEquals(original.preview,state.preview)
+                        assertSame(original.raster,state.raster)
+                        assertFalse(state.dirty)
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("paint-shape-fill-picker").performScrollTo().performClick()
+        compose.onNodeWithTag("dropdown-menu").performKeyInput { pressKey(Key.DirectionUp); pressKey(Key.Enter) }
+        compose.runOnIdle { assertEquals(BrushStyle.Graphite,model.state.value.options.fill) }
+        compose.onNodeWithTag("paint-shape-fill-picker").performClick()
+        compose.onNodeWithTag("dropdown-menu").performKeyInput { pressKey(Key.Escape) }
+        compose.onNodeWithTag("dropdown-menu").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(BrushStyle.Graphite,model.state.value.options.fill) }
+    }
+
+    @Test fun invisibleShapeCannotCommitUntilAVisibleStyleIsSelected() {
+        for (tool in listOf(Tool.Rectangle,Tool.Line)) {
+            compose.runOnIdle {
+                model.tool(tool)
+                model.createPreview(Point(40f,40f),Point(200f,160f))
+                model.options { it.copy(outline = null,fill = if (tool.isClosedShape) null else BrushStyle.Solid) }
+                model.applyPreview()
+            }
+            compose.runOnIdle {
+                assertNotNull(model.state.value.preview)
+                assertFalse(model.state.value.dirty)
+                assertTrue(model.state.value.raster.pixels.all { it == WHITE })
+                model.options { it.copy(outline = BrushStyle.Crayon) }
+                model.applyPreview()
+            }
+            compose.waitUntil(15000) { !model.state.value.busy && model.state.value.preview == null }
+            compose.runOnIdle {
+                assertTrue(model.state.value.dirty)
+                model.undo()
+                assertFalse(model.state.value.dirty)
+                assertTrue(model.state.value.raster.pixels.all { it == WHITE })
+            }
+        }
     }
 
     @Test fun captureWideAndCompactToolbarLayouts() {

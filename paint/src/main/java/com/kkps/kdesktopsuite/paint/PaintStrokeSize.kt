@@ -131,7 +131,7 @@ internal fun StrokeSizeDialog(s: PaintUiState, model: PaintViewModel) {
 internal fun StrokeSizePreview(options: ToolOptions, width: Int, zoom: Float, modifier: Modifier = Modifier) {
     val density = LocalDensity.current
     val length = with(density) { ceil(128.dp.toPx()/zoom).toInt() }
-    val image = remember(options.tool,options.brushStyle,width,length) {
+    val image = remember(options.tool,options.brushStyle,options.outline,width,length) {
         val raster = Raster.blank(length+width+4,width+4)
         val start = Point(width/2f+1,(width+2)/2f)
         val end = Point(start.x+length,start.y)
@@ -139,7 +139,8 @@ internal fun StrokeSizePreview(options: ToolOptions, width: Int, zoom: Float, mo
         val rendered = when (options.tool) {
             Tool.Brush -> raster.brushStroke(points,BLACK,width.toFloat(),options.brushStyle,42)
             Tool.Eraser -> raster.brushStroke(points,BLACK,width.toFloat(),BrushStyle.Solid,42,square = true)
-            else -> raster.render(EditPreview.between(Tool.Line,start,end),options.copy(width = width,foreground = BLACK))
+            else -> raster.render(EditPreview.between(Tool.Line,start,end),options.copy(width = width,foreground = BLACK,
+                outline = options.outline ?: BrushStyle.Solid))
         }
         rendered.bitmap().asImageBitmap()
     }

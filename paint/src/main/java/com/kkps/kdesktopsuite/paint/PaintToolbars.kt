@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.TextFieldLineLimits
@@ -136,8 +137,12 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
                                 busy = s.busy,modifier = Modifier.testTag("paint-shape-shortcut-${tool.name}")) { model.tool(tool) }
                         }
                         ShapePicker(s,model,shape)
-                        ToolbarCheck(strings.getString(R.string.ui_outline),s.options.outline,enabled && !s.busy) { value -> model.options { it.copy(outline = value) } }
-                        ToolbarCheck(strings.getString(R.string.ui_tool_fill),s.options.fill,enabled && !s.busy) { value -> model.options { it.copy(fill = value) } }
+                        ShapePaintPicker(stringResource(R.string.ui_outline),s.options.outline,enabled && !s.busy,"outline") { value ->
+                            model.options { it.copy(outline = value) }
+                        }
+                        ShapePaintPicker(stringResource(R.string.ui_tool_fill),s.options.fill,enabled && !s.busy,"fill") { value ->
+                            model.options { it.copy(fill = value) }
+                        }
                         ToolbarCheck(strings.getString(R.string.ui_keep_aspect_ratio),s.options.constrain,enabled && !s.busy) { value -> model.options { it.copy(constrain = value) } }
                         WidthPicker(s,model)
                         GeometryAction(s,model,labels)
@@ -363,6 +368,45 @@ private fun <T> AlignmentDropdown(label: String, selected: T, enabled: Boolean,
             }
         }
     }
+}
+
+@Composable
+private fun ShapePaintPicker(label: String, style: BrushStyle?, enabled: Boolean, property: String, onSelect: (BrushStyle?) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    val focus = remember { FocusRequester() }
+    val styleLabel = style.shapePaintLabel()
+    Box {
+        TextButton(onClick = { open = true },enabled = enabled,colors = toolbarTextButtonColors(),
+            modifier = Modifier.heightIn(min = 48.dp).testTag("paint-shape-$property-picker")
+                .semantics { contentDescription = label; stateDescription = styleLabel }) {
+            Text(stringResource(R.string.ui_shape_paint_property,label,styleLabel),Modifier.widthIn(max = 220.dp),
+                maxLines = 1,overflow = TextOverflow.Ellipsis)
+            Icon(PaintIcon.Chevron.vector,null,Modifier.size(16.dp))
+        }
+        AppDropdownMenu(open,{ open = false }) {
+            Column(Modifier.width(280.dp).selectableGroup().onPreviewKeyEvent {
+                if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) { open = false; true } else false
+            }) {
+                (listOf(null) + BrushStyle.entries).forEach { brush ->
+                    AppMenuItem(text = { Text(brush.shapePaintLabel()) },onClick = { open = false; onSelect(brush) },
+                        leadingIcon = brush?.let { { BrushPreview(it,Modifier.size(88.dp,36.dp)) } },
+                        trailingIcon = { if (brush == style) Icon(PaintIcon.Apply.vector,null,Modifier.size(20.dp)) },
+                        modifier = (if (brush == style) Modifier.focusRequester(focus) else Modifier)
+                            .focusProperties { canFocus = true }.heightIn(min = 48.dp)
+                            .testTag("paint-shape-$property-${brush?.name ?: "None"}")
+                            .semantics { selected = brush == style })
+                }
+            }
+            LaunchedEffect(open) { if (open) { withFrameNanos { }; focus.requestFocus() } }
+        }
+    }
+}
+
+@Composable
+private fun BrushStyle?.shapePaintLabel(): String = when (this) {
+    null -> stringResource(R.string.ui_no_fill)
+    BrushStyle.Solid -> stringResource(R.string.ui_solid_color)
+    else -> displayLabel()
 }
 
 @Composable

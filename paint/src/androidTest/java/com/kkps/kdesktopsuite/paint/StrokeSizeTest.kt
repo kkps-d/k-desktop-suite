@@ -182,6 +182,22 @@ class StrokeSizeTest {
 class StrokeSizePreviewTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun shapeWidthPreviewUpdatesWithOutlineStyleAndStaysVisibleWithNoOutline() {
+        var outline by mutableStateOf<BrushStyle?>(BrushStyle.Solid)
+        compose.setContent {
+            StrokeSizePreview(ToolOptions(tool = Tool.Rectangle,outline = outline),16,1f,
+                Modifier.width(256.dp).testTag("preview"))
+        }
+        fun pixels() = compose.onNodeWithTag("preview").captureToImage().asAndroidBitmap().raster().pixels
+        val solid = pixels()
+        compose.runOnIdle { outline = BrushStyle.Crayon }
+        val textured = pixels()
+        assertFalse(solid.contentEquals(textured))
+        assertTrue(textured.any { it != WHITE })
+        compose.runOnIdle { outline = null }
+        assertArrayEquals(solid,pixels())
+    }
+
     @Test fun thicknessUsesPhysicalPixelsAtEveryZoomAndDensityIncludingLargeSizes() {
         var density by mutableFloatStateOf(1f)
         var zoom by mutableFloatStateOf(1f)

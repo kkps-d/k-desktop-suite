@@ -405,7 +405,7 @@ internal class PaintViewModel(
         if (preview == null || !preview.hasContent) {
             mutableState.update { it.copy(preview = null) }; after(); return
         }
-        if (preview.tool.isClosedShape && !s.options.outline && !s.options.fill) {
+        if (preview.tool.isShape && s.options.outline == null && (!preview.tool.isClosedShape || s.options.fill == null)) {
             message(R.string.error_shape_style); return
         }
         operation({
@@ -466,7 +466,7 @@ internal class PaintViewModel(
                 }
                 preview != null && horizontalSkew == 0 && verticalSkew == 0 -> movePreview(bounds)
                 preview != null -> {
-                    require(!preview.tool.isClosedShape || s.options.outline || s.options.fill) { "Choose an outline or fill before applying this shape." }
+                    require(!preview.tool.isShape || s.options.outline != null || (preview.tool.isClosedShape && s.options.fill != null)) { "Choose an outline or fill before applying this shape." }
                     // Skew needs pixels; keep the raster unchanged until the floating edit is committed.
                     var converted: EditPreview? = null
                     operation({ raster ->

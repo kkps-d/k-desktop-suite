@@ -13,6 +13,30 @@ class PaintStorageTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private fun uri(file: File) = FileProvider.getUriForFile(context,"${context.packageName}.images",file).toString()
 
+    @Test fun recoveryRetainsIndependentShapeStylesAndReadsLegacyCheckboxes() = runBlocking {
+        val root = File(context.cacheDir,"shape-styles-${UUID.randomUUID()}")
+        try {
+            val store = PaintRecovery(root)
+            val preview = EditPreview(Tool.Rectangle,PixelRect(20,20,50,40))
+            val base = Raster.blank(100,100)
+            for ((index,styles) in listOf(null to null,null to BrushStyle.Watercolor,
+                BrushStyle.Crayon to null,BrushStyle.Marker to BrushStyle.Oil).withIndex()) {
+                val options = ToolOptions(tool = Tool.Rectangle,outline = styles.first,fill = styles.second,background = BLACK)
+                store.write(RecoverySnapshot(base,options,preview,null,Viewport(),null,"Shapes","image/png",null,false,sequence = index+1L))
+                val restored = requireNotNull(store.read())
+                assertEquals(options,restored.options)
+                assertArrayEquals(base.render(preview,options).pixels,restored.raster.render(restored.preview!!,restored.options).pixels)
+                val manifest = File(root,"current.json")
+                val json = org.json.JSONObject(manifest.readText())
+                json.getJSONObject("options").apply { remove("outlineStyle"); remove("fillStyle") }
+                manifest.writeText(json.toString())
+                val legacy = requireNotNull(PaintRecovery(root).read()).options
+                assertEquals(if (options.outline == null) null else BrushStyle.Solid,legacy.outline)
+                assertEquals(if (options.fill == null) null else BrushStyle.Solid,legacy.fill)
+            }
+        } finally { root.deleteRecursively() }
+    }
+
     @Test fun recoveryRetainsSelectionTransparencyAndDefaultsOlderDraftsSafely() = runBlocking {
         val root = File(context.cacheDir,"transparent-recovery-${UUID.randomUUID()}")
         try {
@@ -134,7 +158,7 @@ class PaintStorageTest {
         val base = Raster.blank(160,100)
         val text = base.render(EditPreview(Tool.Text,PixelRect(4,4,145,80),text = "Hello\nမြန်မာ café"),ToolOptions(fontSize = 18))
         assertTrue(text.pixels.any { it != WHITE }); assertTrue(base.pixels.all { it == WHITE })
-        val shape = base.render(EditPreview(Tool.Rectangle,PixelRect(10,10,30,20)),ToolOptions(outline = false,fill = true,background = BLACK))
+        val shape = base.render(EditPreview(Tool.Rectangle,PixelRect(10,10,30,20)),ToolOptions(outline = null,fill = BrushStyle.Solid,background = BLACK))
         assertEquals(BLACK,shape.pixel(20,20)); assertEquals(WHITE,shape.pixel(2,2))
         val history = RasterHistory(base); history.commit(text); history.undo()
         assertArrayEquals(base.pixels,history.raster.pixels)
@@ -151,7 +175,7 @@ class PaintStorageTest {
             if (tool == Tool.Curve) preview = preview.withShapePoint(Point(25f,100f)).withShapePoint(Point(110f,20f))
             if (tool == Tool.Polygon) preview = preview.withShapePoint(Point(25f,110f))
             preview = preview.copy(constructing = false)
-            val result = base.render(preview,ToolOptions(width = 4,foreground = red,background = blue,fill = true))
+            val result = base.render(preview,ToolOptions(width = 4,foreground = red,background = blue,fill = BrushStyle.Solid))
             assertTrue("Outline for $tool",result.pixels.any { it == red })
             if (tool.isClosedShape) assertTrue("Fill for $tool",result.pixels.any { it == blue })
             else assertFalse("No fill for $tool",result.pixels.any { it == blue })

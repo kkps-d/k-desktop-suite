@@ -286,7 +286,7 @@ class TransformToolsTest {
     @Test fun shapeRotationControlsKeepGeometryEditableUntilCommit() {
         compose.runOnIdle {
             model.tool(Tool.RightTriangle)
-            model.options { it.copy(outline = false,fill = true,background = BLACK) }
+            model.options { it.copy(outline = null,fill = BrushStyle.Solid,background = BLACK) }
             model.createPreview(Point(220f,180f),Point(300f,220f))
         }
         val before = model.state.value.raster

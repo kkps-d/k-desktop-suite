@@ -200,6 +200,9 @@
     <string name="ui_shape">ပုံသဏ္ဌာန်</string>
     <string name="ui_transparent">ဖောက်ထွင်းမြင်နိုင်မှု</string>
     <string name="ui_opaque_background">အလင်းပိတ် နောက်ခံ</string>
+    <string name="ui_no_fill">အရောင်မဖြည့်ပါ</string>
+    <string name="ui_solid_color">တစ်ရောင်တည်း</string>
+    <string name="ui_shape_paint_property">%1$s: %2$s</string>
     <string name="ui_outline">အနားသတ်</string>
     <string name="ui_keep_aspect_ratio">အချိုးအစား ထိန်းထားရန်</string>
     <string name="ui_custom_rotate">စိတ်ကြိုက် လှည့်ရန်</string>
