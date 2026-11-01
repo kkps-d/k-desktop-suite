@@ -100,16 +100,54 @@ scrolling in each document. These preferences persist across relaunch.
 | Next / previous tab | Ctrl+Tab / Ctrl+Shift+Tab |
 | Undo / redo | Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z |
 | Cut / copy / paste / select all | Ctrl+X / C / V / A |
+| Find / Replace | Ctrl+F / Ctrl+H |
+| Find next / previous (wraps) | F3 / Shift+F3 |
 | Zoom in / out / reset | Ctrl+Plus / Ctrl+Minus / Ctrl+0 |
 
 Editor zoom also supports Ctrl+wheel and pinch input. It changes document text
 size, retaining the system font scale. Zoom commands remain available in View or
 the compact Commands menu.
 
+## Find and Replace
+
+Edit → Find (Ctrl+F) opens a nonmodal panel below the command bar. Replace
+(Ctrl+H) also shows the replacement field. The compact Commands menu offers the
+same actions. Opening either focuses and selects the query, taking a nonempty,
+single-line editor selection as the query when available.
+
+- Search covers only the active document, using literal, nonoverlapping matches.
+  Matching ignores case by default; Match case enables case-sensitive matching.
+  Text is not normalized, and punctuation is not treated as regular expressions.
+- All matches are highlighted while the panel is open. The selected result has
+  a distinct background and underline. Counts update as text or options change;
+  an empty query disables navigation and replacement.
+- Next/Previous, F3/Shift+F3, or Enter/Shift+Enter in the query navigate with
+  wraparound and reveal offscreen results, including when word wrap is off.
+  Focus stays in the search field. F3 works with the retained query after closing
+  the panel; without a query, it opens Find.
+- Replace (or Enter in the replacement field) changes only an exactly selected
+  match. Otherwise it selects the next match without modifying text. Afterwards
+  navigation starts at the replacement's end. An empty replacement deletes text.
+- Replace all uses the original matches once, even when the replacement contains
+  the query. It is one undoable edit and leaves the caret after the final
+  replacement. Identical replacements do not dirty the document or add undo steps.
+- Find works in read-only documents; replacement actions are disabled.
+- Escape or Close search restores editor focus without collapsing its selection.
+  Android Back hides the software keyboard first, then dismisses the panel.
+  Clipboard, selection, and undo/redo shortcuts stay local to the focused field.
+- Query, replacement, Match case, and panel mode belong to the window, not its
+  tabs. Tab switches keep the destination selection/scroll until an explicit
+  search command. Transfers never move search state. Activity recreation retains
+  the panel state, but durable document recovery stores no search history.
+  Closing the final document hides the panel; a new window starts with no query.
+- Controls reflow in narrow windows and scroll within a bounded panel in short
+  windows, leaving space for the editor.
+
 ## Current limitations
 
-Find/Replace, rich text, legacy encodings, and large-file optimizations are
-deferred.
+Regular expressions, whole-word matching, selection-only and cross-tab search
+are not supported. Rich text, legacy encodings, and large-file optimizations
+remain deferred.
 
 For shared tab constraints, see [Document tabs](TABS.md). Build instructions are
 in [Development](DEVELOPMENT.md).

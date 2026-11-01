@@ -17,6 +17,31 @@ class NotepadLifecycleTest {
     val compose = createAndroidComposeRule<NotepadActivity>()
 
     @Test
+    fun searchPanelAndResultSelectionSurviveActivityRecreation() {
+        compose.waitUntil(5_000) { !compose.activity.notepad.loading }
+        compose.runOnIdle { compose.activity.notepad.newDocument() }
+        compose.onNodeWithTag("document-editor").performTextReplacement("cat cat")
+        val model = compose.activity.notepad
+        compose.runOnIdle {
+            model.search.query.edit { append("cat") }
+            model.search.replacement.edit { append("dog") }
+            model.search.matchCase = true
+            model.search.open(replace = true)
+        }
+        compose.waitUntil(5_000) { model.search.results?.matches?.size == 2 }
+        compose.runOnIdle { model.search.navigate() }
+        val selected = model.active!!.editor.selection
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithTag("search-query").assertIsFocused().assertTextContains("cat")
+        compose.onNodeWithTag("search-replacement").assertTextContains("dog")
+        assertTrue(compose.activity.notepad.search.matchCase)
+        assertEquals(selected, model.active!!.editor.selection)
+        compose.onNodeWithText("Close search").performClick()
+        compose.onNodeWithTag("document-editor").assertIsFocused()
+        assertEquals(selected, model.active!!.editor.selection)
+    }
+
+    @Test
     fun realDesktopCaptionKeepsSystemControlsAndDraggingSpaceOutsideGestureExclusions() {
         assumeTrue(android.os.Build.VERSION.SDK_INT >= 35)
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("document-header").fetchSemanticsNodes().isNotEmpty() }

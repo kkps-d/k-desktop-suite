@@ -1,4 +1,21 @@
 <resources>
+    <string name="find">Find</string>
+    <string name="replace">Replace</string>
+    <string name="find_next">Find next</string>
+    <string name="find_previous">Find previous</string>
+    <string name="replace_all">Replace all</string>
+    <string name="search_query">Find text</string>
+    <string name="search_replacement">Replace with</string>
+    <string name="search_match_case">Match case</string>
+    <string name="search_close">Close search</string>
+    <string name="search_empty">Enter text to find</string>
+    <string name="search_scanning">Searching…</string>
+    <string name="search_no_results">No results</string>
+    <string name="search_position">%1$d of %2$d</string>
+    <string name="search_total">Matches: %1$d</string>
+    <string name="search_replaced">Replacements: %1$d</string>
+    <string name="search_replace_hint">Enter in Replace with</string>
+    <string name="search_replace_all_hint">Active document only</string>
     <string name="app_name" translatable="false">KD Notepad</string>
     <string name="welcome">Welcome</string>
     <string name="start">Start</string>

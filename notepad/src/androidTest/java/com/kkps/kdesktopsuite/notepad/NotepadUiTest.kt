@@ -45,7 +45,8 @@ class NotepadUiTest {
     private lateinit var inputModeManager: InputModeManager
     private val repository = FakeDocuments()
 
-    private fun showEditor(largeFontRtl: Boolean = false, separatingFold: Boolean = false, startWithDocument: Boolean = true) {
+    private fun showEditor(largeFontRtl: Boolean = false, separatingFold: Boolean = false, startWithDocument: Boolean = true,
+        language: String? = null) {
         compose.activityRule.scenario.onActivity {
             it.enableEdgeToEdge()
             if (android.os.Build.VERSION.SDK_INT >= 35) {
@@ -68,7 +69,9 @@ class NotepadUiTest {
                         DeviceConfigurationOverride.LayoutDirection(LayoutDirection.Rtl) then
                         DeviceConfigurationOverride.DarkMode(true)
                 } else DeviceConfigurationOverride.FontScale(1f)
-                DeviceConfigurationOverride(configuration) {
+                val localized = if (language == null) configuration else DeviceConfigurationOverride.Locales(
+                    androidx.compose.ui.text.intl.LocaleList(androidx.compose.ui.text.intl.Locale(language))) then configuration
+                DeviceConfigurationOverride(localized) {
                     inputModeManager = LocalInputModeManager.current
                     val adaptive = currentWindowAdaptiveInfoV2()
                     val posture = if (separatingFold) Posture(hingeList = listOf(
@@ -86,6 +89,290 @@ class NotepadUiTest {
         }
         compose.waitUntil(5_000) { !notepad.loading }
         if (startWithDocument) compose.runOnIdle { notepad.newDocument() }
+    }
+
+    private fun awaitSearch(count: Int) {
+        compose.waitUntil(5_000) { notepad.search.results?.matches?.size == count }
+        compose.waitForIdle()
+    }
+
+    @Test
+    fun searchBurmeseLabelsReflowInShortRtlWindowsWithLargeFonts() {
+        windowSize = DpSize(400.dp, 400.dp)
+        showEditor(largeFontRtl = true, language = "my")
+        compose.onNodeWithTag("document-editor").performTextReplacement("မြန်မာ 😀 မြန်မာ")
+        compose.runOnIdle { notepad.search.open(replace = true) }
+        compose.onNodeWithTag("search-query").performTextReplacement("မြန်မာ")
+        awaitSearch(2)
+        compose.onNodeWithText("ရှာမည့် စာသား").assertIsDisplayed()
+        compose.onNodeWithTag("search-replacement").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("အစားထိုးမည့် စာသား").assertIsDisplayed()
+        compose.onNodeWithTag("document-editor").assertIsDisplayed()
+        compose.onNodeWithText("ရှာဖွေမှု ပိတ်ရန်").performScrollTo().performClick()
+        compose.onNodeWithTag("document-editor").assertIsFocused()
+    }
+
+    @Test
+    fun searchPanelLeavesEditorSpaceInAnExtraShortWindow() {
+        windowSize = DpSize(600.dp, 260.dp)
+        showEditor()
+        compose.runOnIdle { notepad.search.open(replace = true) }
+        compose.onNodeWithTag("search-query").assertIsFocused()
+        compose.onNodeWithTag("document-editor").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithText("Close search").performScrollTo().assertIsDisplayed().performClick()
+    }
+
+    @Test
+    fun searchHorizontalRevealRespectsRtlScrollCoordinates() {
+        showEditor(largeFontRtl = true)
+        compose.runOnIdle { notepad.toggleWordWrap() }
+        compose.onNodeWithTag("document-editor").performTextReplacement("needle" + "x".repeat(300))
+        compose.runOnIdle {
+            notepad.active!!.editor.edit { selection = androidx.compose.ui.text.TextRange(0) }
+            notepad.search.open()
+        }
+        compose.onNodeWithTag("search-query").performTextReplacement("needle")
+        awaitSearch(1)
+        val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        compose.onNodeWithTag("document-editor").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        compose.runOnIdle {
+            val scroll = notepad.active!!.horizontalScroll
+            val layout = layouts.last()
+            val visibleLeft = scroll.maxValue - scroll.value
+            val bounds = layout.getBoundingBox(0)
+            org.junit.Assert.assertTrue("The first match must be visible in RTL", bounds.left + 16f * compose.density.density >= visibleLeft)
+            org.junit.Assert.assertTrue(scroll.value > 0)
+        }
+        compose.onNodeWithTag("search-query").assertIsFocused()
+    }
+
+    @Test
+    fun searchFieldUndoRedoAndCutStayLocalToTheFocusedField() {
+        showEditor()
+        val editor = compose.onNodeWithTag("document-editor")
+        editor.performTextReplacement("document draft")
+        compose.runOnIdle { notepad.search.open(replace = true) }
+        val query = compose.onNodeWithTag("search-query")
+        query.performTextReplacement("needle")
+        compose.runOnIdle { notepad.search.query.undoState.clearHistory() }
+        query.performTextInput("!")
+        query.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.Z); keyUp(Key.CtrlLeft) }
+        compose.runOnIdle { org.junit.Assert.assertEquals("needle", notepad.search.query.text.toString()) }
+        query.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.Y); keyUp(Key.CtrlLeft) }
+        compose.runOnIdle { org.junit.Assert.assertEquals("needle!", notepad.search.query.text.toString()) }
+        val replacement = compose.onNodeWithTag("search-replacement")
+        replacement.performTextReplacement("replacement")
+        replacement.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.A); keyUp(Key.CtrlLeft) }
+        replacement.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.X); keyUp(Key.CtrlLeft) }
+        compose.waitUntil(5_000) { notepad.search.replacement.text.isEmpty() }
+        replacement.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.Z); keyUp(Key.CtrlLeft) }
+        compose.runOnIdle { org.junit.Assert.assertEquals("replacement", notepad.search.replacement.text.toString()) }
+        editor.assertTextEquals("document draft")
+        compose.runOnIdle {
+            notepad.active!!.editor.undoState.undo()
+            org.junit.Assert.assertEquals("", notepad.active!!.editor.text.toString())
+        }
+    }
+
+    @Test
+    fun searchImeActionNavigatesAndBackDismissesPanelAfterKeyboard() {
+        showEditor()
+        compose.onNodeWithTag("document-editor").performTextReplacement("cat cat")
+        compose.runOnIdle { notepad.search.open() }
+        compose.onNodeWithTag("search-query").performTextReplacement("cat")
+        awaitSearch(2)
+        compose.onNodeWithTag("search-query").performImeAction()
+        compose.onNodeWithTag("search-status").assertTextEquals("2 of 2")
+        compose.runOnUiThread {
+            androidx.core.view.WindowInsetsControllerCompat(compose.activity.window, compose.activity.window.decorView)
+                .hide(androidx.core.view.WindowInsetsCompat.Type.ime())
+        }
+        compose.waitUntil(5_000) {
+            androidx.core.view.ViewCompat.getRootWindowInsets(compose.activity.window.decorView)
+                ?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) != true
+        }
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.onNodeWithTag("find-replace-panel").assertDoesNotExist()
+        compose.onNodeWithTag("document-editor").assertIsFocused()
+    }
+
+    @Test
+    fun searchMenusAndShortcutsUseTheSamePanelAndWrapNavigation() {
+        showEditor()
+        val editor = compose.onNodeWithTag("document-editor")
+        editor.performTextReplacement("cat cat CAT")
+        compose.onNodeWithText("Edit").performClick()
+        compose.onNodeWithText("Find", useUnmergedTree = false).performClick()
+        val query = compose.onNodeWithTag("search-query")
+        query.assertIsFocused().performTextReplacement("cat")
+        awaitSearch(3)
+        compose.onNodeWithTag("search-status").assertTextEquals("1 of 3")
+        query.performKeyInput { pressKey(Key.F3) }
+        compose.onNodeWithTag("search-status").assertTextEquals("2 of 3")
+        query.performKeyInput { keyDown(Key.ShiftLeft); pressKey(Key.Enter); keyUp(Key.ShiftLeft) }
+        compose.onNodeWithTag("search-status").assertTextEquals("1 of 3")
+        query.performKeyInput { keyDown(Key.ShiftLeft); pressKey(Key.F3); keyUp(Key.ShiftLeft) }
+        compose.onNodeWithTag("search-status").assertTextEquals("3 of 3")
+        query.assertIsFocused().performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.H); keyUp(Key.CtrlLeft) }
+        compose.onNodeWithTag("search-replacement").assertIsDisplayed()
+        query.assertIsFocused().performKeyInput { pressKey(Key.Escape) }
+        compose.onNodeWithTag("find-replace-panel").assertDoesNotExist()
+        editor.assertIsFocused().performKeyInput { pressKey(Key.F3) }
+        compose.runOnIdle { org.junit.Assert.assertEquals(androidx.compose.ui.text.TextRange(0, 3), notepad.active!!.editor.selection) }
+        compose.onNodeWithTag("find-replace-panel").assertDoesNotExist()
+    }
+
+    @Test
+    fun searchFieldClipboardAndUndoShortcutsNeverEditTheDocument() {
+        showEditor()
+        val editor = compose.onNodeWithTag("document-editor")
+        editor.performTextReplacement("document draft")
+        editor.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.H); keyUp(Key.CtrlLeft) }
+        val query = compose.onNodeWithTag("search-query")
+        query.performTextReplacement("needle")
+        query.performKeyInput {
+            keyDown(Key.CtrlLeft); pressKey(Key.A); keyUp(Key.CtrlLeft)
+        }
+        compose.runOnIdle { org.junit.Assert.assertEquals(androidx.compose.ui.text.TextRange(0, 6), notepad.search.query.selection) }
+        query.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.C); keyUp(Key.CtrlLeft) }
+        compose.waitUntil(5_000) {
+            compose.activity.getSystemService(android.content.ClipboardManager::class.java)
+                .primaryClip?.getItemAt(0)?.text?.toString() == "needle"
+        }
+        compose.onNodeWithTag("search-replacement").performClick().performKeyInput {
+            keyDown(Key.CtrlLeft); pressKey(Key.V); keyUp(Key.CtrlLeft)
+        }
+        compose.runOnIdle { org.junit.Assert.assertEquals("needle", notepad.search.replacement.text.toString()) }
+        compose.onNodeWithTag("search-replacement").performKeyInput {
+            keyDown(Key.CtrlLeft); pressKey(Key.A); pressKey(Key.X); pressKey(Key.Z); pressKey(Key.Y); keyUp(Key.CtrlLeft)
+        }
+        editor.assertTextEquals("document draft")
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals("", notepad.search.replacement.text.toString())
+            notepad.active!!.editor.undoState.undo()
+            org.junit.Assert.assertEquals("", notepad.active!!.editor.text.toString())
+        }
+    }
+
+    @Test
+    fun searchCountsAndStylingFollowLiveTextAndDisappearOnClose() {
+        showEditor()
+        val editor = compose.onNodeWithTag("document-editor")
+        editor.performTextReplacement("cat Cat cat")
+        editor.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.F); keyUp(Key.CtrlLeft) }
+        compose.onNodeWithTag("search-query").performTextReplacement("cat")
+        awaitSearch(3)
+        val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        editor.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        org.junit.Assert.assertEquals(3, layouts.last().layoutInput.text.spanStyles.size)
+        org.junit.Assert.assertEquals("cat Cat cat", layouts.last().layoutInput.text.text)
+        org.junit.Assert.assertEquals(0, layouts.last().layoutInput.text.spanStyles.single {
+            it.item.textDecoration == androidx.compose.ui.text.style.TextDecoration.Underline
+        }.start)
+        compose.onNodeWithTag("search-query").performKeyInput { pressKey(Key.F3) }
+        layouts.clear()
+        editor.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        org.junit.Assert.assertEquals(4, layouts.last().layoutInput.text.spanStyles.single {
+            it.item.textDecoration == androidx.compose.ui.text.style.TextDecoration.Underline
+        }.start)
+        compose.onNodeWithText("Match case").performClick()
+        awaitSearch(2)
+        compose.runOnIdle { notepad.active!!.editor.edit { replace(0, length, "cat cat cat cat") } }
+        awaitSearch(4)
+        compose.onNodeWithTag("search-query").performTextReplacement("missing")
+        awaitSearch(0)
+        compose.onNodeWithTag("search-status").assertTextEquals("No results")
+        compose.onNodeWithText("Find next").assertIsNotEnabled()
+        compose.onNodeWithTag("search-query").performTextReplacement("")
+        awaitSearch(0)
+        compose.onNodeWithTag("search-status").assertTextEquals("Enter text to find")
+        compose.onNodeWithText("Close search").performClick()
+        layouts.clear()
+        editor.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        org.junit.Assert.assertTrue(layouts.last().layoutInput.text.spanStyles.isEmpty())
+        editor.assertTextEquals("cat cat cat cat")
+    }
+
+    @Test
+    fun searchRevealsOffscreenMatchesWithWrapOffAndZoomWithoutMovingFocus() {
+        showEditor()
+        compose.runOnIdle { notepad.toggleWordWrap(); notepad.changeZoom(200) }
+        val editor = compose.onNodeWithTag("document-editor")
+        editor.performTextReplacement("start\n" + "line\n".repeat(150) + "x".repeat(300) + "needle")
+        compose.runOnIdle { notepad.active!!.editor.edit { selection = androidx.compose.ui.text.TextRange(0) } }
+        editor.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.F); keyUp(Key.CtrlLeft) }
+        compose.onNodeWithTag("search-query").performTextReplacement("needle")
+        awaitSearch(1)
+        compose.waitUntil(5_000) { notepad.active!!.scroll.value > 0 && notepad.active!!.horizontalScroll.value > 0 }
+        compose.onNodeWithTag("search-query").assertIsFocused()
+        compose.runOnIdle { org.junit.Assert.assertEquals("needle", notepad.active!!.editor.text.subSequence(
+            notepad.active!!.editor.selection.min, notepad.active!!.editor.selection.max).toString()) }
+    }
+
+    @Test
+    fun searchReplacementEnterAndReadOnlyGuardsWorkFromThePanel() {
+        showEditor()
+        val editor = compose.onNodeWithTag("document-editor")
+        editor.performTextReplacement("cat cat")
+        editor.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.H); keyUp(Key.CtrlLeft) }
+        compose.onNodeWithTag("search-query").performTextReplacement("cat")
+        awaitSearch(2)
+        compose.onNodeWithTag("search-replacement").performTextReplacement("dog")
+        compose.onNodeWithTag("search-replacement").performKeyInput { pressKey(Key.Enter) }
+        awaitSearch(1)
+        editor.assertTextEquals("dog cat")
+        compose.onNodeWithTag("search-replacement").assertIsFocused()
+        compose.runOnIdle { notepad.active!!.readOnly = true }
+        compose.onNodeWithText("Replace", substring = false).assertIsNotEnabled()
+        compose.onNodeWithText("Replace all").assertIsNotEnabled()
+        compose.onNodeWithText("Find next").assertIsEnabled()
+        compose.onNodeWithTag("search-replacement").performKeyInput { pressKey(Key.Enter) }
+        editor.assertTextEquals("dog cat")
+    }
+
+    @Test
+    fun searchSeedsOnlySingleLineSelectionsAndClosePreservesTheResultSelection() {
+        showEditor()
+        val editor = compose.onNodeWithTag("document-editor")
+        editor.performTextReplacement("seed\nother seed")
+        compose.runOnIdle { notepad.active!!.editor.edit { selection = androidx.compose.ui.text.TextRange(0, 4) } }
+        editor.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.F); keyUp(Key.CtrlLeft) }
+        awaitSearch(2)
+        compose.onNodeWithTag("search-query").assertTextContains("seed")
+        compose.onNodeWithText("Close search").performClick()
+        editor.assertIsFocused()
+        compose.runOnIdle { org.junit.Assert.assertEquals(androidx.compose.ui.text.TextRange(0, 4), notepad.active!!.editor.selection)
+            notepad.active!!.editor.edit { selection = androidx.compose.ui.text.TextRange(0, 10) } }
+        editor.performKeyInput { keyDown(Key.CtrlLeft); pressKey(Key.F); keyUp(Key.CtrlLeft) }
+        compose.onNodeWithTag("search-query").assertTextContains("seed")
+    }
+
+    @Test
+    fun searchCompactMenuAndShortLargeFontRtlPanelKeepEditorSpace() {
+        windowSize = DpSize(400.dp, 400.dp)
+        showEditor(largeFontRtl = true)
+        compose.onNodeWithTag("document-editor").performTextReplacement("မြန်မာ 😀 မြန်မာ")
+        compose.onNodeWithText("Commands").performClick()
+        compose.onNodeWithText("Replace", substring = false).performScrollTo().performClick()
+        compose.onNodeWithTag("search-query").performTextReplacement("မြန်မာ")
+        awaitSearch(2)
+        compose.onNodeWithTag("document-editor").assertIsDisplayed()
+        compose.onNodeWithText("Close search").performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithTag("find-replace-panel").assertDoesNotExist()
+        compose.onNodeWithTag("document-editor").assertIsFocused()
+    }
+
+    @Test
+    fun searchIsDisabledOnWelcomeAndF3WithNoQueryOpensFind() {
+        showEditor(startWithDocument = false)
+        compose.onNodeWithText("Edit").performClick()
+        listOf("Find", "Replace", "Find next", "Find previous").forEach {
+            compose.onNodeWithText(it, substring = false).assertIsNotEnabled()
+        }
+        compose.onNodeWithText("Find", substring = false).performKeyInput { pressKey(Key.Escape) }
+        compose.onNodeWithTag("welcome-new").performClick()
+        compose.onNodeWithTag("document-editor").performClick().performKeyInput { pressKey(Key.F3) }
+        compose.onNodeWithTag("search-query").assertIsFocused()
     }
 
     @Test

@@ -44,6 +44,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.OutputTransformation
 import androidx.compose.foundation.text.contextmenu.builder.item
 import androidx.compose.foundation.text.contextmenu.data.TextContextMenuKeys
 import androidx.compose.foundation.text.contextmenu.modifier.appendTextContextMenuComponents
@@ -70,6 +71,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.ClipEntry
@@ -78,14 +80,19 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -120,6 +127,8 @@ internal enum class NotepadCommand(@StringRes val label: Int, val shortcut: Stri
     Save(R.string.save_document, "Ctrl+S"), SaveAs(R.string.save_as, "Ctrl+Shift+S"), Close(R.string.close_document, "Ctrl+W"),
     Undo(R.string.undo, "Ctrl+Z"), Redo(R.string.redo, "Ctrl+Y"),
     Cut(R.string.cut, "Ctrl+X"), Copy(R.string.copy, "Ctrl+C"), Paste(R.string.paste, "Ctrl+V"), SelectAll(R.string.select_all, "Ctrl+A"),
+    Find(R.string.find, "Ctrl+F"), Replace(R.string.replace, "Ctrl+H"),
+    FindNext(R.string.find_next, "F3"), FindPrevious(R.string.find_previous, "Shift+F3"),
     ZoomIn(R.string.zoom_in, "Ctrl++"), ZoomOut(R.string.zoom_out, "Ctrl+−"), ZoomReset(R.string.zoom_reset, "Ctrl+0"),
     WordWrap(R.string.word_wrap, ""), StatusBar(R.string.status_bar, ""), ReadOnly(R.string.read_only, ""),
 }
@@ -128,6 +137,7 @@ internal enum class NotepadCommand(@StringRes val label: Int, val shortcut: Stri
 internal fun documentTitle(doc: DocumentSession): String = doc.name ?: stringResource(R.string.untitled)
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 internal fun NotepadScreen(
     notepad: NotepadViewModel,
     activity: NotepadActivity? = null,
@@ -140,7 +150,21 @@ internal fun NotepadScreen(
     val focus = remember { FocusRequester() }
     val commandFocus = remember { FocusRequester() }
     var editorFocused by remember { mutableStateOf(false) }
+    var searchFocused by remember { mutableStateOf(false) }
+    val search = notepad.search
+    val keyboard = LocalSoftwareKeyboardController.current
     val active = notepad.active
+    fun closeSearch() {
+        val doc = notepad.active
+        val selection = doc?.editor?.selection
+        search.close()
+        searchFocused = false
+        keyboard?.hide()
+        if (doc != null && selection != null) {
+            focus.requestFocus()
+            doc.editor.edit { this.selection = selection }
+        }
+    }
     val focusManager = LocalFocusManager.current
     var aboutOpen by rememberSaveable { mutableStateOf(false) }
     var licensesOpen by rememberSaveable { mutableStateOf(false) }
@@ -161,6 +185,7 @@ internal fun NotepadScreen(
         view.cancelDragAndDrop()
     }
     BackHandler(enabled = notepad.settingsOpen) { notepad.showSettings(false) }
+    BackHandler(enabled = search.visible && !notepad.settingsOpen && !licensesOpen && !WindowInsets.isImeVisible) { closeSearch() }
     BackHandler(enabled = licensesOpen, onBack = licenseBack)
     val tabs = rememberLazyListState()
     val headerColor = if (notepad.settingsOpen || licensesOpen) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh
@@ -234,6 +259,10 @@ internal fun NotepadScreen(
             NotepadCommand.WordWrap -> notepad.toggleWordWrap()
             NotepadCommand.StatusBar -> notepad.toggleStatusBar()
             NotepadCommand.ReadOnly -> doc.readOnly = !doc.readOnly
+            NotepadCommand.Find -> search.open()
+            NotepadCommand.Replace -> search.open(replace = true)
+            NotepadCommand.FindNext -> search.navigate()
+            NotepadCommand.FindPrevious -> search.navigate(backwards = true)
             NotepadCommand.Cut, NotepadCommand.Copy, NotepadCommand.Paste -> scope.launch {
                 try {
                     if (command == NotepadCommand.Paste) {
@@ -309,7 +338,13 @@ internal fun NotepadScreen(
                         false
                     } else if (notepad.settingsOpen) {
                         false
-                    } else if (event.type != KeyEventType.KeyDown || !event.isCtrlPressed || notepad.closeConfirmation != null || notepad.conflict != null) false
+                    } else if (event.type != KeyEventType.KeyDown || notepad.closeConfirmation != null || notepad.conflict != null || aboutOpen) false
+                    else if (event.key == Key.Escape && search.visible) { closeSearch(); true }
+                    else if (event.key == Key.F3 && !event.isCtrlPressed && !event.isAltPressed && !event.isMetaPressed) {
+                        run(if (event.isShiftPressed) NotepadCommand.FindPrevious else NotepadCommand.FindNext)
+                        true
+                    } else if (!event.isCtrlPressed) false
+                    else if (searchFocused && event.key in listOf(Key.X, Key.C, Key.V, Key.A, Key.Z, Key.Y)) false
                     else if (event.key == Key.Tab) {
                         notepad.cycleTab(if (event.isShiftPressed) -1 else 1)
                         true
@@ -319,6 +354,8 @@ internal fun NotepadScreen(
                             Key.O -> NotepadCommand.Open
                             Key.S -> if (event.isShiftPressed) NotepadCommand.SaveAs else NotepadCommand.Save
                             Key.W -> NotepadCommand.Close
+                            Key.F -> NotepadCommand.Find
+                            Key.H -> NotepadCommand.Replace
                             Key.Z -> if (event.isShiftPressed) NotepadCommand.Redo else NotepadCommand.Undo
                             Key.Y -> NotepadCommand.Redo
                             Key.X -> NotepadCommand.Cut
@@ -412,19 +449,27 @@ internal fun NotepadScreen(
                         }
                     }
                     if (active != null) {
-                        DocumentEditor(active, notepad.zoom, notepad::changeZoom, focus,
-                            Modifier.weight(1f)
-                                .onFocusChanged { editorFocused = it.isFocused }
-                                .filterTextContextMenuComponents {
-                                    it.key !in setOf(TextContextMenuKeys.CutKey, TextContextMenuKeys.CopyKey,
-                                        TextContextMenuKeys.PasteKey, TextContextMenuKeys.SelectAllKey)
-                                }
-                                .appendTextContextMenuComponents {
-                                    contextCommands.filter(::enabled).forEach { command ->
-                                        item(command, contextLabels.getValue(command)) { close(); run(command) }
-                                    }
-                                }, wordWrap = notepad.wordWrap, fontFamily = notepad.fontStyle.fontFamily,
-                        )
+                        BoxWithConstraints(Modifier.weight(1f)) {
+                            val searchMaxHeight = (maxHeight * 0.5f).coerceAtMost(360.dp)
+                            Column(Modifier.fillMaxSize()) {
+                                if (search.visible) FindReplacePanel(search, active.readOnly, ::closeSearch, { searchFocused = it },
+                                    Modifier.fillMaxWidth().heightIn(max = searchMaxHeight))
+                                DocumentEditor(active, notepad.zoom, notepad::changeZoom, focus,
+                                    Modifier.weight(1f)
+                                        .onFocusChanged { editorFocused = it.isFocused }
+                                        .filterTextContextMenuComponents {
+                                            it.key !in setOf(TextContextMenuKeys.CutKey, TextContextMenuKeys.CopyKey,
+                                                TextContextMenuKeys.PasteKey, TextContextMenuKeys.SelectAllKey)
+                                        }
+                                        .appendTextContextMenuComponents {
+                                            contextCommands.filter(::enabled).forEach { command ->
+                                                item(command, contextLabels.getValue(command)) { close(); run(command) }
+                                            }
+                                        }, wordWrap = notepad.wordWrap, fontFamily = notepad.fontStyle.fontFamily,
+                                    search = search,
+                                )
+                            }
+                        }
                         if (notepad.showStatusBar) StatusBar(active, notepad.zoom, compact, ::run)
                     } else {
                         NotepadWelcome(
@@ -910,7 +955,7 @@ private fun CommandBar(
 ) {
     var menu by remember { mutableStateOf<String?>(null) }
     val files = NotepadCommand.entries.filter { it in NotepadCommand.New..NotepadCommand.Close }
-    val edits = NotepadCommand.entries.filter { it in NotepadCommand.Undo..NotepadCommand.SelectAll }
+    val edits = NotepadCommand.entries.filter { it in NotepadCommand.Undo..NotepadCommand.FindPrevious }
     val views = NotepadCommand.entries.filter { it in NotepadCommand.ZoomIn..NotepadCommand.ReadOnly }
     Surface(color = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface) {
         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("command-bar").padding(horizontal = 8.dp),
@@ -975,11 +1020,63 @@ private fun DocumentEditor(
     doc: DocumentSession, zoom: Int, changeZoom: (Int) -> Unit, focus: FocusRequester, modifier: Modifier,
     wordWrap: Boolean = true,
     fontFamily: FontFamily = NoteFontStyle.Monospace.fontFamily,
+    search: NotepadSearch? = null,
 ) {
     val editorLabel = stringResource(R.string.document_editor)
     val latestZoom by rememberUpdatedState(zoom)
+    var layout by remember(doc.id) { mutableStateOf<TextLayoutResult?>(null) }
+    var viewport by remember { mutableStateOf(IntSize.Zero) }
+    val padding = with(LocalDensity.current) { NotepadSpacing.medium.toPx() }
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    var revealed by remember(doc.id) { mutableIntStateOf(search?.reveal?.sequence ?: 0) }
+    val reveal = search?.reveal?.takeIf { it.documentId == doc.id }
+    LaunchedEffect(reveal, layout, viewport, wordWrap, rtl) {
+        val target = reveal ?: return@LaunchedEffect
+        val geometry = layout ?: return@LaunchedEffect
+        if (target.sequence == revealed || geometry.layoutInput.text.text != doc.editor.text.toString() || viewport == IntSize.Zero) return@LaunchedEffect
+        val offset = target.range.start.coerceIn(0, geometry.layoutInput.text.length)
+        val bounds = if (offset < geometry.layoutInput.text.length && target.range.start != target.range.end) {
+            geometry.getBoundingBox(offset)
+        } else geometry.getCursorRect(offset)
+        val top = bounds.top + padding
+        val bottom = bounds.bottom + padding
+        val vertical = when {
+            top < doc.scroll.value -> top
+            bottom > doc.scroll.value + viewport.height -> bottom - viewport.height + padding
+            else -> doc.scroll.value.toFloat()
+        }
+        doc.scroll.scrollTo(vertical.roundToInt().coerceAtLeast(0))
+        if (!wordWrap) {
+            val left = bounds.left + padding
+            val right = bounds.right + padding
+            val visibleLeft = if (rtl) doc.horizontalScroll.maxValue - doc.horizontalScroll.value else doc.horizontalScroll.value
+            val horizontal = when {
+                left < visibleLeft -> left - padding
+                right > visibleLeft + viewport.width -> right - viewport.width + padding
+                else -> visibleLeft.toFloat()
+            }.roundToInt().coerceIn(0, doc.horizontalScroll.maxValue)
+            doc.horizontalScroll.scrollTo(if (rtl) doc.horizontalScroll.maxValue - horizontal else horizontal)
+        }
+        revealed = target.sequence
+    }
+    val results = if (search?.visible == true) search.results else null
+    val matchStyle = SpanStyle(background = MaterialTheme.colorScheme.secondaryContainer, color = MaterialTheme.colorScheme.onSecondaryContainer)
+    val currentStyle = SpanStyle(background = MaterialTheme.colorScheme.tertiaryContainer, color = MaterialTheme.colorScheme.onTertiaryContainer,
+        textDecoration = TextDecoration.Underline)
+    val highlights = remember(results, doc, matchStyle, currentStyle) {
+        if (results == null) null else OutputTransformation {
+            if (results.input.document === doc && asCharSequence().toString() == results.input.text) {
+                results.matches.forEach { match ->
+                    val current = doc.editor.selection.let { it.min == match.start && it.max == match.end }
+                    addStyle(if (current) currentStyle else matchStyle, match.start, match.end)
+                }
+            }
+        }
+    }
     BasicTextField(
         state = doc.editor,
+        outputTransformation = highlights,
+        onTextLayout = { layout = it() },
         readOnly = doc.readOnly,
         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
         textStyle = MaterialTheme.typography.bodyLarge.copy(
@@ -989,6 +1086,7 @@ private fun DocumentEditor(
             color = MaterialTheme.colorScheme.onSurface,
         ),
         modifier = modifier.fillMaxWidth().testTag("document-editor")
+            .onSizeChanged { viewport = it }
             .semantics { contentDescription = editorLabel }
             .focusRequester(focus)
             .pointerInput(doc.id) {

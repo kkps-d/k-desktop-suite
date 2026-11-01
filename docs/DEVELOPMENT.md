@@ -75,6 +75,13 @@ Keep document and editing behavior in the owning app. Share platform-independent
 logic where useful and keep Android adapters in their appropriate modules.
 Extract shared UI when both apps demonstrate reuse.
 
+Notepad's `LiteralSearch` defines ordered, nonoverlapping UTF-16 literal ranges.
+`NotepadSearch`, owned by each window's ViewModel, scans on the Default dispatcher
+with cancellation and validates captured document/text/options before using ranges.
+Only temporary UI fields go into SavedStateHandle; search is not part of document
+recovery or tab transfer. Editor highlights are styling-only OutputTransformation
+spans; replacements use TextFieldState.edit, with one transaction for Replace all.
+
 ## Shared desktop UI constraints
 
 Both editor activities extend AppCompatActivity so per-app language changes work

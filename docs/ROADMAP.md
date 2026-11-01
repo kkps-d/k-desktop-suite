@@ -7,7 +7,6 @@ current code before implementing it. The [Notepad guide](NOTEPAD.md) and
 
 ## KD Notepad
 
-- Find/Replace.
 - Rich text and legacy encodings.
 - Large-file optimizations.
 

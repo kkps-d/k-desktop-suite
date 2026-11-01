@@ -31,6 +31,7 @@ internal class NotepadViewModel(
     val recentFiles get() = workspace.recentFiles
     val activeId get() = window.activeId
     val active: DocumentSession? get() = documents.firstOrNull { it.id == activeId }
+    val search = NotepadSearch({ active }, savedState, viewModelScope) { workspace.ready.await() }
     val loading get() = workspace.loading
     var opening by mutableIntStateOf(0)
         private set

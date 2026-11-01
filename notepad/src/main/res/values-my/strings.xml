@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Generated Burmese test translation; review wording with a fluent speaker. -->
 <resources>
+    <string name="find">ရှာရန်</string>
+    <string name="replace">အစားထိုးရန်</string>
+    <string name="find_next">နောက်တစ်ခု ရှာရန်</string>
+    <string name="find_previous">အရင်တစ်ခု ရှာရန်</string>
+    <string name="replace_all">အားလုံး အစားထိုးရန်</string>
+    <string name="search_query">ရှာမည့် စာသား</string>
+    <string name="search_replacement">အစားထိုးမည့် စာသား</string>
+    <string name="search_match_case">စာလုံးအကြီးအသေး ကိုက်ညီရန်</string>
+    <string name="search_close">ရှာဖွေမှု ပိတ်ရန်</string>
+    <string name="search_empty">ရှာမည့် စာသား ရိုက်ထည့်ပါ</string>
+    <string name="search_scanning">ရှာဖွေနေသည်…</string>
+    <string name="search_no_results">ရလဒ် မရှိပါ</string>
+    <string name="search_position">%2$d ခုအနက် %1$d ခုမြောက်</string>
+    <string name="search_total">ကိုက်ညီမှု: %1$d</string>
+    <string name="search_replaced">အစားထိုးမှု: %1$d</string>
+    <string name="search_replace_hint">အစားထိုးမည့် စာသားအကွက်တွင် Enter နှိပ်ပါ</string>
+    <string name="search_replace_all_hint">လက်ရှိ စာတမ်းတွင်သာ</string>
     <string name="welcome">ကြိုဆိုပါသည်</string>
     <string name="start">စတင်ရန်</string>
     <string name="recent">မကြာသေးမီက ဖိုင်များ</string>

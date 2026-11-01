@@ -79,6 +79,38 @@ Tests cover codecs, real content providers, document/tab state, recovery, adapti
 UI, and activity recreation. Compose previews cover phone, tablet, desktop, short
 windows, and an extra-large dark window.
 
+Find/Replace coverage is in `LiteralSearchTest`, `NotepadSearchStateTest`, `NotepadSearchImeTest`, and
+the `search…` cases in `NotepadUiTest`. It checks literal UTF-16 ranges (including
+Burmese and emoji), case handling, nonoverlap, wrapping, original-set replacement,
+single-step undo/redo, deletion/no-op edits, stale-result/read-only guards,
+window-local saved UI state, tab switches/transfers, menu/shortcut parity,
+field-local clipboard/undo, IME composing Enter, live counts/styling, offscreen reveal with wrapping
+disabled and zoom, selection-preserving dismissal, and Welcome behavior.
+
+For focused instrumented state checks, explicitly select Small Desktop:
+
+```sh
+ANDROID_SERIAL=emulator-5554 ./gradlew :notepad:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.kkps.kdesktopsuite.notepad.NotepadSearchStateTest
+```
+
+Also verify query/replacement IME composition and Enter/Shift+Enter, Back with
+the IME visible then hidden, recreation with the panel expanded, English/Burmese
+labels, large fonts/RTL, narrow/short resizing, and horizontal reveal with word
+wrap off. Search highlights must never appear in copied/saved text or recovery,
+and navigating on one tab must not move another tab's selection/scroll.
+
+Find/Replace verification on 31 October 2026: 20 Notepad JVM tests and 55 selected
+instrumented regressions passed on local Small Desktop (`emulator-5554`). Debug
+build, lint, test-APK compilation, and all 432 localization resource checks passed;
+lint reported no errors and 17 existing/toolchain warnings. The native clipboard
+round-trip test was attempted but blocked by foreground-access denial under the
+emulator's System User (0), and was excluded from the final focused run. Rerun
+`NotepadUiTest.searchFieldClipboardAndUndoShortcutsNeverEditTheDocument` after
+signing in to the regular desktop user. Real software-keyboard Back dismissal
+still needs manual verification; composition commits are separately covered by
+`NotepadSearchImeTest` using a controlled InputConnection.
+
 ### Paint
 
 Tests cover image-space coverage, fill connectivity, masks and cropping,
