@@ -131,7 +131,8 @@ internal enum class PaintStartupBehavior { ReopenLastEdit, NewImage, AskEveryTim
 internal data class PaintPreferences(val appearance: String = "System", val jpegQuality: Int = 90,
     val customColors: List<Int> = List(10) { WHITE }, val recent: List<String> = emptyList(),
     val defaultCanvasWidth: Int = 800, val defaultCanvasHeight: Int = 600,
-    val startupBehavior: PaintStartupBehavior = PaintStartupBehavior.ReopenLastEdit)
+    val startupBehavior: PaintStartupBehavior = PaintStartupBehavior.ReopenLastEdit,
+    val recentNames: Map<String,String> = emptyMap())
 
 internal class PaintSettings(context: Context) {
     private val store = context.paintPreferences
@@ -147,7 +148,12 @@ internal class PaintSettings(context: Context) {
             json.optJSONArray("recent")?.let { array -> List(array.length()) { array.getString(it) } } ?: emptyList(),
             if (validSize) width else 800,if (validSize) height else 600,
             PaintStartupBehavior.entries.firstOrNull { it.name == json.optString("startupBehavior") }
-                ?: PaintStartupBehavior.ReopenLastEdit)
+                ?: PaintStartupBehavior.ReopenLastEdit,
+            json.optJSONObject("recentNames")?.let { names ->
+                names.keys().asSequence().mapNotNull { uri ->
+                    names.optString(uri).takeIf { it.isNotBlank() }?.let { uri to it }
+                }.toMap()
+            } ?: emptyMap())
     }
     suspend fun save(value: PaintPreferences) = update { value }
     suspend fun update(change: (PaintPreferences) -> PaintPreferences) {
@@ -156,7 +162,8 @@ internal class PaintSettings(context: Context) {
             it[key] = JSONObject().put("appearance", value.appearance).put("quality", value.jpegQuality)
                 .put("canvasWidth",value.defaultCanvasWidth).put("canvasHeight",value.defaultCanvasHeight)
                 .put("startupBehavior",value.startupBehavior.name)
-                .put("colors", JSONArray(value.customColors)).put("recent", JSONArray(value.recent)).toString()
+                .put("colors", JSONArray(value.customColors)).put("recent", JSONArray(value.recent))
+                .put("recentNames",JSONObject(value.recentNames.filterKeys { uri -> uri in value.recent })).toString()
         }
     }
 }

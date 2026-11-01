@@ -359,6 +359,7 @@ internal class PaintViewModel(
         if (preview?.payload != null && !preview.containsSelection(point)) { applyPreview(); return }
         if (preview?.tool?.isShape == true && !preview.containsSelection(point)) { applyPreview(); return }
         when (s.options.tool) {
+            Tool.Select -> if (preview == null && s.selection?.contains(x,y) == false) clearSelection()
             Tool.Fill -> operation({ it.fill(x, y, s.options.foreground, s.selection) })
             Tool.Eyedropper -> {
                 val color = s.raster.pixel(x,y)
@@ -695,7 +696,7 @@ internal class PaintViewModel(
         if (state.value.busy) return
         mutableState.update { it.copy(busy = true) }
         editJob = viewModelScope.launch {
-            try { val result = images.read(uri); install(result.raster,result.name,uri,result.mime,result.fingerprint); recent(uri) }
+            try { val result = images.read(uri); install(result.raster,result.name,uri,result.mime,result.fingerprint); recent(uri,result.name) }
             catch (cancel: CancellationException) { throw cancel }
             catch (_: OutOfMemoryError) { message(R.string.error_image_memory) }
             catch (error: Exception) { failure(error, R.string.error_open_image) }
@@ -738,7 +739,7 @@ internal class PaintViewModel(
                 window?.reservedUris?.remove(uri)
                 mutableState.update { it.copy(uri = uri, title = it.title, mime = job.mime) }
                 images.name(uri)?.let { name -> mutableState.update { it.copy(title = name) } }
-                sync(); recent(uri); pendingSave = null
+                sync(); recent(uri,state.value.title); pendingSave = null
                 mutableState.update { it.copy(saving = false) }
                 val continuation = saveContinuation; saveContinuation = null
                 if (continuation != null && !unsaved()) continuation() else if (continuation != null) {
@@ -750,7 +751,28 @@ internal class PaintViewModel(
             catch (error: Exception) { window?.reservedUris?.clear(); pendingSave = null; saveContinuation = null; mutableState.update { it.copy(saving = false) }; failure(error, R.string.error_save) }
         }
     }
-    private fun recent(uri: String) = preferences { it.copy(recent = (listOf(uri) + it.recent.filter { old -> old != uri }).take(10)) }
+    private fun recent(uri: String, name: String) = preferences {
+        val recent = (listOf(uri) + it.recent.filter { old -> old != uri }).take(10)
+        it.copy(recent = recent,recentNames = (it.recentNames + (uri to name)).filterKeys { key -> key in recent })
+    }
+    suspend fun refreshRecentNames() {
+        val names = buildMap {
+            for (uri in state.value.preferences.recent) {
+                try { images.name(uri)?.takeIf { it.isNotBlank() }?.let { put(uri,it) } }
+                catch (cancel: CancellationException) { throw cancel }
+                catch (_: Exception) { }
+            }
+        }
+        if (names.any { (uri,name) -> uri in state.value.preferences.recent && state.value.preferences.recentNames[uri] != name }) {
+            preferences { current ->
+                current.copy(recentNames = current.recentNames + names.filterKeys { it in current.recent })
+            }
+        }
+    }
+    fun removeRecent(uri: String) = preferences {
+        it.copy(recent = it.recent.filterNot { old -> old == uri },recentNames = it.recentNames - uri)
+    }
+    fun clearRecent() = preferences { it.copy(recent = emptyList(),recentNames = emptyMap()) }
     fun preferences(change: (PaintPreferences) -> PaintPreferences) {
         mutableState.update { it.withPreferences(change(it.preferences)) }
         viewModelScope.launch { try { settings.update(change) } catch (error: Exception) { failure(error, R.string.error_settings_save) } }

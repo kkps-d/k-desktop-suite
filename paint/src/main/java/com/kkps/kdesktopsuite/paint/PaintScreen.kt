@@ -269,23 +269,7 @@ private fun FileMenu(s: PaintUiState, model: PaintViewModel) {
             AppMenuItem({ Text(stringResource(R.string.ui_save_as_ctrl_shift_s)) },{ close { model.save(true) } },enabled = !s.busy,shortcut = "Ctrl+Shift+S")
             if (s.preferences.recent.isNotEmpty()) {
                 HorizontalDivider()
-                Box {
-                    var recentOpen by remember { mutableStateOf(false) }
-                    AppMenuItem({ Text(stringResource(R.string.ui_recent)) },{ recentOpen = true },
-                        enabled = !s.busy,trailingIcon = { Text(if (LocalLayoutDirection.current == LayoutDirection.Rtl) "‹" else "›") })
-                    AppDropdownMenu(recentOpen,{ recentOpen = false },anchorPosition = MenuAnchorPosition.End) {
-                        s.preferences.recent.forEachIndexed { index, uri ->
-                            AppMenuItem({ Text("${index+1}: ${android.net.Uri.decode(uri.substringAfterLast('/')).takeLast(44)}",maxLines = 2) },
-                                { recentOpen = false; close { model.openRecent(uri) } },enabled = !s.busy,
-                                modifier = Modifier.onPreviewKeyEvent {
-                                    if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) {
-                                        recentOpen = false
-                                        true
-                                    } else false
-                                })
-                        }
-                    }
-                }
+                PaintRecentMenu(s,model) { uri -> close { model.openRecent(uri) } }
                 HorizontalDivider()
             }
             AppMenuItem({ Text(stringResource(R.string.ui_insert_image)) },{ close(model::insertPicker) },enabled = !s.busy)

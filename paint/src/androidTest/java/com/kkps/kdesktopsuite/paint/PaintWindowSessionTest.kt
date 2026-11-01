@@ -300,13 +300,17 @@ class PaintWindowSessionTest {
         coroutineScope {
             launch { settings.update { it.copy(appearance = "Dark") } }
             launch { settings.update { it.copy(jpegQuality = 72) } }
-            launch { settings.update { it.copy(recent = (listOf("one") + it.recent).distinct()) } }
-            launch { settings.update { it.copy(recent = (listOf("two") + it.recent).distinct()) } }
+            launch { settings.update { it.copy(recent = (listOf("one") + it.recent).distinct(),
+                recentNames = it.recentNames + ("one" to "First image.png")) } }
+            launch { settings.update { it.copy(recent = (listOf("two") + it.recent).distinct(),
+                recentNames = it.recentNames + ("two" to "Second image.png")) } }
         }
         val preferences = settings.preferences.first()
         assertEquals("Dark", preferences.appearance)
         assertEquals(72, preferences.jpegQuality)
         assertTrue(preferences.recent.containsAll(listOf("one", "two")))
+        assertEquals("First image.png",preferences.recentNames["one"])
+        assertEquals("Second image.png",preferences.recentNames["two"])
     } }
 
     @Test fun failedLaunchKeepsRecoveryAndAllowsRetry() = runBlocking { session {

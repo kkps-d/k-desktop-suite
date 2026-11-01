@@ -384,7 +384,7 @@ internal fun PaintCanvas(
                                     model.stroke(stroke.toList(),erasing,strokeSeed,brushSession)
                                 }
                                 !hitExisting && !resize && dragStart != null && moved -> model.createPreview(dragStart!!,dragEnd ?: dragStart!!,event.keyboardModifiers.isShiftPressed)
-                                !moved -> model.tap(imageStart)
+                                !moved && !(tool == Tool.Select && resize && initial.preview == null) -> model.tap(imageStart)
                             }
                         }
                     } catch (cancelled: CancellationException) { throw cancelled }

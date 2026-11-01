@@ -5,6 +5,8 @@ package com.kkps.kdesktopsuite.paint
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
@@ -50,31 +52,42 @@ internal fun PaintToolbars(s: PaintUiState, model: PaintViewModel, width: Float)
     val selected = s.selection != null || s.preview?.payload != null
     val shape = s.options.tool.takeIf { it.isShape } ?: s.lastShape
     val primaryScroll = rememberScrollState()
+    val activeItem = remember { BringIntoViewRequester() }
+    val activeModifier = Modifier.bringIntoViewRequester(activeItem)
+    LaunchedEffect(s.options.tool,s.colorOptions,s.colorBackground,s.ribbonCollapsed,width,primaryScroll.viewportSize) {
+        if (!s.ribbonCollapsed) {
+            withFrameNanos { }
+            activeItem.bringIntoView()
+        }
+    }
     Column(Modifier.testTag("classic-ribbon")) {
-        if (!s.ribbonCollapsed) Row(Modifier.fillMaxWidth().horizontalScroll(primaryScroll)
-            .background(MaterialTheme.colorScheme.surfaceContainerLow).testTag("paint-primary-toolbar"),
-            verticalAlignment = Alignment.CenterVertically) {
+        if (!s.ribbonCollapsed) PaintToolbarRow("paint-primary-toolbar",MaterialTheme.colorScheme.surfaceContainerLow,primaryScroll) {
             PaintButton(PaintIcon.Copy,"${stringResource(R.string.ui_copy)} (Ctrl+C)",enabled && selected,busy = s.busy) { model.copy() }
             PaintButton(PaintIcon.Cut,"${stringResource(R.string.ui_cut)} (Ctrl+X)",enabled && selected,busy = s.busy) { model.copy(true) }
             PaintButton(PaintIcon.Paste,"${stringResource(R.string.ui_paste)} (Ctrl+V)",enabled,busy = s.busy,action = model::paste)
             ToolbarDivider()
-            PaintButton(Tool.Select.icon,strings.getString(R.string.ui_tool_select),enabled = enabled,busy = s.busy,selected = s.options.tool == Tool.Select) { model.tool(Tool.Select) }
+            PaintButton(Tool.Select.icon,strings.getString(R.string.ui_tool_select),
+                modifier = if (!s.colorOptions && s.options.tool == Tool.Select) activeModifier else Modifier,
+                enabled = enabled,busy = s.busy,selected = s.options.tool == Tool.Select) { model.tool(Tool.Select) }
             TransformControls(s,model)
             ToolbarDivider()
             listOf(Tool.Pan,Tool.Pencil,Tool.Brush,Tool.Eraser,Tool.Fill,Tool.Text,Tool.Eyedropper).forEach { tool ->
-                PaintButton(tool.icon,tool.displayLabel(),enabled = enabled,busy = s.busy,selected = s.options.tool == tool) { model.tool(tool) }
+                PaintButton(tool.icon,tool.displayLabel(),
+                    modifier = if (!s.colorOptions && s.options.tool == tool) activeModifier else Modifier,
+                    enabled = enabled,busy = s.busy,selected = s.options.tool == tool) { model.tool(tool) }
             }
-            PaintButton(shape.icon,strings.getString(R.string.ui_shape),modifier = Modifier.testTag("paint-shape-tool"),
+            PaintButton(shape.icon,strings.getString(R.string.ui_shape),
+                modifier = (if (!s.colorOptions && s.options.tool.isShape) activeModifier else Modifier).testTag("paint-shape-tool"),
                 enabled = enabled,busy = s.busy,selected = s.options.tool.isShape) { model.tool(shape) }
             ToolbarDivider()
-            ToolbarColor(s.options.foreground,stringResource(R.string.ui_foreground),!s.colorBackground,enabled && !s.busy) { model.selectColor(false) }
-            ToolbarColor(s.options.background,stringResource(R.string.ui_background),s.colorBackground,enabled && !s.busy) { model.selectColor(true) }
+            ToolbarColor(s.options.foreground,stringResource(R.string.ui_foreground),!s.colorBackground,enabled && !s.busy,
+                if (s.colorOptions && !s.colorBackground) activeModifier else Modifier) { model.selectColor(false) }
+            ToolbarColor(s.options.background,stringResource(R.string.ui_background),s.colorBackground,enabled && !s.busy,
+                if (s.colorOptions && s.colorBackground) activeModifier else Modifier) { model.selectColor(true) }
         }
         if (!s.ribbonCollapsed) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         key(if (s.colorOptions) "colors" else if (s.options.tool.isShape) "shapes" else s.options.tool.name) {
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-                .background(MaterialTheme.colorScheme.surfaceContainer).testTag("paint-secondary-toolbar")
-                .heightIn(min = 48.dp),verticalAlignment = Alignment.CenterVertically) {
+            PaintToolbarRow("paint-secondary-toolbar",MaterialTheme.colorScheme.surfaceContainer) {
                 if (availableWidth >= 600) {
                     val name = if (s.colorOptions) {
                         if (s.colorBackground) stringResource(R.string.ui_background) else stringResource(R.string.ui_foreground)
@@ -171,7 +184,7 @@ private fun TransformMenu(open: Boolean, dismiss: () -> Unit, content: @Composab
 }
 
 @Composable
-private fun ToolbarTooltip(label: String, content: @Composable () -> Unit) {
+internal fun ToolbarTooltip(label: String, content: @Composable () -> Unit) {
     TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
         tooltip = { PlainTooltip { Text(label) } },state = rememberTooltipState(),content = content)
 }
@@ -220,10 +233,10 @@ private fun GeometryAction(s: PaintUiState, model: PaintViewModel, labels: Boole
 }
 
 @Composable
-private fun ToolbarColor(color: Int, label: String, selected: Boolean, enabled: Boolean, action: () -> Unit) {
+private fun ToolbarColor(color: Int, label: String, selected: Boolean, enabled: Boolean, modifier: Modifier = Modifier, action: () -> Unit) {
     TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
         tooltip = { PlainTooltip { Text("$label #${"%06X".format(color and 0xFFFFFF)}") } },state = rememberTooltipState()) {
-        Box(Modifier.size(48.dp).clickable(enabled = enabled,role = Role.Button,onClick = action)
+        Box(modifier.size(48.dp).clickable(enabled = enabled,role = Role.Button,onClick = action)
             .semantics { contentDescription = label; stateDescription = "#${"%06X".format(color and 0xFFFFFF)}"; this.selected = selected }
             .padding(6.dp).border(if (selected) 3.dp else 1.dp,
                 if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,CircleShape)

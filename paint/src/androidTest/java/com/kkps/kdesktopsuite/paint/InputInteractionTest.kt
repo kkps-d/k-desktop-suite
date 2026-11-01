@@ -64,6 +64,53 @@ class InputInteractionTest {
         compose.runOnIdle { assertTrue(view.dispatchKeyEvent(AndroidKeyEvent(now,now,action,AndroidKeyEvent.KEYCODE_SPACE,repeat))) }
     }
 
+    @Test fun outsideTouchOrMouseTapClearsUntouchedSelectionWithoutEditingPixels() {
+        compose.runOnIdle { model.viewport(model.state.value.viewport.zoomed(0.5f)) }
+        for (mouse in listOf(false,true)) {
+            compose.runOnIdle { model.createPreview(Point(100f,100f),Point(200f,200f)) }
+            val before = model.state.value
+            compose.onNodeWithTag("paint-canvas").performTouchInput { click(screen(Point(150f,150f))) }
+            compose.runOnIdle { assertEquals(before.selection,model.state.value.selection) }
+            compose.onNodeWithTag("paint-canvas").performTouchInput { click(screen(Point(200f,200f))) }
+            compose.runOnIdle {
+                assertEquals(before.selection,model.state.value.selection)
+                model.tap(Point(-1f,-1f))
+                assertEquals(before.selection,model.state.value.selection)
+            }
+            if (mouse) compose.onNodeWithTag("paint-canvas").performMouseInput { click(screen(Point(300f,300f))) }
+            else compose.onNodeWithTag("paint-canvas").performTouchInput { click(screen(Point(300f,300f))) }
+            compose.runOnIdle {
+                assertNull(model.state.value.selection)
+                assertNull(model.state.value.preview)
+                assertSame(before.raster,model.state.value.raster)
+                assertEquals(before.dirty,model.state.value.dirty)
+                assertEquals(before.canUndo,model.state.value.canUndo)
+                assertEquals(before.canRedo,model.state.value.canRedo)
+            }
+        }
+    }
+
+    @Test fun outsideTapStillCommitsAnEditedSelectionAsOneUndoableChange() {
+        compose.runOnIdle { model.tool(Tool.Pencil); model.stroke(listOf(Point(120f,120f))) }
+        compose.waitUntil(15000) { !model.state.value.busy && model.state.value.dirty }
+        val before = model.state.value.raster
+        compose.runOnIdle {
+            model.tool(Tool.Select)
+            model.viewport(model.state.value.viewport.zoomed(0.5f))
+            model.createPreview(Point(100f,100f),Point(200f,200f))
+            model.movePreview(PixelRect(250,250,100,100))
+        }
+        compose.onNodeWithTag("paint-canvas").performTouchInput { click(screen(Point(400f,400f))) }
+        compose.waitUntil(15000) { !model.state.value.busy && model.state.value.preview == null }
+        compose.runOnIdle {
+            assertNull(model.state.value.selection)
+            assertEquals(WHITE,model.state.value.raster.pixel(120,120))
+            assertEquals(BLACK,model.state.value.raster.pixel(270,270))
+            model.undo()
+            assertArrayEquals(before.pixels,model.state.value.raster.pixels)
+        }
+    }
+
     private fun screenshot(name: String) {
         compose.waitForIdle()
         val instrumentation = InstrumentationRegistry.getInstrumentation()

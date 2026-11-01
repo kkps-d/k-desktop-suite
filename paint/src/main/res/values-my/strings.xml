@@ -317,4 +317,9 @@
     <string name="ui_color_red">အနီ</string>
     <string name="ui_color_green">အစိမ်း</string>
     <string name="ui_color_blue">အပြာ</string>
+    <string name="ui_toolbar_scroll_backward">ရှေ့ပိုင်း ကိရိယာဘား ထိန်းချုပ်မှုများကို ပြရန်</string>
+    <string name="ui_toolbar_scroll_forward">နောက်ထပ် ကိရိယာဘား ထိန်းချုပ်မှုများကို ပြရန်</string>
+    <string name="ui_recent_image">ပုံ %1$d</string>
+    <string name="ui_remove_recent">%1$s ကို လတ်တလောဖိုင်များမှ ဖယ်ရှားရန်</string>
+    <string name="ui_clear_recent">လတ်တလောဖိုင်စာရင်းကို ရှင်းရန်</string>
 </resources>

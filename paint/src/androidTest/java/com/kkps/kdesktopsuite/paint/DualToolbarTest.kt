@@ -55,6 +55,18 @@ class DualToolbarTest {
         scope.cancel()
     }
 
+    @Test fun activeToolsAndColorsRevealAfterSwitchingAndResizing() {
+        compose.runOnIdle { size = DpSize(360.dp,400.dp); model.tool(Tool.Eyedropper) }
+        compose.onNodeWithContentDescription("Eyedropper").assertIsDisplayed()
+        compose.runOnIdle { model.tool(Tool.Select) }
+        compose.onNodeWithContentDescription("Select").assertIsDisplayed()
+        compose.runOnIdle { model.selectColor(true) }
+        compose.onNodeWithContentDescription("Secondary color").assertIsDisplayed()
+        compose.runOnIdle { size = DpSize(600.dp,400.dp); model.tool(Tool.Brush) }
+        compose.onNodeWithContentDescription("Brush").assertIsDisplayed()
+        compose.onNodeWithTag("paint-brush-picker").assertIsDisplayed()
+    }
+
     @Test fun compactRowsScrollIndependentlyAndKeepThreeShapesAtLargeTextAndRtl() {
         compose.runOnIdle { size = DpSize(360.dp,640.dp); fontScale = 2f; rtl = true }
         compose.onNodeWithTag("paint-shape-tool").performScrollTo().performClick()

@@ -31,8 +31,19 @@ once on release. Arrow keys position a visible keyboard cursor; Space starts/fin
 strokes, shapes, and rectangular selections, and Escape cancels an unfinished keyboard edit.
 Single touches outside the image do not draw or select. Switching to a different drawing tool clears the selection and commits any
 pending move or paste. Returning to the active tool preserves pending edits.
+With Select, tapping outside an untouched selection but inside the image clears
+the selection without editing pixels or adding undo history. Tapping inside it
+or on its resize handle preserves it. An outside tap still commits and clears an
+edited floating selection; taps in the gray area remain navigation-only.
 
 ### Toolbars and colors
+
+When a toolbar overflows, 48dp arrow buttons show that more controls are available;
+each scrolls most of the visible row and disables at its corresponding end. Arrows
+follow RTL direction and disappear when the row fits. Switching tools or color
+targets, restoring the primary toolbar, and resizing reveal the active primary
+control automatically. Changing tool categories starts their secondary options
+at the beginning of the row.
 
 The primary toolbar groups clipboard commands, selection, drawing tools, and primary/secondary
 color targets. The secondary toolbar shows options for the active tool or selected color.
@@ -133,6 +144,13 @@ Default canvas dimensions save automatically when valid; Reset beside the inputs
 restores 800 × 600. These defaults apply to new images only.
 
 ## Files and recovery
+
+File → Recent shows provider-supplied document names, cached across launches and
+shared between windows. Older URI-only entries resolve their names in the
+background when the menu opens. Inaccessible entries retain their cached names,
+or show a numbered Image label when no name is available. Each entry has a Remove
+button; Clear recent files empties the list. Neither action deletes files, closes
+open images, releases their access, or changes the current draft.
 
 Open and Save as use Android's document picker without broad storage permissions.
 Save as and File → Share this image… first offer matching PNG/JPEG format dialogs.

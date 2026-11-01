@@ -189,6 +189,25 @@ These identify existing checks; they are not claims of complete manual coverage.
 
 ### Paint document safety regressions
 
+- `ToolbarOverflowTest` checks end-state arrows, scrolling in both directions,
+  resize/content-fit transitions, and RTL placement. `DualToolbarTest` also checks
+  active tool/color reveal and secondary option access in narrow windows.
+- `InputInteractionTest` checks outside touch/mouse taps clearing untouched
+  selections without pixel, dirty-state, or undo changes; inside/resize-handle taps
+  preserve them, and outside taps still commit edited selections as one undo step.
+- `PaintRecentFilesTest` checks provider display names for legacy URI-only lists,
+  Unicode names, persistence, inaccessible-entry fallbacks, removal/clear without
+  file deletion or draft changes, and opening through the Recent menu. Manually
+  check long/duplicate names, keyboard-only removal, large fonts, and updates
+  across multiple windows.
+
+Toolbar/Recent and selection polish validation on 1 November 2026: all 48 Paint JVM tests,
+debug build, lint, test-APK compilation, and all 437 localization resource checks
+passed. Lint retains two existing bitmap KTX warnings. Instrumented execution and
+visual verification remain pending: local Small Desktop was held by another
+agent-device session (`DEVICE_IN_USE`), which was not reused or closed.
+
+
 - Check one undoable change per committed stroke, shape, text, or transform;
   cancellation and no-op operations preserve pixels, dimensions, and dirty state.
 - Verify image-space coverage at different zooms/densities, stable brush textures,

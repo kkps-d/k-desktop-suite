@@ -329,4 +329,9 @@
     <string name="ui_color_red">Red</string>
     <string name="ui_color_green">Green</string>
     <string name="ui_color_blue">Blue</string>
+    <string name="ui_toolbar_scroll_backward">Show earlier toolbar controls</string>
+    <string name="ui_toolbar_scroll_forward">Show more toolbar controls</string>
+    <string name="ui_recent_image">Image %1$d</string>
+    <string name="ui_remove_recent">Remove %1$s from recent files</string>
+    <string name="ui_clear_recent">Clear recent files</string>
 </resources>
