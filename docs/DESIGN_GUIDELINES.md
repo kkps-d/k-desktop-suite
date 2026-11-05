@@ -2,7 +2,7 @@
 
 ## Direction
 
-Build focused Android productivity apps for phones, tablets, foldables, and desktop windows. Each app launches independently. Use familiar Windows-inspired document workflows with native Jetpack Compose and Material 3 Expressive styling.
+Build focused Android productivity apps optimized for desktop windows and tablets. Design larger-screen workflows first, with keyboard, mouse, trackpad, touch, and stylus support as appropriate. Keep phones and compact windows usable as secondary layouts. Each app launches independently. Use familiar Windows-inspired document workflows with native Jetpack Compose and Material 3 Expressive styling.
 
 Name apps **KD [App]**, where **KD** means **K Desktop**: **KD Notepad** (K Desktop Notepad) and **KD Paint** (K Desktop Paint). Use the short name consistently in launcher labels, window titles, and user-facing text.
 
@@ -15,10 +15,16 @@ user-preferred logo mockups, design decisions, and earlier explorations.
 - Keep editors and canvases visually quiet. Apply expressive shapes and restrained motion to controls; use clear separators and minimal elevation.
 - Use system typography for controls and a readable monospace face for plain-text editing. Use `dp` for layout and `sp` for text; respect font scaling without clipping.
 
+## Desktop density and controls
+
+- Retain Material 3 Expressive color, typography, shape, and interaction principles while adapting component sizes and spacing for productive desktop and tablet use. Favor compact menus, toolbars, tabs, property controls, and status bars that leave more room for the document or canvas.
+- Keep frequent commands visible and group related controls with clear alignment, labels, and separators. Use desktop conventions such as menu bars, shortcut hints, context menus, and supporting panes where useful. Avoid oversized padding, controls, and navigation that consume working space without improving usability.
+- Allow targets smaller than 48dp for dense, pointer-oriented controls when they remain easy to identify and activate. Use larger targets and spacing for touch-oriented workflows and primary actions; do not infer input needs from screen size alone. Expand hit areas where space permits without overlapping adjacent controls, and preserve readable text, visible focus, and accessible command alternatives.
+
 ## Adaptive layout
 
 - Base layout on the current window's width, height, and folding posture using Material 3 Adaptive. Recompute during resizing; avoid device-name checks, orientation locks, and fixed aspect ratios.
-- Prioritize the document area. KD Notepad uses tabs above File/Edit menus, a full-size editor, and a quiet status bar. Consolidate commands into overflow menus in narrow or short windows without losing functionality.
+- Start with efficient desktop and tablet layouts, then adapt to narrow or short windows. Prioritize the document area. KD Notepad uses tabs above File/Edit menus, a full-size editor, and a quiet status bar. Consolidate commands into overflow menus when space requires it without losing functionality.
 - Add supporting panes when space permits; collapse them into navigable destinations or panels when constrained. Use adaptive navigation only when the app has multiple destinations.
 - Let editors and canvases use available space; constrain reading panels and dialogs to comfortable widths. Keep tabs scrollable, the selected tab visible, and New reachable.
 - Handle system bars, desktop caption controls, cutouts, hinges, and IME insets. Keep controls and the caret visible; preserve Android Back behavior and system window dragging.
@@ -28,7 +34,7 @@ user-preferred logo mockups, design decisions, and earlier explorations.
 - Support touch, keyboard, mouse, and trackpad. Provide logical Tab/Shift+Tab and arrow-key navigation, visible focus, Enter/Space activation, and Escape dismissal without trapping focus.
 - Provide standard editing, file, and tab shortcuts; show them in menus and route them through the same commands. Preserve native text selection, clipboard, Unicode, and IME behavior.
 - Provide hover feedback, tooltips, right-click context menus, and wheel scrolling. Add drag-and-drop, content zoom, and stylus support where relevant; retain accessible command alternatives.
-- Use labeled controls, screen-reader semantics, distinct selected/disabled states, and at least 48dp touch targets. Maintain 4.5:1 normal-text contrast, avoid color-only indicators, support RTL, and respect reduced motion.
+- Use labeled controls, screen-reader semantics, and distinct selected/disabled states. Size targets for their input context using the density guidance above; favor at least 48dp targets for touch-oriented controls. Maintain 4.5:1 normal-text contrast, avoid color-only indicators, support RTL, and respect reduced motion.
 
 ## Documents and tabs
 
@@ -41,7 +47,7 @@ Follow the shared [document tab guidance](TABS.md) for apps that use tabs.
 
 ## Verification
 
-- Check compact through extra-large widths, short windows, live resizing, maximize/restore, split screen, external displays, and fold changes. Verify drafts, selection, scroll, and active tabs remain intact.
+- Verify desktop and tablet layouts first, including control density, command discoverability, and accurate pointer and touch activation. Also check compact through extra-large widths, short windows, live resizing, maximize/restore, split screen, external displays, and fold changes. Verify drafts, selection, scroll, and active tabs remain intact.
 - Exercise keyboard-only operation, pointer input, software keyboard, large fonts, RTL, TalkBack, light/dark themes, activity recreation, and process recovery. Use previews plus emulator/device checks.
 
 References: [Window size classes](https://developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes), [desktop windowing](https://developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing), [keyboard and pointer input](https://developer.android.com/guide/topics/large-screens/keyboard-mouse-and-trackpad-tier-2), [adaptive app quality](https://developer.android.com/docs/quality-guidelines/adaptive-app-quality).
