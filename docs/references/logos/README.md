@@ -8,11 +8,13 @@ and do not require a server or a network connection.
 
 ## Selected direction
 
-[Printed KD — compact white cup and wooden paintbrush](kd-compact-white-cup.html)
+[Printed KD — black bindings and blue pen](kd-notepad-binding.html)
 contains the current design for both apps:
 
-- **KD Notepad:** a light-blue notebook and matching pen, with KD printed on
-  the notebook.
+- **KD Notepad:** neutral paper with blue KD print and a slim blue cover,
+  three solid black bindings centered across the top edge, and a blue pen with
+  a silver lower section. Blue remains in the cover and pen rather than
+  filling the page.
 - **KD Paint:** a compact white cup with a small handle and dark KD lettering,
   holding a golden pencil, a brown wooden paintbrush with a silver collar and
   pointed bristles, and a purple capped marker. The pencil and marker use
@@ -40,6 +42,12 @@ its foreground items.
 - [Paint refinements](kd-paint-refinements.html): balanced pot, compact cup,
   and two-tool pot. Compact cup was selected, then refined with white ceramic,
   richer utensil colors, and a wooden brush with a pointed tip.
+- [White compact cup pair](kd-compact-white-cup.html): the selected Paint logo
+  beside the earlier all-blue Notepad design.
+- [Notepad blue accent variants](kd-notepad-refinements.html): blue spine,
+  blue header, blue binding, and blue ink. Blue binding was selected and
+  refined with centered solid black bindings, quieter page rules, and a
+  mostly blue pen.
 
 ## Sources and verification
 
@@ -51,7 +59,8 @@ The fragments also work directly in the inline preview host.
 
 Browser checks covered the current square originals, all six crop previews,
 light/dark icon palettes, unchanged preview appearance when switching icon
-modes, and layout at 320px and 768px viewport widths. Earlier explorations were
+modes, centered and evenly spaced black bindings, and layout at 320px and
+768px viewport widths. Earlier explorations were
 checked for variant navigation, light/dark rendering, and narrow layouts.
 Android builds and emulator tests are not applicable to these HTML-only
 mockups. Production launcher resources and platform integration remain future

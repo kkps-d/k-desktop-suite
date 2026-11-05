@@ -1,0 +1,214 @@
+<style>
+  #kd-notepad-binding { color-scheme: light dark; }
+  #kd-notepad-binding .kd-board {
+    --kd-stage: light-dark(#edf2f6, #1e2630);
+    --kd-text: light-dark(#24394b, #e9f0f7);
+    --kd-muted: light-dark(#53687b, #b1c2d2);
+    --kd-rule: light-dark(#cfdbe5, #3d4d5d);
+    --kd-control: light-dark(#f9fbfd, #2a3745);
+    --kd-size: 120px;
+    color: var(--kd-text);
+    background: var(--kd-stage);
+    border-radius: 22px;
+    padding: 24px 28px;
+    font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+    box-sizing: border-box;
+  }
+  #kd-notepad-binding .kd-logo {
+    --kd-tile-surface: light-dark(#ffffff, #1a1a1a);
+    --kd-outline-color: light-dark(rgb(26 26 26 / 45%), rgb(255 255 255 / 50%));
+    --kd-outline-width: clamp(.35px, .005em, .75px);
+    --kd-sheet: #fafafa;
+    --kd-cover: light-dark(#5b9fcf, #78b8e4);
+    --kd-blue: light-dark(#6cb6e8, #87c7f2);
+    --kd-blue-ink: light-dark(#2b648d, #224f70);
+    --kd-rings: #111111;
+    --kd-page-rule: #8b949d;
+    --kd-pen-body: light-dark(#dfe5eb, #d1dce5);
+    --kd-pen-edge: light-dark(#a1adb8, #8e9daa);
+    --kd-cup: #ffffff;
+    --kd-cup-edge: #ffffff;
+    --kd-cup-inner: light-dark(#d4d4d4, #dedede);
+    --kd-cup-ink: #252525;
+    --kd-yellow: light-dark(#f2b12f, #f9c14e);
+    --kd-yellow-edge: light-dark(#c7891f, #d49b2e);
+    --kd-wood: light-dark(#efd5ac, #f0d2a6);
+    --kd-graphite: #3a4652;
+    --kd-brush-wood: light-dark(#a2673b, #c88b52);
+    --kd-brush-wood-edge: light-dark(#704226, #945b31);
+    --kd-bristle: light-dark(#70513b, #9b7656);
+    --kd-bristle-edge: light-dark(#513927, #79583d);
+    --kd-purple: light-dark(#9870ce, #b896e8);
+    --kd-purple-edge: light-dark(#6c479f, #8d62c4);
+    --kd-metal: light-dark(#c4d5e2, #dbe4ed);
+  }
+  #kd-notepad-binding .kd-heading { padding-right: 76px; }
+  #kd-notepad-binding .kd-heading h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.025em; }
+  #kd-notepad-binding .kd-heading p { margin: 3px 0 0; color: var(--kd-muted); font-size: 12px; }
+  #kd-notepad-binding .kd-appearance { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 20px; }
+  #kd-notepad-binding .kd-appearance label { font-size: 12px; color: var(--kd-muted); }
+  #kd-notepad-binding .kd-appearance select { color: var(--kd-text); background: var(--kd-control); border: 1px solid var(--kd-rule); border-radius: 10px; padding: 9px 32px 9px 12px; min-height: 44px; font: inherit; }
+  #kd-notepad-binding .kd-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 27px 0; }
+  #kd-notepad-binding .kd-app { display: flex; flex-direction: column; align-items: center; min-width: 0; gap: 17px; }
+  #kd-notepad-binding .kd-app h3 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: -.025em; }
+  #kd-notepad-binding .kd-logo { width: 1em; height: 1em; position: relative; flex: 0 0 auto; font-size: var(--kd-size); overflow: hidden; }
+  #kd-notepad-binding .kd-logo *, #kd-notepad-binding .kd-logo *::before, #kd-notepad-binding .kd-logo *::after { position: absolute; box-sizing: border-box; }
+  #kd-notepad-binding .kd-tile { inset: 0; background: var(--kd-tile-surface); }
+  #kd-notepad-binding .kd-mask-squircle { clip-path: var(--kd-squircle-mask); }
+  #kd-notepad-binding .kd-mask-rounded { clip-path: inset(0 round 22%); }
+  #kd-notepad-binding .kd-mask-circle { clip-path: circle(50%); }
+  /* Outline the composed silhouette, including clipped shapes and tool tips. */
+  #kd-notepad-binding .kd-art {
+    inset: 0;
+    filter:
+      drop-shadow(var(--kd-outline-width) 0 0 var(--kd-outline-color))
+      drop-shadow(calc(-1 * var(--kd-outline-width)) 0 0 var(--kd-outline-color))
+      drop-shadow(0 var(--kd-outline-width) 0 var(--kd-outline-color))
+      drop-shadow(0 calc(-1 * var(--kd-outline-width)) 0 var(--kd-outline-color));
+  }
+  #kd-notepad-binding .kd-brand { display: flex; align-items: center; justify-content: center; }
+  #kd-notepad-binding .kd-brand span { position: static; font: 800 .23em/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: -.045em; }
+
+  /* Solid black rings, a narrow blue cover, and neutral paper keep the binding legible. */
+  #kd-notepad-binding .kd-notebook { left: 21%; top: 18%; width: 54%; height: 65%; background: var(--kd-cover); border-radius: .045em; transform: rotate(-6deg); }
+  #kd-notepad-binding .kd-page { left: 5%; right: 4%; top: 14%; bottom: 5%; background: var(--kd-sheet); border-radius: .025em; }
+  #kd-notepad-binding .kd-page::before { content: ''; left: 20%; top: 65%; width: 55%; height: 4%; background: var(--kd-page-rule); border-radius: .012em; }
+  #kd-notepad-binding .kd-page::after { content: ''; left: 20%; top: 79%; width: 38%; height: 4%; background: var(--kd-page-rule); border-radius: .012em; }
+  #kd-notepad-binding .kd-notebook .kd-brand { inset: 13% 12% 44%; color: var(--kd-blue-ink); }
+  #kd-notepad-binding .kd-notebook .kd-brand span { font-size: .21em; }
+  #kd-notepad-binding .kd-rings { top: -5%; left: 50%; width: 64%; height: 18%; transform: translateX(-50%); display: flex; justify-content: space-between; }
+  #kd-notepad-binding .kd-ring { position: relative; flex: 0 0 12.5%; height: 100%; background: var(--kd-rings); border: .016em solid var(--kd-rings); border-radius: .04em; }
+  #kd-notepad-binding .kd-pen { left: 70%; top: 40%; width: 10%; height: 44%; background: linear-gradient(var(--kd-blue) 0 70%, var(--kd-pen-body) 70% 100%); border-radius: .025em .025em 0 0; border-left: .014em solid var(--kd-pen-edge); transform: rotate(30deg); }
+  #kd-notepad-binding .kd-pen::before { content: ''; left: 69%; top: 5%; width: .018em; height: .11em; border-radius: .015em; background: var(--kd-blue-ink); }
+  #kd-notepad-binding .kd-pen::after { content: ''; left: -.014em; top: 100%; width: .10em; height: .11em; background: var(--kd-blue-ink); clip-path: polygon(0 0,100% 0,50% 100%); }
+
+  /* The open cup sits in front of three distinctly shaped drawing tools. */
+  #kd-notepad-binding .kd-paint .kd-art { transform: translateX(-2%) scale(.94); }
+  #kd-notepad-binding .kd-cup-handle { left: 69%; top: 55%; width: 16%; height: 23%; border: .045em solid var(--kd-cup-edge); border-radius: 0 .09em .09em 0; }
+  #kd-notepad-binding .kd-cup-opening { left: 26%; top: 45%; width: 48%; height: 10%; background: var(--kd-cup-inner); border-radius: 50%; box-shadow: inset 0 .015em 0 var(--kd-cup); }
+  #kd-notepad-binding .kd-pencil { left: 35%; top: 28%; width: 10%; height: 33%; background: var(--kd-yellow); border-left: .025em solid var(--kd-yellow-edge); transform: rotate(-10deg); transform-origin: center bottom; }
+  #kd-notepad-binding .kd-pencil::before { content: ''; left: -.025em; top: -.10em; width: .10em; height: .10em; background: var(--kd-wood); clip-path: polygon(50% 0,100% 100%,0 100%); }
+  #kd-notepad-binding .kd-pencil::after { content: ''; left: .01em; top: -.10em; width: .029em; height: .05em; background: var(--kd-graphite); clip-path: polygon(50% 0,100% 100%,0 100%); }
+  #kd-notepad-binding .kd-paintbrush { left: 48%; top: 27%; width: 7%; height: 34%; background: var(--kd-brush-wood); border-left: .012em solid var(--kd-brush-wood-edge); border-radius: 0 0 .03em .03em; transform: rotate(3deg); transform-origin: center bottom; }
+  #kd-notepad-binding .kd-paintbrush::before { content: ''; left: -25%; top: -.18em; width: 150%; height: .20em; background: repeating-linear-gradient(90deg, var(--kd-bristle) 0 .022em, var(--kd-bristle-edge) .022em .027em); clip-path: polygon(60% 0,82% 18%,94% 40%,100% 64%,95% 84%,84% 100%,16% 100%,5% 84%,0 64%,6% 40%,22% 16%); }
+  #kd-notepad-binding .kd-paintbrush::after { content: ''; left: -20%; top: 0; width: 140%; height: .085em; background: var(--kd-metal); border-bottom: .015em solid var(--kd-brush-wood-edge); }
+  #kd-notepad-binding .kd-marker { left: 58%; top: 28%; width: 10%; height: 33%; background: var(--kd-purple); border-radius: .025em; transform: rotate(13deg); transform-origin: center bottom; }
+  #kd-notepad-binding .kd-marker::before { content: ''; left: 0; top: 0; width: 100%; height: 31%; background: var(--kd-purple-edge); border-radius: .025em .025em 0 0; }
+  #kd-notepad-binding .kd-marker::after { content: ''; left: 65%; top: 4%; width: .018em; height: .09em; background: var(--kd-purple); border-radius: .01em; }
+  #kd-notepad-binding .kd-cup { left: 26%; top: 50%; width: 48%; height: 35%; background: var(--kd-cup); border-radius: 0 0 .075em .075em; }
+  #kd-notepad-binding .kd-cup .kd-brand { inset: 12% 9% 14%; color: var(--kd-cup-ink); }
+  #kd-notepad-binding .kd-cup .kd-brand span { font-size: .225em; }
+
+  #kd-notepad-binding .kd-crops { border-top: 1px solid var(--kd-rule); padding-top: 18px; display: grid; gap: 16px; }
+  #kd-notepad-binding .kd-crop-row { display: grid; grid-template-columns: minmax(80px, .9fr) repeat(2, minmax(0, 1fr)); gap: 12px; align-items: center; }
+  #kd-notepad-binding .kd-crop-row > span { font-size: 12px; color: var(--kd-muted); }
+  #kd-notepad-binding .kd-crop-head > span:not(:first-child) { text-align: center; }
+  #kd-notepad-binding .kd-crop-slot { display: flex; justify-content: center; }
+  #kd-notepad-binding .kd-crop-slot .kd-logo { font-size: 64px; }
+  #kd-notepad-binding .kd-footer { margin-top: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; color: var(--kd-muted); font-size: 11px; }
+  @media (max-width: 480px) {
+    #kd-notepad-binding .kd-board { padding: 22px 16px; }
+    #kd-notepad-binding .kd-heading { padding-right: 65px; }
+    #kd-notepad-binding .kd-pair { gap: 12px; }
+    #kd-notepad-binding .kd-app > .kd-logo { font-size: min(var(--kd-size), 29vw); }
+    #kd-notepad-binding .kd-app h3 { font-size: 16px; }
+    #kd-notepad-binding .kd-appearance select { font-size: 16px; }
+    #kd-notepad-binding .kd-footer span:first-child { display: none; }
+  }
+</style>
+<div id="kd-notepad-binding" class="viz-dotted-background">
+  <div class="kd-board" aria-label="Refined blue binding Notepad logo beside the selected Paint logo">
+    <header class="kd-heading"><h2>Blue binding</h2><p>Neutral paper · black binding · blue pen</p></header>
+    <div class="kd-appearance">
+      <label for="kd-binding-appearance">Icon appearance</label>
+      <select id="kd-binding-appearance" class="cursor-interaction"><option value="system">Follow system</option><option value="light">Light</option><option value="dark">Dark</option></select>
+    </div>
+    <div class="kd-pair">
+      <article class="kd-app">
+        <div class="kd-logo kd-notepad" role="img" aria-label="Square KD Notepad logo with three centered solid black bindings, a blue cover, neutral paper, blue KD print, and a slim blue pen with a silver lower section">
+          <div class="kd-tile"></div>
+          <div class="kd-art">
+            <div class="kd-notebook">
+              <div class="kd-page"><div class="kd-brand"><span>KD</span></div></div>
+              <div class="kd-rings"><div class="kd-ring"></div><div class="kd-ring"></div><div class="kd-ring"></div></div>
+            </div>
+            <div class="kd-pen"></div>
+          </div>
+        </div>
+        <h3>KD Notepad</h3>
+      </article>
+      <article class="kd-app">
+        <div class="kd-logo kd-paint" role="img" aria-label="Square KD Paint logo with a white KD cup holding, from left to right, a golden pencil, a brown wooden paintbrush with pointed bristles and a silver ferrule, and a purple capped marker">
+          <div class="kd-tile"></div>
+          <div class="kd-art">
+            <div class="kd-cup-handle"></div><div class="kd-cup-opening"></div>
+            <div class="kd-pencil"></div><div class="kd-paintbrush"></div><div class="kd-marker"></div>
+            <div class="kd-cup"><div class="kd-brand"><span>KD</span></div></div>
+          </div>
+        </div>
+        <h3>KD Paint</h3>
+      </article>
+    </div>
+    <div class="kd-crops" role="group" aria-label="Launcher crop previews">
+      <div class="kd-crop-row kd-crop-head"><span>Crop</span><span>KD Notepad</span><span>KD Paint</span></div>
+      <div class="kd-crop-row"><span>Squircle</span><div class="kd-crop-slot" data-app="kd-notepad" data-mask="squircle"></div><div class="kd-crop-slot" data-app="kd-paint" data-mask="squircle"></div></div>
+      <div class="kd-crop-row"><span>Rounded square</span><div class="kd-crop-slot" data-app="kd-notepad" data-mask="rounded"></div><div class="kd-crop-slot" data-app="kd-paint" data-mask="rounded"></div></div>
+      <div class="kd-crop-row"><span>Circle</span><div class="kd-crop-slot" data-app="kd-notepad" data-mask="circle"></div><div class="kd-crop-slot" data-app="kd-paint" data-mask="circle"></div></div>
+    </div>
+    <footer class="kd-footer"><span>PRINTED KD / ADAPTIVE COLORS</span><span>Square originals · 64px crops</span></footer>
+    <span id="kd-binding-mode-status" class="sr-only" aria-live="polite"></span>
+  </div>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('kd-notepad-binding');
+  const board = root.querySelector('.kd-board');
+  const picker = root.querySelector('select');
+  const status = root.querySelector('#kd-binding-mode-status');
+  // A fourth-order superellipse gives a continuous squircle rather than circular corners.
+  const squircle = Array.from({ length: 128 }, (_, i) => {
+    const angle = i * 2 * Math.PI / 128;
+    const x = Math.cos(angle), y = Math.sin(angle);
+    return `${(50 + 50 * Math.sign(x) * Math.sqrt(Math.abs(x))).toFixed(3)}% ${(50 + 50 * Math.sign(y) * Math.sqrt(Math.abs(y))).toFixed(3)}%`;
+  });
+  root.style.setProperty('--kd-squircle-mask', 'polygon(' + squircle.join(',') + ')');
+  const maskLabels = { squircle: 'squircle', rounded: 'rounded square', circle: 'circle' };
+  for (const slot of root.querySelectorAll('.kd-crop-slot')) {
+    const original = root.querySelector('.kd-app > .' + slot.dataset.app);
+    const copy = original.cloneNode(true);
+    copy.classList.add('kd-mask-' + slot.dataset.mask);
+    copy.setAttribute('aria-label', (slot.dataset.app === 'kd-notepad' ? 'KD Notepad' : 'KD Paint') + ', ' + maskLabels[slot.dataset.mask] + ' crop');
+    slot.appendChild(copy);
+  }
+  const state = { size: 120, appearance: 'system' };
+  const applyAppearance = () => {
+    for (const logo of root.querySelectorAll('.kd-logo')) {
+      logo.style.colorScheme = state.appearance === 'system' ? 'light dark' : state.appearance;
+    }
+    picker.value = state.appearance;
+  };
+  const restore = saved => {
+    const appearance = saved?.privateContent?.appearance;
+    if (['light', 'dark', 'system'].includes(appearance)) state.appearance = appearance;
+    applyAppearance();
+  };
+  restore(window.openai?.widgetState);
+  window.addEventListener('openai:set_globals', event => {
+    if (event.detail?.globals?.widgetState) restore(event.detail.globals.widgetState);
+  });
+  picker.addEventListener('change', () => {
+    state.appearance = picker.value;
+    applyAppearance();
+    status.textContent = 'Appearance: ' + picker.selectedOptions[0].textContent;
+    if (window.openai?.setWidgetState) {
+      window.openai.setWidgetState({ privateContent: { appearance: state.appearance } }).catch(() => {});
+    }
+  });
+  const render = () => board.style.setProperty('--kd-size', state.size + 'px');
+  render();
+  if (globalThis.Tweak) {
+    const tweak = new Tweak({ container: board, onChange: render });
+    tweak.addSlider(state, 'size', { label: 'Hero logo size', min: 96, max: 152, unit: 'px' });
+  }
+})();
+</script>
