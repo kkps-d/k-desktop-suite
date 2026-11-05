@@ -1,8 +1,8 @@
 # Logo design studies
 
 Design checkpoint: 5 November 2026. The preferred beveled Notepad/Paint pair is
-used by those Android apps. KD Preview has a selected logo study for its planned
-app. The HTML previews preserve the design studies.
+used by those Android apps. KD Preview and KD Explorer have selected logo studies.
+The HTML previews preserve the design studies.
 
 Open the previews directly in a browser. They include their styling and scripts
 and do not require a server or a network connection.
@@ -71,7 +71,35 @@ The optical map is an independent implementation informed by the
 The file symbols use the export runtime's bundled Lucide artwork. No network
 connection is needed to open the standalone preview.
 
+### KD Explorer
+
+**Soft geometry with a seamless, shortened back** is the user's latest selection.
+Open the [preferred preview](kd-explorer-soft-geometry.html) or edit its
+[source](sources/kd-explorer-soft-geometry.html).
+
+- An upright amber open folder with softly rounded corners and subtle foreground
+  shading. The front and back have the same width, with a taller front pocket.
+- The ear and back form a continuous surface without a dividing highlight;
+  both were shortened in the final refinement.
+- Two lightly fanned paper sheets sit farther inside the pocket. The geometric
+  KD print retains the same dimensions as the other suite logos and is centered
+  on the front.
+- Flat white and `#1a1a1a` icon backgrounds, adjusted foreground palettes, and
+  subtle opposite-color edge outlines. Square originals include squircle,
+  rounded-square, and circle crop previews.
+
+Square 1024 × 1024 PNG renders: [light](kd-explorer-light.png) and
+[dark](kd-explorer-dark.png). These are design references; the study has not yet
+been applied to Explorer's Android resources.
+
 ## Earlier explorations
+
+- [Explorer directions](kd-explorer-logo-directions.html): Classic folder,
+  Open folder, Folder compass, and File drawer. Open folder was selected.
+- [Upright open folder](kd-explorer-open-folder.html): level folder layers,
+  fanned papers, and the earlier beveled finish.
+- [Modern Explorer treatments](kd-explorer-modern-folder.html): Soft geometry
+  and Flat cut. Soft geometry was selected and refined into the version above.
 
 - [Initial styles](kd-logo-studies.html): Material, folded paper, KD monogram,
   and desktop classic. Material was selected.
@@ -134,6 +162,12 @@ and Floating UI core 1.7.3 / DOM 1.7.4 dependencies, with licenses preserved in
 export to retain offline operation. Its PNGs capture each selected square original
 at 1024px in Chrome; the KD canvas redraws at the output resolution.
 
+The four Explorer exports also inline those same pinned runtime dependencies;
+their licenses are in the existing [runtime notices](kd-preview-NOTICES.txt).
+After regenerating them, re-inline the scripts to retain offline operation.
+The Explorer PNGs capture the selected square originals at 1024px, with the KD
+canvas drawn at the same resolution.
+
 Browser checks covered the current square originals, all six crop previews,
 light/dark icon palettes, unchanged preview appearance when switching icon
 modes, centered and evenly spaced silver bindings, foreground gradients with
@@ -146,4 +180,9 @@ all crop masks, centered frame/glass geometry, sharp KD under refraction changes
 and the light/dark 1024px PNG renders were checked. The Preview study changes no
 Android resources, so Android builds/tests were not rerun for this checkpoint.
 The HTML previews are design references; Android uses the native resources above.
+The Explorer studies were checked offline in Chrome at 320px and 768px widths,
+including variant navigation, all crop masks, both icon palettes, aligned folder
+layers, an upright outer folder, and accent changes. The selected light/dark PNGs
+were visually reviewed. No Android resources changed in this checkpoint, so
+Android builds and tests were not rerun.
 See [Testing](../../TESTING.md) for production icon verification.

@@ -1,0 +1,117 @@
+<style>
+  #kd-explorer-soft-geometry { color-scheme: light dark; }
+  #kd-explorer-soft-geometry .ex-board {
+    --ex-stage: light-dark(#edf2f6,#1e2630); --ex-text: light-dark(#24394b,#e9f0f7);
+    --ex-muted: light-dark(#53687b,#b1c2d2); --ex-rule: light-dark(#cfdbe5,#3d4d5d);
+    background: var(--ex-stage); color: var(--ex-text); border-radius: 22px; padding: 24px 28px;
+    font: 14px/1.5 ui-sans-serif,system-ui,sans-serif; box-sizing: border-box;
+  }
+  #kd-explorer-soft-geometry .ex-heading { min-height: 60px; padding-right: 90px; }
+  #kd-explorer-soft-geometry h2 { margin: 0; font-size: 19px; font-weight: 500; letter-spacing: -.025em; }
+  #kd-explorer-soft-geometry .ex-subtitle { margin-top: 4px; color: var(--ex-muted); font-size: 12px; }
+  #kd-explorer-soft-geometry .ex-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 22px 0 24px; }
+  #kd-explorer-soft-geometry figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; }
+  #kd-explorer-soft-geometry figcaption { color: var(--ex-muted); font-size: 12px; }
+  #kd-explorer-soft-geometry .ex-icon {
+    --ex-base: #fff; --ex-amber: #efb848; --ex-bright: #f5cb78; --ex-deep: #dea632;
+    --ex-ink: #52380d; --ex-paper: #fff; --ex-paper-back: #e8edf2; --ex-line: #c2ccd4;
+    --ex-outline: #1a1a1a40; --ex-edge: #fff9;
+    width: 1em; height: 1em; font-size: 180px; position: relative; overflow: hidden;
+    background: var(--ex-base); isolation: isolate;
+  }
+  #kd-explorer-soft-geometry .ex-icon[data-mode="dark"] {
+    --ex-base: #1a1a1a; --ex-ink: #543a13; --ex-paper: #f4f6f8;
+    --ex-paper-back: #b9c6d0; --ex-line: #b1bec8; --ex-outline: #ffffff61; --ex-edge: #fff7;
+  }
+  #kd-explorer-soft-geometry .ex-art {
+    position: absolute; inset: 0; transform: none;
+    filter: drop-shadow(.0025em 0 0 var(--ex-outline)) drop-shadow(-.0025em 0 0 var(--ex-outline)) drop-shadow(0 .0025em 0 var(--ex-outline)) drop-shadow(0 -.0025em 0 var(--ex-outline));
+  }
+  #kd-explorer-soft-geometry .ex-art * { position: absolute; box-sizing: border-box; }
+  #kd-explorer-soft-geometry .ex-tab { left: 18%; top: 24%; width: 29%; height: 15%; border-radius: .045em .045em 0 0; background: var(--ex-deep); }
+  #kd-explorer-soft-geometry .ex-back { left: 18%; top: 31%; width: 64%; height: 50%; border-radius: .045em; background: var(--ex-deep); }
+  #kd-explorer-soft-geometry .ex-paper { left: 33%; top: 29%; width: 40%; height: 42%; border-radius: .03em; transform: rotate(5deg); background: var(--ex-paper); box-shadow: 0 .006em .012em #2634431a; }
+  #kd-explorer-soft-geometry .ex-paper.back { left: 26%; top: 28%; transform: rotate(-6deg); background: var(--ex-paper-back); }
+  #kd-explorer-soft-geometry .ex-paper::before { content: ''; position: absolute; left: 18%; top: 18%; width: 55%; height: 3.5%; border-radius: .01em; background: var(--ex-line); box-shadow: 0 .045em 0 var(--ex-line); }
+  #kd-explorer-soft-geometry .ex-paper.back::before { display: none; }
+  #kd-explorer-soft-geometry .ex-front { left: 18%; top: 41%; width: 64%; height: 40%; border-radius: .045em .045em .07em .07em; background: linear-gradient(155deg,var(--ex-bright),var(--ex-amber) 62%); box-shadow: inset 0 .007em 0 var(--ex-edge),inset 0 -.006em 0 #60440012; }
+  #kd-explorer-soft-geometry .ex-brand { inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #kd-explorer-soft-geometry .ex-crops { display: grid; grid-template-columns: 88px 1fr 1fr; align-items: center; gap: 12px; padding-top: 20px; border-top: 1px solid var(--ex-rule); }
+  #kd-explorer-soft-geometry .ex-crops > span { color: var(--ex-muted); font-size: 12px; }
+  #kd-explorer-soft-geometry .ex-slot { display: flex; justify-content: center; }
+  #kd-explorer-soft-geometry .ex-slot .ex-icon { font-size: 56px; }
+  #kd-explorer-soft-geometry .ex-squircle { clip-path: polygon(0% 30%,.4% 20%,1.5% 12%,4% 6%,8% 2.5%,15% .5%,30% 0%,70% 0%,85% .5%,92% 2.5%,96% 6%,98.5% 12%,99.6% 20%,100% 30%,100% 70%,99.6% 80%,98.5% 88%,96% 94%,92% 97.5%,85% 99.5%,70% 100%,30% 100%,15% 99.5%,8% 97.5%,4% 94%,1.5% 88%,.4% 80%,0% 70%); }
+  #kd-explorer-soft-geometry .ex-rounded { clip-path: inset(0 round 22%); }
+  #kd-explorer-soft-geometry .ex-circle { clip-path: circle(50%); }
+  @media(max-width:480px) {
+    #kd-explorer-soft-geometry .ex-board { padding: 22px 16px; }
+    #kd-explorer-soft-geometry .ex-heading { min-height: 110px; }
+    #kd-explorer-soft-geometry .ex-pair { gap: 16px; }
+    #kd-explorer-soft-geometry .ex-pair .ex-icon { font-size: min(160px,33vw); }
+    #kd-explorer-soft-geometry .ex-crops { grid-template-columns: 76px 1fr 1fr; gap: 12px 6px; }
+    #kd-explorer-soft-geometry .ex-slot .ex-icon { font-size: 48px; }
+  }
+</style>
+<div id="kd-explorer-soft-geometry" aria-label="Modern KD Explorer folder">
+  <div class="viz-dotted-background" aria-label="Soft geometry folder refinement">
+    <section data-variant="Soft geometry" aria-label="Soft geometry folder design">
+      <div class="ex-board">
+        <header class="ex-heading"><h2>Soft geometry</h2><div class="ex-subtitle">Seamless back · compact ear</div></header>
+        <div class="ex-pair">
+          <figure><div class="ex-icon" data-mode="light" data-brand-y="53" role="img" aria-label="Light KD Explorer logo: an upright amber folder with softly rounded corners, two fanned sheets and centered KD"><div class="ex-art"><div class="ex-tab"></div><div class="ex-back"></div><div class="ex-paper back"></div><div class="ex-paper"></div><div class="ex-front"></div><canvas class="ex-brand" width="600" height="600" aria-hidden="true"></canvas></div></div><figcaption>Light</figcaption></figure>
+          <figure><div class="ex-icon" data-mode="dark" data-brand-y="53" role="img" aria-label="Dark KD Explorer soft geometry logo"></div><figcaption>Dark</figcaption></figure>
+        </div>
+        <div class="ex-crops" aria-label="Soft geometry crop previews"></div>
+      </div>
+    </section>
+  </div>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('kd-explorer-soft-geometry');
+  const state = { accent: '#efb848' };
+  function restore(saved) {
+    if (/^#[0-9a-f]{6}$/i.test(saved?.accent || '')) state.accent = saved.accent;
+  }
+  restore(window.openai?.widgetState?.privateContent);
+  root.querySelectorAll('.ex-board').forEach(board => {
+    const original = board.querySelector('.ex-pair [data-mode="light"]');
+    board.querySelector('.ex-pair [data-mode="dark"]').innerHTML = original.innerHTML;
+    const crops = board.querySelector('.ex-crops');
+    [['Squircle','squircle'],['Rounded','rounded'],['Circle','circle']].forEach(([label,mask]) => {
+      const name = document.createElement('span'); name.textContent = label; crops.appendChild(name);
+      ['light','dark'].forEach(mode => {
+        const slot = document.createElement('div'); slot.className = 'ex-slot';
+        const icon = original.cloneNode(true); icon.dataset.mode = mode; icon.classList.add('ex-' + mask);
+        icon.setAttribute('aria-label',board.querySelector('h2').textContent + ', ' + mode + ', ' + label + ' crop');
+        slot.appendChild(icon); crops.appendChild(slot);
+      });
+    });
+  });
+  const wordmark = new Path2D('M0,0H3.6V6.2L8.8,0H13.3L6.9,7.4L13.8,16H9.2L3.6,9V16H0ZM14.5,0H20.6C26.1,0 29.6,3 29.6,8C29.6,13 26.1,16 20.6,16H14.5ZM18.1,3.3V12.7H20.4C23.9,12.7 25.8,11.1 25.8,8C25.8,4.9 23.9,3.3 20.4,3.3Z');
+  function render() {
+    root.querySelectorAll('.ex-icon').forEach(icon => {
+      const dark = icon.dataset.mode === 'dark';
+      const mix = (color,ratio) => `color-mix(in srgb, ${state.accent} ${ratio}%, ${color})`;
+      icon.style.setProperty('--ex-amber',dark ? mix('white',82) : state.accent);
+      icon.style.setProperty('--ex-bright',mix('white',dark ? 64 : 78));
+      icon.style.setProperty('--ex-deep',mix('black',dark ? 86 : 82));
+      const ctx = icon.querySelector('.ex-brand').getContext('2d');
+      ctx.setTransform(ctx.canvas.width / 100,0,0,ctx.canvas.height / 100,0,0); ctx.clearRect(0,0,100,100);
+      ctx.save(); ctx.translate(35.2,Number(icon.dataset.brandY));
+      ctx.fillStyle = getComputedStyle(icon).getPropertyValue('--ex-ink').trim();
+      ctx.fill(wordmark,'evenodd'); ctx.restore();
+    });
+  }
+  function changed() {
+    render();
+    window.openai?.setWidgetState?.({ privateContent: { ...state }, modelContent: { explorerAccent: state.accent } }).catch(() => {});
+  }
+  render();
+  window.addEventListener('openai:set_globals',event => { restore(event.detail?.globals?.widgetState?.privateContent); render(); });
+  if (globalThis.Tweak) {
+    const tweak = new Tweak({ container: root, onChange: changed });
+    tweak.addColorPicker(state,'accent',{ label: 'Explorer accent', reference: '--ex-amber' });
+  }
+})();
+</script>
