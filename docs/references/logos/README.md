@@ -6,23 +6,28 @@ icons have not been replaced.
 Open the previews directly in a browser. They include their styling and scripts
 and do not require a server or a network connection.
 
-## Selected direction
+## Current user-preferred version
 
-[Printed KD — black bindings and blue pen](kd-notepad-binding.html)
-contains the current design for both apps:
+**Beveled edges with silver bindings** is the user's latest selection.
+Open the [preferred preview](kd-logo-beveled.html) or edit its
+[source](sources/kd-logo-beveled.html). This replaces the earlier flat finish
+and black Notepad bindings; the studies below preserve those explorations.
 
 - **KD Notepad:** neutral paper with blue KD print and a slim blue cover,
-  three solid black bindings centered across the top edge, and a blue pen with
-  a silver lower section. Blue remains in the cover and pen rather than
-  filling the page.
+  three filled silver bindings centered across the top edge, and a blue pen
+  with a silver lower section. The bindings, cover, page edges, and pen use
+  the selected beveled treatment. Blue remains in the cover and pen rather
+  than filling the page.
 - **KD Paint:** a compact white cup with a small handle and dark KD lettering,
   holding a golden pencil, a brown wooden paintbrush with a silver collar and
   pointed bristles, and a purple capped marker. The pencil and marker use
-  slightly richer colors than the earlier explorations.
+  slightly richer colors than the earlier explorations, with beveled shading
+  on the foreground materials.
 - Square originals with squircle, rounded-square, and circle crop previews.
 - White icon backgrounds in light mode and neutral very dark gray (`#1a1a1a`)
   backgrounds in dark mode. Colored foregrounds adjust by mode; the cup stays
-  white with dark KD lettering.
+  white ceramic with subtle edge shading and dark KD lettering.
+- Gradients apply only to foreground objects. Icon backgrounds stay flat.
 - Subtle dark outlines on light icons and light outlines on dark icons.
 - The icon appearance selector affects the originals and crops independently
   of the surrounding preview's theme.
@@ -48,6 +53,11 @@ its foreground items.
   blue header, blue binding, and blue ink. Blue binding was selected and
   refined with centered solid black bindings, quieter page rules, and a
   mostly blue pen.
+- [Flat pair with black bindings](kd-notepad-binding.html): the previous
+  preferred pair before the gradient exploration and silver-binding change.
+- [Gradient treatments](kd-logo-gradients.html): Soft light, Satin materials,
+  Beveled edges, and a Flat reference. The user selected Beveled edges, then
+  requested silver bindings using that same finish.
 
 ## Sources and verification
 
@@ -59,9 +69,10 @@ The fragments also work directly in the inline preview host.
 
 Browser checks covered the current square originals, all six crop previews,
 light/dark icon palettes, unchanged preview appearance when switching icon
-modes, centered and evenly spaced black bindings, and layout at 320px and
-768px viewport widths. Earlier explorations were
-checked for variant navigation, light/dark rendering, and narrow layouts.
+modes, centered and evenly spaced silver bindings, foreground gradients with
+flat icon backgrounds, and layout at 320px and 768px viewport widths. Earlier
+explorations were checked for variant navigation, light/dark rendering, and
+narrow layouts.
 Android builds and emulator tests are not applicable to these HTML-only
 mockups. Production launcher resources and platform integration remain future
 work.

@@ -1,0 +1,301 @@
+<style>
+  #kd-logo-gradients { color-scheme: light dark; }
+  #kd-logo-gradients .kd-board {
+    --kd-stage: light-dark(#edf2f6, #1e2630);
+    --kd-text: light-dark(#24394b, #e9f0f7);
+    --kd-muted: light-dark(#53687b, #b1c2d2);
+    --kd-rule: light-dark(#cfdbe5, #3d4d5d);
+    --kd-control: light-dark(#f9fbfd, #2a3745);
+    --kd-size: 120px;
+    color: var(--kd-text);
+    background: var(--kd-stage);
+    border-radius: 22px;
+    padding: 24px 28px;
+    font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+    box-sizing: border-box;
+  }
+  #kd-logo-gradients .kd-logo {
+    --kd-tile-surface: light-dark(#ffffff, #1a1a1a);
+    --kd-outline-color: light-dark(rgb(26 26 26 / 45%), rgb(255 255 255 / 50%));
+    --kd-outline-width: clamp(.35px, .005em, .75px);
+    --kd-sheet: #fafafa;
+    --kd-cover: light-dark(#5b9fcf, #78b8e4);
+    --kd-blue: light-dark(#6cb6e8, #87c7f2);
+    --kd-blue-ink: light-dark(#2b648d, #224f70);
+    --kd-rings: #111111;
+    --kd-page-rule: #8b949d;
+    --kd-pen-body: light-dark(#dfe5eb, #d1dce5);
+    --kd-pen-edge: light-dark(#a1adb8, #8e9daa);
+    --kd-cup: #ffffff;
+    --kd-cup-edge: #ffffff;
+    --kd-cup-inner: light-dark(#d4d4d4, #dedede);
+    --kd-cup-ink: #252525;
+    --kd-yellow: light-dark(#f2b12f, #f9c14e);
+    --kd-yellow-edge: light-dark(#c7891f, #d49b2e);
+    --kd-wood: light-dark(#efd5ac, #f0d2a6);
+    --kd-graphite: #3a4652;
+    --kd-brush-wood: light-dark(#a2673b, #c88b52);
+    --kd-brush-wood-edge: light-dark(#704226, #945b31);
+    --kd-bristle: light-dark(#70513b, #9b7656);
+    --kd-bristle-edge: light-dark(#513927, #79583d);
+    --kd-purple: light-dark(#9870ce, #b896e8);
+    --kd-purple-edge: light-dark(#6c479f, #8d62c4);
+    --kd-metal: light-dark(#c4d5e2, #dbe4ed);
+    --kd-cover-light: light-dark(#88bee3, #a0d2f1);
+    --kd-cover-dark: light-dark(#3c80af, #5898c7);
+    --kd-blue-light: light-dark(#9bd5f6, #b1dffa);
+    --kd-blue-dark: light-dark(#3f8ebf, #5b9fc9);
+    --kd-paper-shade: light-dark(#e7ebee, #e6ebef);
+    --kd-ceramic-shade: light-dark(#e0e5e9, #e3e9ed);
+    --kd-gold-light: light-dark(#ffdc7d, #ffe293);
+    --kd-gold-dark: light-dark(#ce901f, #dda739);
+    --kd-purple-light: light-dark(#b899e5, #d4bcf2);
+    --kd-purple-dark: light-dark(#7852ad, #9670cb);
+    --kd-wood-light: light-dark(#c78f5b, #e0ad79);
+    --kd-wood-dark: light-dark(#7a4b2d, #a36b3f);
+    --kd-metal-light: light-dark(#f8fbfd, #ffffff);
+    --kd-metal-dark: light-dark(#94a3af, #acbac5);
+  }
+  #kd-logo-gradients .kd-heading { padding-right: 76px; }
+  #kd-logo-gradients .kd-heading h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.025em; }
+  #kd-logo-gradients .kd-heading p { margin: 3px 0 0; color: var(--kd-muted); font-size: 12px; }
+  #kd-logo-gradients .kd-appearance { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 20px; }
+  #kd-logo-gradients .kd-appearance label { font-size: 12px; color: var(--kd-muted); }
+  #kd-logo-gradients .kd-appearance select { color: var(--kd-text); background: var(--kd-control); border: 1px solid var(--kd-rule); border-radius: 10px; padding: 9px 32px 9px 12px; min-height: 44px; font: inherit; }
+  #kd-logo-gradients .kd-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 27px 0; }
+  #kd-logo-gradients .kd-app { display: flex; flex-direction: column; align-items: center; min-width: 0; gap: 17px; }
+  #kd-logo-gradients .kd-app h3 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: -.025em; }
+  #kd-logo-gradients .kd-logo { width: 1em; height: 1em; position: relative; flex: 0 0 auto; font-size: var(--kd-size); overflow: hidden; }
+  #kd-logo-gradients .kd-logo *, #kd-logo-gradients .kd-logo *::before, #kd-logo-gradients .kd-logo *::after { position: absolute; box-sizing: border-box; }
+  #kd-logo-gradients .kd-tile { inset: 0; background: var(--kd-tile-surface); }
+  #kd-logo-gradients .kd-mask-squircle { clip-path: var(--kd-squircle-mask); }
+  #kd-logo-gradients .kd-mask-rounded { clip-path: inset(0 round 22%); }
+  #kd-logo-gradients .kd-mask-circle { clip-path: circle(50%); }
+  /* Outline the composed silhouette, including clipped shapes and tool tips. */
+  #kd-logo-gradients .kd-art {
+    inset: 0;
+    filter:
+      drop-shadow(var(--kd-outline-width) 0 0 var(--kd-outline-color))
+      drop-shadow(calc(-1 * var(--kd-outline-width)) 0 0 var(--kd-outline-color))
+      drop-shadow(0 var(--kd-outline-width) 0 var(--kd-outline-color))
+      drop-shadow(0 calc(-1 * var(--kd-outline-width)) 0 var(--kd-outline-color));
+  }
+  #kd-logo-gradients .kd-brand { display: flex; align-items: center; justify-content: center; }
+  #kd-logo-gradients .kd-brand span { position: static; font: 800 .23em/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: -.045em; }
+
+  /* Solid black rings, a narrow blue cover, and neutral paper keep the binding legible. */
+  #kd-logo-gradients .kd-notebook { left: 21%; top: 18%; width: 54%; height: 65%; background: var(--kd-cover); border-radius: .045em; transform: rotate(-6deg); }
+  #kd-logo-gradients .kd-page { left: 5%; right: 4%; top: 14%; bottom: 5%; background: var(--kd-sheet); border-radius: .025em; }
+  #kd-logo-gradients .kd-page::before { content: ''; left: 20%; top: 65%; width: 55%; height: 4%; background: var(--kd-page-rule); border-radius: .012em; }
+  #kd-logo-gradients .kd-page::after { content: ''; left: 20%; top: 79%; width: 38%; height: 4%; background: var(--kd-page-rule); border-radius: .012em; }
+  #kd-logo-gradients .kd-notebook .kd-brand { inset: 13% 12% 44%; color: var(--kd-blue-ink); }
+  #kd-logo-gradients .kd-notebook .kd-brand span { font-size: .21em; }
+  #kd-logo-gradients .kd-rings { top: -5%; left: 50%; width: 64%; height: 18%; transform: translateX(-50%); display: flex; justify-content: space-between; }
+  #kd-logo-gradients .kd-ring { position: relative; flex: 0 0 12.5%; height: 100%; background: var(--kd-rings); border: .016em solid var(--kd-rings); border-radius: .04em; }
+  #kd-logo-gradients .kd-pen { left: 70%; top: 40%; width: 10%; height: 44%; background: linear-gradient(var(--kd-blue) 0 70%, var(--kd-pen-body) 70% 100%); border-radius: .025em .025em 0 0; border-left: .014em solid var(--kd-pen-edge); transform: rotate(30deg); }
+  #kd-logo-gradients .kd-pen::before { content: ''; left: 69%; top: 5%; width: .018em; height: .11em; border-radius: .015em; background: var(--kd-blue-ink); }
+  #kd-logo-gradients .kd-pen::after { content: ''; left: -.014em; top: 100%; width: .10em; height: .11em; background: var(--kd-blue-ink); clip-path: polygon(0 0,100% 0,50% 100%); }
+
+  /* The open cup sits in front of three distinctly shaped drawing tools. */
+  #kd-logo-gradients .kd-paint .kd-art { transform: translateX(-2%) scale(.94); }
+  #kd-logo-gradients .kd-cup-handle { left: 69%; top: 55%; width: 16%; height: 23%; border: .045em solid var(--kd-cup-edge); border-radius: 0 .09em .09em 0; }
+  #kd-logo-gradients .kd-cup-opening { left: 26%; top: 45%; width: 48%; height: 10%; background: var(--kd-cup-inner); border-radius: 50%; box-shadow: inset 0 .015em 0 var(--kd-cup); }
+  #kd-logo-gradients .kd-pencil { left: 35%; top: 28%; width: 10%; height: 33%; background: var(--kd-yellow); border-left: .025em solid var(--kd-yellow-edge); transform: rotate(-10deg); transform-origin: center bottom; }
+  #kd-logo-gradients .kd-pencil::before { content: ''; left: -.025em; top: -.10em; width: .10em; height: .10em; background: var(--kd-wood); clip-path: polygon(50% 0,100% 100%,0 100%); }
+  #kd-logo-gradients .kd-pencil::after { content: ''; left: .01em; top: -.10em; width: .029em; height: .05em; background: var(--kd-graphite); clip-path: polygon(50% 0,100% 100%,0 100%); }
+  #kd-logo-gradients .kd-paintbrush { left: 48%; top: 27%; width: 7%; height: 34%; background: var(--kd-brush-wood); border-left: .012em solid var(--kd-brush-wood-edge); border-radius: 0 0 .03em .03em; transform: rotate(3deg); transform-origin: center bottom; }
+  #kd-logo-gradients .kd-paintbrush::before { content: ''; left: -25%; top: -.18em; width: 150%; height: .20em; background: repeating-linear-gradient(90deg, var(--kd-bristle) 0 .022em, var(--kd-bristle-edge) .022em .027em); clip-path: polygon(60% 0,82% 18%,94% 40%,100% 64%,95% 84%,84% 100%,16% 100%,5% 84%,0 64%,6% 40%,22% 16%); }
+  #kd-logo-gradients .kd-paintbrush::after { content: ''; left: -20%; top: 0; width: 140%; height: .085em; background: var(--kd-metal); border-bottom: .015em solid var(--kd-brush-wood-edge); }
+  #kd-logo-gradients .kd-marker { left: 58%; top: 28%; width: 10%; height: 33%; background: var(--kd-purple); border-radius: .025em; transform: rotate(13deg); transform-origin: center bottom; }
+  #kd-logo-gradients .kd-marker::before { content: ''; left: 0; top: 0; width: 100%; height: 31%; background: var(--kd-purple-edge); border-radius: .025em .025em 0 0; }
+  #kd-logo-gradients .kd-marker::after { content: ''; left: 65%; top: 4%; width: .018em; height: .09em; background: var(--kd-purple); border-radius: .01em; }
+  #kd-logo-gradients .kd-cup { left: 26%; top: 50%; width: 48%; height: 35%; background: var(--kd-cup); border-radius: 0 0 .075em .075em; }
+  #kd-logo-gradients .kd-cup .kd-brand { inset: 12% 9% 14%; color: var(--kd-cup-ink); }
+  #kd-logo-gradients .kd-cup .kd-brand span { font-size: .225em; }
+
+  /* All finish treatments are scoped to foreground objects; tiles stay flat. */
+  #kd-logo-gradients .kd-shading .kd-notebook { background: linear-gradient(135deg, var(--kd-cover-light), var(--kd-cover) 50%, var(--kd-cover-dark)); }
+  #kd-logo-gradients .kd-shading .kd-page { background: linear-gradient(135deg, #ffffff 5%, var(--kd-sheet) 60%, var(--kd-paper-shade)); }
+  #kd-logo-gradients .kd-shading .kd-pen {
+    background:
+      linear-gradient(90deg, var(--kd-blue-dark), var(--kd-blue-light) 38%, var(--kd-blue) 80%) top / 100% 70% no-repeat,
+      linear-gradient(90deg, var(--kd-metal), var(--kd-metal-light) 35%, var(--kd-metal)) bottom / 100% 30% no-repeat;
+  }
+  #kd-logo-gradients .kd-shading .kd-cup { background: linear-gradient(110deg, #ffffff 5%, #ffffff 50%, var(--kd-ceramic-shade)); }
+  #kd-logo-gradients .kd-shading .kd-pencil { background: linear-gradient(90deg, var(--kd-gold-light), var(--kd-yellow) 50%, var(--kd-gold-dark)); }
+  #kd-logo-gradients .kd-shading .kd-marker { background: linear-gradient(90deg, var(--kd-purple-light), var(--kd-purple) 50%, var(--kd-purple-dark)); }
+  #kd-logo-gradients .kd-shading .kd-marker::before { background: linear-gradient(90deg, var(--kd-purple), var(--kd-purple-edge)); }
+  #kd-logo-gradients .kd-shading .kd-paintbrush { background: linear-gradient(90deg, var(--kd-wood-light), var(--kd-brush-wood) 55%, var(--kd-wood-dark)); }
+  #kd-logo-gradients .kd-shading .kd-paintbrush::after { background: linear-gradient(90deg, var(--kd-metal-light), var(--kd-metal) 40%, var(--kd-metal-dark)); }
+
+  /* Satin uses curved highlights on cylinders and restrained ceramic shading. */
+  #kd-logo-gradients .kd-satin .kd-notebook { background: linear-gradient(145deg, var(--kd-cover-dark), var(--kd-cover) 30%, var(--kd-cover-light) 57%, var(--kd-cover) 90%); }
+  #kd-logo-gradients .kd-satin .kd-page { background: linear-gradient(110deg, var(--kd-paper-shade), #ffffff 22%, #ffffff 65%, var(--kd-sheet)); }
+  #kd-logo-gradients .kd-satin .kd-pen {
+    background:
+      linear-gradient(90deg, var(--kd-blue-dark), var(--kd-blue) 18%, var(--kd-blue-light) 37%, var(--kd-blue) 60%, var(--kd-blue-dark)) top / 100% 70% no-repeat,
+      linear-gradient(90deg, var(--kd-metal-dark), var(--kd-metal-light) 30%, var(--kd-metal) 58%, var(--kd-metal-dark)) bottom / 100% 30% no-repeat;
+  }
+  #kd-logo-gradients .kd-satin .kd-cup { background: radial-gradient(ellipse at 30% 24%, #ffffff 20%, #ffffff 45%, var(--kd-ceramic-shade) 100%); box-shadow: inset -.018em 0 .025em rgb(26 26 26 / 8%); }
+  #kd-logo-gradients .kd-satin .kd-cup-opening { background: linear-gradient(#c5cbd0, #e6e9ec); }
+  #kd-logo-gradients .kd-satin .kd-pencil { background: linear-gradient(90deg, var(--kd-gold-dark), var(--kd-gold-light) 28%, var(--kd-yellow) 65%, var(--kd-gold-dark)); }
+  #kd-logo-gradients .kd-satin .kd-marker { background: linear-gradient(90deg, var(--kd-purple-dark), var(--kd-purple-light) 30%, var(--kd-purple) 65%, var(--kd-purple-dark)); }
+  #kd-logo-gradients .kd-satin .kd-marker::before { background: linear-gradient(90deg, var(--kd-purple-edge), var(--kd-purple) 30%, var(--kd-purple-edge)); }
+  #kd-logo-gradients .kd-satin .kd-paintbrush { background: linear-gradient(90deg, var(--kd-wood-dark), var(--kd-wood-light) 30%, var(--kd-brush-wood) 65%, var(--kd-wood-dark)); }
+  #kd-logo-gradients .kd-satin .kd-paintbrush::after { background: linear-gradient(90deg, var(--kd-metal-dark), var(--kd-metal-light) 30%, var(--kd-metal) 62%, var(--kd-metal-dark)); }
+
+  /* Short edge ramps suggest bevels without adding a cast shadow to the tile. */
+  #kd-logo-gradients .kd-beveled .kd-notebook { background: linear-gradient(135deg, var(--kd-cover-light), var(--kd-cover) 20%, var(--kd-cover-dark)); box-shadow: inset .012em .012em 0 rgb(255 255 255 / 45%), inset -.012em -.012em 0 rgb(26 26 26 / 16%); }
+  #kd-logo-gradients .kd-beveled .kd-page { background: linear-gradient(#ffffff 0 90%, var(--kd-paper-shade)); box-shadow: .012em .015em .018em rgb(26 26 26 / 15%); }
+  #kd-logo-gradients .kd-beveled .kd-pen {
+    background:
+      linear-gradient(90deg, var(--kd-blue-dark), var(--kd-blue-light) 18%, var(--kd-blue) 38% 80%, var(--kd-blue-dark)) top / 100% 70% no-repeat,
+      linear-gradient(90deg, var(--kd-metal-dark), var(--kd-metal-light) 20%, var(--kd-metal) 40% 80%, var(--kd-metal-dark)) bottom / 100% 30% no-repeat;
+  }
+  #kd-logo-gradients .kd-beveled .kd-cup { background: linear-gradient(90deg, var(--kd-ceramic-shade), #ffffff 14% 84%, var(--kd-ceramic-shade)); box-shadow: inset 0 -.018em .015em rgb(26 26 26 / 9%); }
+  #kd-logo-gradients .kd-beveled .kd-pencil { background: linear-gradient(90deg, var(--kd-gold-light) 0 24%, var(--kd-yellow) 24% 75%, var(--kd-gold-dark)); }
+  #kd-logo-gradients .kd-beveled .kd-marker { background: linear-gradient(90deg, var(--kd-purple-light), var(--kd-purple) 24% 75%, var(--kd-purple-dark)); }
+  #kd-logo-gradients .kd-beveled .kd-marker::before { background: linear-gradient(90deg, var(--kd-purple), var(--kd-purple-edge) 24% 75%, var(--kd-purple-dark)); }
+  #kd-logo-gradients .kd-beveled .kd-paintbrush { background: linear-gradient(90deg, var(--kd-wood-light) 0 25%, var(--kd-brush-wood) 25% 75%, var(--kd-wood-dark)); }
+  #kd-logo-gradients .kd-beveled .kd-paintbrush::after { background: linear-gradient(90deg, var(--kd-metal-light), var(--kd-metal) 24% 75%, var(--kd-metal-dark)); }
+
+  #kd-logo-gradients .kd-crops { border-top: 1px solid var(--kd-rule); padding-top: 18px; display: grid; gap: 16px; }
+  #kd-logo-gradients .kd-crop-row { display: grid; grid-template-columns: minmax(80px, .9fr) repeat(2, minmax(0, 1fr)); gap: 12px; align-items: center; }
+  #kd-logo-gradients .kd-crop-row > span { font-size: 12px; color: var(--kd-muted); }
+  #kd-logo-gradients .kd-crop-head > span:not(:first-child) { text-align: center; }
+  #kd-logo-gradients .kd-crop-slot { display: flex; justify-content: center; }
+  #kd-logo-gradients .kd-crop-slot .kd-logo { font-size: 64px; }
+  #kd-logo-gradients .kd-footer { margin-top: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; color: var(--kd-muted); font-size: 11px; }
+  @media (max-width: 480px) {
+    #kd-logo-gradients .kd-board { padding: 22px 16px; }
+    #kd-logo-gradients .kd-heading { padding-right: 65px; }
+    #kd-logo-gradients .kd-heading p { min-height: 36px; }
+    #kd-logo-gradients .kd-pair { gap: 12px; }
+    #kd-logo-gradients .kd-app > .kd-logo { font-size: min(var(--kd-size), 29vw); }
+    #kd-logo-gradients .kd-app h3 { font-size: 16px; }
+    #kd-logo-gradients .kd-appearance select { font-size: 16px; }
+    #kd-logo-gradients .kd-footer span:first-child { display: none; }
+  }
+</style>
+<div id="kd-logo-gradients" aria-label="Logo gradient study settings">
+  <div class="viz-carousel viz-dotted-background" aria-label="KD logo gradient treatments">
+  <section data-variant="Soft light" aria-label="Soft light design">
+  <div class="kd-board kd-shading kd-soft" aria-label="Soft light gradient treatment">
+    <header class="kd-heading"><h2>Soft light</h2><p>Gentle tonal shading · matte surfaces</p></header>
+    <div class="kd-appearance">
+      <label for="kd-gradient-appearance">Icon appearance</label>
+      <select id="kd-gradient-appearance" class="cursor-interaction"><option value="system">Follow system</option><option value="light">Light</option><option value="dark">Dark</option></select>
+    </div>
+    <div class="kd-pair">
+      <article class="kd-app">
+        <div class="kd-logo kd-notepad" role="img" aria-label="Square KD Notepad logo with three centered solid black bindings, a blue cover, neutral paper, blue KD print, and a slim blue pen with a silver lower section">
+          <div class="kd-tile"></div>
+          <div class="kd-art">
+            <div class="kd-notebook">
+              <div class="kd-page"><div class="kd-brand"><span>KD</span></div></div>
+              <div class="kd-rings"><div class="kd-ring"></div><div class="kd-ring"></div><div class="kd-ring"></div></div>
+            </div>
+            <div class="kd-pen"></div>
+          </div>
+        </div>
+        <h3>KD Notepad</h3>
+      </article>
+      <article class="kd-app">
+        <div class="kd-logo kd-paint" role="img" aria-label="Square KD Paint logo with a white KD cup holding, from left to right, a golden pencil, a brown wooden paintbrush with pointed bristles and a silver ferrule, and a purple capped marker">
+          <div class="kd-tile"></div>
+          <div class="kd-art">
+            <div class="kd-cup-handle"></div><div class="kd-cup-opening"></div>
+            <div class="kd-pencil"></div><div class="kd-paintbrush"></div><div class="kd-marker"></div>
+            <div class="kd-cup"><div class="kd-brand"><span>KD</span></div></div>
+          </div>
+        </div>
+        <h3>KD Paint</h3>
+      </article>
+    </div>
+    <div class="kd-crops" role="group" aria-label="Launcher crop previews">
+      <div class="kd-crop-row kd-crop-head"><span>Crop</span><span>KD Notepad</span><span>KD Paint</span></div>
+      <div class="kd-crop-row"><span>Squircle</span><div class="kd-crop-slot" data-app="kd-notepad" data-mask="squircle"></div><div class="kd-crop-slot" data-app="kd-paint" data-mask="squircle"></div></div>
+      <div class="kd-crop-row"><span>Rounded square</span><div class="kd-crop-slot" data-app="kd-notepad" data-mask="rounded"></div><div class="kd-crop-slot" data-app="kd-paint" data-mask="rounded"></div></div>
+      <div class="kd-crop-row"><span>Circle</span><div class="kd-crop-slot" data-app="kd-notepad" data-mask="circle"></div><div class="kd-crop-slot" data-app="kd-paint" data-mask="circle"></div></div>
+    </div>
+    <footer class="kd-footer"><span>FOREGROUND FINISHES / FLAT BACKGROUNDS</span><span>Square originals · 64px crops</span></footer>
+    <span id="kd-gradient-mode-status" class="sr-only" aria-live="polite"></span>
+  </div>
+  </section>
+  <section data-variant="Satin materials" aria-label="Satin materials design" hidden></section>
+  <section data-variant="Beveled edges" aria-label="Beveled edges design" hidden></section>
+  <section data-variant="Flat reference" aria-label="Current flat design" hidden></section>
+  </div>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('kd-logo-gradients');
+  const board = root.querySelector('.kd-board');
+  const alternatives = [
+    { name: 'Satin materials', style: 'satin', caption: 'Narrow reflections · ceramic + metal' },
+    { name: 'Beveled edges', style: 'beveled', caption: 'Crisp edge highlights · faceted tools' },
+    { name: 'Flat reference', style: 'flat', caption: 'Current design · without added shading' }
+  ];
+  for (const alternative of alternatives) {
+    const copy = board.cloneNode(true);
+    copy.classList.replace('kd-soft', 'kd-' + alternative.style);
+    if (alternative.style === 'flat') copy.classList.remove('kd-shading');
+    copy.setAttribute('aria-label', alternative.name + ' treatment');
+    copy.querySelector('h2').textContent = alternative.name;
+    copy.querySelector('.kd-heading p').textContent = alternative.caption;
+    const picker = copy.querySelector('select');
+    picker.id += '-' + alternative.style;
+    copy.querySelector('label').htmlFor = picker.id;
+    copy.querySelector('[aria-live]').removeAttribute('id');
+    root.querySelector('[data-variant="' + alternative.name + '"]').appendChild(copy);
+  }
+  const pickers = root.querySelectorAll('select');
+  // A fourth-order superellipse gives a continuous squircle rather than circular corners.
+  const squircle = Array.from({ length: 128 }, (_, i) => {
+    const angle = i * 2 * Math.PI / 128;
+    const x = Math.cos(angle), y = Math.sin(angle);
+    return `${(50 + 50 * Math.sign(x) * Math.sqrt(Math.abs(x))).toFixed(3)}% ${(50 + 50 * Math.sign(y) * Math.sqrt(Math.abs(y))).toFixed(3)}%`;
+  });
+  root.style.setProperty('--kd-squircle-mask', 'polygon(' + squircle.join(',') + ')');
+  const maskLabels = { squircle: 'squircle', rounded: 'rounded square', circle: 'circle' };
+  for (const slot of root.querySelectorAll('.kd-crop-slot')) {
+    const original = slot.closest('.kd-board').querySelector('.kd-app > .' + slot.dataset.app);
+    const copy = original.cloneNode(true);
+    copy.classList.add('kd-mask-' + slot.dataset.mask);
+    copy.setAttribute('aria-label', (slot.dataset.app === 'kd-notepad' ? 'KD Notepad' : 'KD Paint') + ', ' + maskLabels[slot.dataset.mask] + ' crop');
+    slot.appendChild(copy);
+  }
+  const state = { size: 120, appearance: 'system' };
+  const applyAppearance = () => {
+    for (const logo of root.querySelectorAll('.kd-logo')) {
+      logo.style.colorScheme = state.appearance === 'system' ? 'light dark' : state.appearance;
+    }
+    for (const picker of pickers) picker.value = state.appearance;
+  };
+  const restore = saved => {
+    const appearance = saved?.privateContent?.appearance;
+    if (['light', 'dark', 'system'].includes(appearance)) state.appearance = appearance;
+    applyAppearance();
+  };
+  restore(window.openai?.widgetState);
+  window.addEventListener('openai:set_globals', event => {
+    if (event.detail?.globals?.widgetState) restore(event.detail.globals.widgetState);
+  });
+  for (const picker of pickers) picker.addEventListener('change', () => {
+    state.appearance = picker.value;
+    applyAppearance();
+    picker.closest('.kd-board').querySelector('[aria-live]').textContent = 'Appearance: ' + picker.selectedOptions[0].textContent;
+    if (window.openai?.setWidgetState) {
+      window.openai.setWidgetState({ privateContent: { appearance: state.appearance } }).catch(() => {});
+    }
+  });
+  const render = () => {
+    for (const item of root.querySelectorAll('.kd-board')) item.style.setProperty('--kd-size', state.size + 'px');
+  };
+  render();
+  if (globalThis.Tweak) {
+    const tweak = new Tweak({ container: root, onChange: render });
+    tweak.addSlider(state, 'size', { label: 'Hero logo size', min: 96, max: 176, unit: 'px' });
+  }
+})();
+</script>
