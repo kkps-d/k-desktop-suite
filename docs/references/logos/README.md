@@ -107,7 +107,16 @@ reflective rims, and unfilled etched KD lettering. The approved controls are
 `#29b99d` tint, 34% density, 80% reflections, and 35% refraction. Square 1024px
 renders: [light](kd-explorer-glass-light.png) and [dark](kd-explorer-glass-dark.png).
 The amber Explorer selection and beveled Android logos remain the defaults.
-Notepad's glass backing and blue pen barrel are being explored separately.
+
+**KD Notepad glass** extends the same material to the notebook backing, upper
+pen barrel, and pointed pen cone, ending in a small silver writing tip. The
+paper and blue KD print, three silver bindings, and silver pen grip retain their
+existing materials and geometry. Open its [preview](kd-notepad-glass.html) or
+edit the [source](sources/kd-notepad-glass.html). Square 1024px renders:
+[light](kd-notepad-glass-light.png) and [dark](kd-notepad-glass-dark.png).
+It uses the same tint, density, reflection, and refraction defaults as Explorer.
+This is an approved alternate design reference; Android still uses the beveled
+Notepad artwork.
 
 ## Earlier explorations
 

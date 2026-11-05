@@ -1,6 +1,7 @@
 # Alternate glass logo style
 
-Approved reference: **KD Explorer aquamarine glass**, 5 November 2026.
+Approved references: **KD Explorer aquamarine glass** and **KD Notepad glass**,
+5 November 2026.
 This is a second visual style for the suite. It does not replace Explorer's
 amber Soft geometry selection or the beveled Notepad/Paint Android artwork.
 
@@ -53,11 +54,34 @@ are preserved in [runtime notices](kd-preview-NOTICES.txt). Regenerate exports
 with the visualize skill's `scripts/render.py`, then re-inline those dependencies
 to retain offline operation.
 
+## Notepad checkpoint
+
+Open the [Notepad preview](kd-notepad-glass.html), edit its
+[source](sources/kd-notepad-glass.html), or inspect the square 1024 × 1024 renders:
+[light](kd-notepad-glass-light.png) and [dark](kd-notepad-glass-dark.png).
+
+The notebook backing, upper pen barrel, and pointed pen cone use the same
+blue-to-aquamarine glass material. The barrel and cone transmit the actual
+artwork underneath, with slight refraction and fine reflective edges. A small
+silver writing tip terminates the glass cone. The silver grip and three centered
+silver bindings keep their metal finish. Neutral paper, blue KD ink, page rules,
+notebook tilt, and pen placement retain the established Notepad geometry.
+
+The approved defaults match Explorer: `#29b99d` tint, 34% density, 80% edge
+reflections, and 35% pen refraction. The pen's original full pointed silhouette
+is preserved; only its final 2.6 coordinate units (in the 100-unit square) are
+silver. Square originals and all six crop previews use these same defaults.
+The standalone export uses the same bundled runtime and regeneration process
+described above.
+
 ## Verification and scope
 
 The light/dark artwork and small crop contact sheet were visually reviewed using
 an offline canvas renderer. Runtime checks exercised eight canvases, tint and
 density changes, reflection changes in the KD area, and saved-state restoration.
+Notepad's light/dark artwork, glass pen cone, silver writing tip, and small crops
+were also visually reviewed. Runtime checks covered its tint, density,
+reflections, pen refraction, and saved-state restoration.
 The PNGs were rendered directly from the approved canvas code at 1024 × 1024.
 The exported document was checked for bundled scripts and local documentation
 links. Browser layout verification remains pending because local file previews
@@ -65,5 +89,6 @@ were blocked by the browser URL policy.
 
 This checkpoint changes design references and documentation only. No native
 resources, generator, app appearance setting, or device deployment changed;
-Android builds and emulator tests were not rerun. Notepad's backing and blue pen
-barrel are the next preview exploration, not an approved replacement yet.
+Android builds and emulator tests were not rerun. These are approved alternate
+design references, with native integration and an in-app style selector outside
+this checkpoint.

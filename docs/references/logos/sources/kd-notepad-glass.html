@@ -1,0 +1,191 @@
+<style>
+  #kd-notepad-glass { color-scheme: light dark; }
+  #kd-notepad-glass .glass-board {
+    --study-bg: light-dark(#edf1f3, #23292c);
+    --study-text: light-dark(#203c40, #e5efed);
+    --study-muted: light-dark(#52676a, #b6c8c6);
+    --study-rule: light-dark(#ced9da, #405352);
+    color: var(--study-text); background: var(--study-bg);
+    border-radius: 22px; padding: 24px 28px;
+    font: 14px/1.5 ui-sans-serif, system-ui, sans-serif; box-sizing: border-box;
+  }
+  #kd-notepad-glass .glass-heading { min-height: 58px; padding-right: 90px; }
+  #kd-notepad-glass h2 { margin: 0; font-size: 19px; font-weight: 500; letter-spacing: -.025em; }
+  #kd-notepad-glass .glass-subtitle { margin-top: 3px; color: var(--study-muted); font-size: 12px; }
+  #kd-notepad-glass .glass-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 20px 0 24px; }
+  #kd-notepad-glass figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; }
+  #kd-notepad-glass figcaption, #kd-notepad-glass .glass-crops > span { font-size: 12px; color: var(--study-muted); }
+  #kd-notepad-glass .glass-icon { display: block; width: min(100%, 240px); height: auto; aspect-ratio: 1; background: #fff; }
+  #kd-notepad-glass .glass-icon[data-mode="dark"] { background: #1a1a1a; }
+  #kd-notepad-glass .glass-crops { display: grid; grid-template-columns: 108px 1fr 1fr; align-items: center; gap: 14px 12px; padding-top: 20px; border-top: 1px solid var(--study-rule); }
+  #kd-notepad-glass .glass-slot { display: flex; justify-content: center; }
+  #kd-notepad-glass .glass-slot .glass-icon { width: 72px; }
+  #kd-notepad-glass .glass-squircle { clip-path: polygon(0% 30%,.4% 20%,1.5% 12%,4% 6%,8% 2.5%,15% .5%,30% 0%,70% 0%,85% .5%,92% 2.5%,96% 6%,98.5% 12%,99.6% 20%,100% 30%,100% 70%,99.6% 80%,98.5% 88%,96% 94%,92% 97.5%,85% 99.5%,70% 100%,30% 100%,15% 99.5%,8% 97.5%,4% 94%,1.5% 88%,.4% 80%,0% 70%); }
+  #kd-notepad-glass .glass-rounded { clip-path: inset(0 round 22%); }
+  #kd-notepad-glass .glass-circle { clip-path: circle(50%); }
+  @media (max-width: 480px) {
+    #kd-notepad-glass .glass-board { padding: 22px 16px; }
+    #kd-notepad-glass .glass-heading { min-height: 88px; }
+    #kd-notepad-glass .glass-pair { gap: 14px; }
+    #kd-notepad-glass .glass-crops { grid-template-columns: 100px 1fr 1fr; gap: 12px 6px; }
+    #kd-notepad-glass .glass-slot .glass-icon { width: 48px; }
+  }
+</style>
+<div id="kd-notepad-glass" aria-label="KD Notepad alternate glass logo">
+  <div class="viz-dotted-background">
+    <section class="glass-board" aria-label="Notepad glass backing and pen">
+      <header class="glass-heading">
+        <h2>Glass backing &amp; pen</h2>
+        <div class="glass-subtitle">KD Notepad · alternate glass style</div>
+      </header>
+      <div class="glass-pair">
+        <figure>
+          <canvas class="glass-icon" data-mode="light" width="1024" height="1024" role="img" aria-label="Light KD Notepad: aquamarine glass backing, transparent pen barrel and pointed cone, small silver writing tip, neutral paper with blue KD print, silver bindings and grip">KD Notepad alternate glass logo, light version.</canvas>
+          <figcaption>Light · white</figcaption>
+        </figure>
+        <figure>
+          <canvas class="glass-icon" data-mode="dark" width="1024" height="1024" role="img" aria-label="Dark KD Notepad: reflective glass backing, pen barrel and pointed cone with a small silver writing tip on a flat dark background">KD Notepad alternate glass logo, dark version.</canvas>
+          <figcaption>Dark · #1a1a1a</figcaption>
+        </figure>
+      </div>
+      <div class="glass-crops" aria-label="Light and dark adaptive crop previews"></div>
+    </section>
+  </div>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('kd-notepad-glass');
+  const board = root.querySelector('.glass-board');
+  const state = { tint: '#29b99d', density: 34, reflections: 80, refraction: 35 };
+  function restore(saved) {
+    if (/^#[0-9a-f]{6}$/i.test(saved?.tint || '')) state.tint = saved.tint;
+    for (const [key,min,max] of [['density',20,60],['reflections',15,80],['refraction',0,70]]) {
+      if (Number.isFinite(saved?.[key])) state[key] = Math.max(min,Math.min(max,saved[key]));
+    }
+  }
+  restore(window.openai?.widgetState?.privateContent);
+  const crops = root.querySelector('.glass-crops');
+  for (const [name,mask] of [['Squircle','squircle'],['Rounded square','rounded'],['Circle','circle']]) {
+    const label = document.createElement('span'); label.textContent = name; crops.appendChild(label);
+    for (const mode of ['light','dark']) {
+      const slot = document.createElement('div'); slot.className = 'glass-slot';
+      const icon = document.createElement('canvas'); icon.width = 600; icon.height = 600;
+      icon.className = 'glass-icon glass-' + mask; icon.dataset.mode = mode;
+      icon.setAttribute('role','img'); icon.setAttribute('aria-label',`${name}, ${mode} KD Notepad glass logo`);
+      slot.appendChild(icon); crops.appendChild(slot);
+    }
+  }
+  const wordmark = new Path2D('M0,0H3.6V6.2L8.8,0H13.3L6.9,7.4L13.8,16H9.2L3.6,9V16H0ZM14.5,0H20.6C26.1,0 29.6,3 29.6,8C29.6,13 26.1,16 20.6,16H14.5ZM18.1,3.3V12.7H20.4C23.9,12.7 25.8,11.1 25.8,8C25.8,4.9 23.9,3.3 20.4,3.3Z');
+  function paint(canvas) {
+    const ctx = canvas.getContext('2d');
+    const dark = canvas.dataset.mode === 'dark';
+    const rgb = state.tint.match(/[a-f0-9]{2}/ig).map(v => parseInt(v,16));
+    const tint = alpha => `rgba(${rgb.join(',')},${alpha})`;
+    const density = state.density / 100;
+    const shine = state.reflections / 100;
+    const metal = dark ? '#dbe4ed' : '#c4d5e2';
+    const metalLight = dark ? '#ffffff' : '#f8fbfd';
+    const metalDark = dark ? '#acbac5' : '#94a3af';
+    const ink = dark ? '#224f70' : '#2b648d';
+    const gradient = (x1,y1,x2,y2,stops) => {
+      const g = ctx.createLinearGradient(x1,y1,x2,y2);
+      for (const [at,color] of stops) g.addColorStop(at,color);
+      return g;
+    };
+    const rectangle = (x,y,w,h,r=0) => {
+      const path = new Path2D(); path.roundRect(x,y,w,h,r); return path;
+    };
+    const rotate = (degrees,x,y) => {
+      ctx.translate(x,y); ctx.rotate(degrees * Math.PI / 180); ctx.translate(-x,-y);
+    };
+    function glass(path,x,y,w,h) {
+      ctx.fillStyle = gradient(x,y,x+w,y+h,[[0,`rgba(37,129,185,${density + .09})`],[.48,tint(density + .02)],[1,`rgba(63,196,118,${density + .10})`]]);
+      ctx.fill(path);
+      ctx.save(); ctx.clip(path);
+      ctx.fillStyle = gradient(x,y,x+w,y,[[0,'#0d6a7c55'],[.045,'#5bd3df17'],[.15,'#ffffff00'],[.86,'#ffffff00'],[1,'#0f765844']]);
+      ctx.fillRect(x,y,w,h);
+      ctx.fillStyle = gradient(x,y,x+w*.8,y+h,[[0,`rgba(245,255,255,${shine * .34})`],[.3,`rgba(245,255,255,${shine * .09})`],[.65,'#ffffff00'],[1,'#ffffff00']]);
+      ctx.fillRect(x,y,w,h);
+      ctx.translate(.18,.22);
+      ctx.strokeStyle = `rgba(236,255,255,${shine + .12})`; ctx.lineWidth = .42; ctx.stroke(path);
+      ctx.restore();
+      ctx.strokeStyle = dark ? '#9ee8dd80' : '#267f8566'; ctx.lineWidth = .3; ctx.stroke(path);
+      ctx.save(); ctx.clip(path); ctx.translate(-.18,-.22);
+      ctx.strokeStyle = `rgba(198,255,235,${shine * .70})`; ctx.lineWidth = .38; ctx.stroke(path); ctx.restore();
+    }
+    ctx.setTransform(canvas.width/100,0,0,canvas.height/100,0,0);
+    ctx.clearRect(0,0,100,100);
+    ctx.fillStyle = dark ? '#1a1a1a' : '#ffffff'; ctx.fillRect(0,0,100,100);
+
+    // Match the approved beveled Notepad's geometry; change only cover material.
+    ctx.save(); rotate(-6,48,50.5);
+    glass(rectangle(21,18,54,65,4.5),21,18,54,65);
+    ctx.fillStyle = '#1a1a1a26'; ctx.fill(rectangle(24.7,28.3,49.14,52.65,2.5));
+    ctx.fillStyle = gradient(23.7,27.1,23.7,79.75,[[0,'#ffffff'],[.90,'#ffffff'],[1,dark ? '#e6ebef' : '#e7ebee']]);
+    ctx.fill(rectangle(23.7,27.1,49.14,52.65,2.5));
+    ctx.save(); ctx.translate(34.95,38.06); ctx.scale(.9,.9);
+    ctx.fillStyle = ink; ctx.fill(wordmark,'evenodd'); ctx.restore();
+    ctx.fillStyle = '#8b949d';
+    ctx.fill(rectangle(33.528,61.3225,27.027,2.106,1.053));
+    ctx.fill(rectangle(33.528,68.6935,18.6732,2.106,1.053));
+    for (const x of [30.72,45.84,60.96]) {
+      const ring = rectangle(x,14.75,4.32,11.7,2.16);
+      ctx.fillStyle = gradient(x,14.75,x+4.32,14.75,[[0,metalDark],[.2,metalLight],[.4,metal],[.8,metal],[1,metalDark]]);
+      ctx.fill(ring); ctx.strokeStyle = metalDark; ctx.lineWidth = .6; ctx.stroke(ring);
+      ctx.save(); ctx.clip(ring); ctx.translate(.25,.25);
+      ctx.strokeStyle = metalLight; ctx.lineWidth = .35; ctx.stroke(ring); ctx.restore();
+    }
+    ctx.restore();
+
+    // The barrel transmits the actual notebook beneath it. Its silver grip stays opaque.
+    ctx.save(); rotate(30,75,62);
+    const barrel = rectangle(70,40,10,30.8,[2.5,2.5,0,0]);
+    ctx.save(); ctx.clip(barrel); ctx.setTransform(1,0,0,1,0,0);
+    const offset = canvas.width / 100 * state.refraction / 100;
+    ctx.drawImage(canvas,offset,offset*.4); ctx.restore();
+    // A restrained internal refill makes the transparent barrel's depth visible.
+    ctx.fillStyle = '#8fa9b644'; ctx.fill(rectangle(74.55,44, .9,26.8,.3));
+    ctx.fillStyle = '#edf7f54d'; ctx.fill(rectangle(74.65,44,.18,26.8,.09));
+    glass(barrel,70,40,10,30.8);
+    ctx.save(); ctx.clip(barrel);
+    ctx.strokeStyle = `rgba(242,255,255,${shine * .85})`; ctx.lineWidth = .38;
+    ctx.beginPath(); ctx.moveTo(70.55,69.9); ctx.lineTo(70.55,42.5); ctx.quadraticCurveTo(70.55,40.55,72.5,40.55); ctx.lineTo(77.2,40.55); ctx.stroke();
+    ctx.restore();
+    const grip = rectangle(70,70.8,10,13.2);
+    ctx.fillStyle = gradient(70,70.8,80,70.8,[[0,metalDark],[.2,metalLight],[.4,metal],[.8,metal],[1,metalDark]]);
+    ctx.fill(grip); ctx.strokeStyle = dark ? '#ffffff70' : '#1a1a1a55'; ctx.lineWidth = .3; ctx.stroke(grip);
+    // Continue the barrel's glass material into the pointed cone, terminating in
+    // a small silver writing tip while retaining the original pen silhouette.
+    const cone = new Path2D('M70 84H80L76.18 92.4H73.82Z');
+    ctx.save(); ctx.clip(cone); ctx.setTransform(1,0,0,1,0,0);
+    ctx.drawImage(canvas,offset,offset*.4); ctx.restore();
+    ctx.fillStyle = '#b5c6cd70'; ctx.fill(new Path2D('M74.72 84H75.28L75.18 92.7H74.82Z'));
+    glass(cone,70,84,10,8.4);
+    const writingTip = new Path2D('M73.82 92.4H76.18L75 95Z');
+    ctx.fillStyle = gradient(73.82,92.4,76.18,92.4,[[0,metalDark],[.28,metalLight],[.55,metal],[1,metalDark]]);
+    ctx.fill(writingTip); ctx.strokeStyle = metalDark; ctx.lineWidth = .18; ctx.stroke(writingTip);
+    ctx.fillStyle = ink; ctx.fill(rectangle(77.3,42.2,1.8,11,.8));
+    ctx.restore();
+  }
+  function render() { root.querySelectorAll('canvas').forEach(paint); }
+  function changed() {
+    render();
+    window.openai?.setWidgetState?.({
+      privateContent: { ...state },
+      modelContent: { study: 'KD Notepad alternate glass logo with silver writing tip', glassTint: state.tint, glassDensity: state.density, reflections: state.reflections, refraction: state.refraction }
+    }).catch(() => {});
+  }
+  render();
+  window.addEventListener('openai:set_globals',event => {
+    const saved = event.detail?.globals?.widgetState?.privateContent;
+    if (saved) { restore(saved); render(); }
+  });
+  if (globalThis.Tweak) {
+    const tweak = new Tweak({ container: board, onChange: changed });
+    tweak.addColorPicker(state,'tint',{ label: 'Glass tint', reference: 'glass.tint' });
+    tweak.addSlider(state,'density',{ label: 'Glass density', min: 20, max: 60, unit: '%', reference: 'glass.density' });
+    tweak.addSlider(state,'reflections',{ label: 'Edge reflections', min: 15, max: 80, unit: '%', reference: 'glass.reflections' });
+    tweak.addSlider(state,'refraction',{ label: 'Pen refraction', min: 0, max: 70, unit: '%', reference: 'glass.refraction' });
+  }
+})();
+</script>
