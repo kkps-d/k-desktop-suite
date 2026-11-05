@@ -2,7 +2,9 @@
 
 Design checkpoint: 5 November 2026. The preferred beveled Notepad/Paint pair is
 used by those Android apps. KD Preview and KD Explorer have selected logo studies.
-The HTML previews preserve the design studies.
+The HTML previews preserve the design studies. The approved
+[alternate glass style](GLASS_STYLE.md) is maintained separately from the
+current default artwork.
 
 Open the previews directly in a browser. They include their styling and scripts
 and do not require a server or a network connection.
@@ -92,6 +94,21 @@ Square 1024 × 1024 PNG renders: [light](kd-explorer-light.png) and
 [dark](kd-explorer-dark.png). These are design references; the study has not yet
 been applied to Explorer's Android resources.
 
+## Alternate glass style
+
+**Aquamarine glass** is the approved alternate style, with Explorer as its first
+completed reference. Open the [preview](kd-explorer-aquamarine-glass.html) or edit
+its [source](sources/kd-explorer-aquamarine-glass.html). See the
+[glass style guide](GLASS_STYLE.md) for material rules, the exact approved values,
+verification, and scope.
+
+The upright folder has transparent blue/green layers, long visible sheets,
+reflective rims, and unfilled etched KD lettering. The approved controls are
+`#29b99d` tint, 34% density, 80% reflections, and 35% refraction. Square 1024px
+renders: [light](kd-explorer-glass-light.png) and [dark](kd-explorer-glass-dark.png).
+The amber Explorer selection and beveled Android logos remain the defaults.
+Notepad's glass backing and blue pen barrel are being explored separately.
+
 ## Earlier explorations
 
 - [Explorer directions](kd-explorer-logo-directions.html): Classic folder,
@@ -162,7 +179,7 @@ and Floating UI core 1.7.3 / DOM 1.7.4 dependencies, with licenses preserved in
 export to retain offline operation. Its PNGs capture each selected square original
 at 1024px in Chrome; the KD canvas redraws at the output resolution.
 
-The four Explorer exports also inline those same pinned runtime dependencies;
+The Explorer exports also inline those same pinned runtime dependencies;
 their licenses are in the existing [runtime notices](kd-preview-NOTICES.txt).
 After regenerating them, re-inline the scripts to retain offline operation.
 The Explorer PNGs capture the selected square originals at 1024px, with the KD

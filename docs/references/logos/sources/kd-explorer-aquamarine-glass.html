@@ -1,0 +1,193 @@
+<style>
+  #kd-aquamarine-glass { color-scheme: light dark; }
+  #kd-aquamarine-glass .glass-board {
+    --study-bg: light-dark(#edf1f3, #23292c);
+    --study-text: light-dark(#203c40, #e5efed);
+    --study-muted: light-dark(#52676a, #b6c8c6);
+    --study-rule: light-dark(#ced9da, #405352);
+    color: var(--study-text); background: var(--study-bg);
+    border-radius: 22px; padding: 24px 28px;
+    font: 14px/1.5 ui-sans-serif, system-ui, sans-serif; box-sizing: border-box;
+  }
+  #kd-aquamarine-glass .glass-heading { min-height: 58px; padding-right: 90px; }
+  #kd-aquamarine-glass h2 { margin: 0; font-size: 19px; font-weight: 500; letter-spacing: -.025em; }
+  #kd-aquamarine-glass .glass-subtitle { margin-top: 3px; color: var(--study-muted); font-size: 12px; }
+  #kd-aquamarine-glass .glass-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 20px 0 24px; }
+  #kd-aquamarine-glass figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; }
+  #kd-aquamarine-glass figcaption, #kd-aquamarine-glass .glass-crops > span { font-size: 12px; color: var(--study-muted); }
+  #kd-aquamarine-glass .glass-icon { display: block; width: min(100%, 240px); height: auto; aspect-ratio: 1; background: #fff; }
+  #kd-aquamarine-glass .glass-icon[data-mode="dark"] { background: #1a1a1a; }
+  #kd-aquamarine-glass .glass-crops { display: grid; grid-template-columns: 108px 1fr 1fr; align-items: center; gap: 14px 12px; padding-top: 20px; border-top: 1px solid var(--study-rule); }
+  #kd-aquamarine-glass .glass-slot { display: flex; justify-content: center; }
+  #kd-aquamarine-glass .glass-slot .glass-icon { width: 72px; }
+  #kd-aquamarine-glass .glass-squircle { clip-path: polygon(0% 30%,.4% 20%,1.5% 12%,4% 6%,8% 2.5%,15% .5%,30% 0%,70% 0%,85% .5%,92% 2.5%,96% 6%,98.5% 12%,99.6% 20%,100% 30%,100% 70%,99.6% 80%,98.5% 88%,96% 94%,92% 97.5%,85% 99.5%,70% 100%,30% 100%,15% 99.5%,8% 97.5%,4% 94%,1.5% 88%,.4% 80%,0% 70%); }
+  #kd-aquamarine-glass .glass-rounded { clip-path: inset(0 round 22%); }
+  #kd-aquamarine-glass .glass-circle { clip-path: circle(50%); }
+  @media (max-width: 480px) {
+    #kd-aquamarine-glass .glass-board { padding: 22px 16px; }
+    #kd-aquamarine-glass .glass-heading { min-height: 88px; }
+    #kd-aquamarine-glass .glass-pair { gap: 14px; }
+    #kd-aquamarine-glass .glass-crops { grid-template-columns: 100px 1fr 1fr; gap: 12px 6px; }
+    #kd-aquamarine-glass .glass-slot .glass-icon { width: 48px; }
+  }
+</style>
+<div id="kd-aquamarine-glass" aria-label="KD Explorer aquamarine glass material study">
+  <div class="viz-dotted-background">
+    <section class="glass-board" aria-label="Aquamarine glass folder">
+      <header class="glass-heading">
+        <h2>Aquamarine glass</h2>
+        <div class="glass-subtitle">KD Explorer · playful material study</div>
+      </header>
+      <div class="glass-pair">
+        <figure>
+          <canvas class="glass-icon" data-mode="light" width="1000" height="1000" role="img" aria-label="Light KD Explorer: transparent blue and aquamarine folder with two visible paper sheets and an etched geometric KD outline">Transparent aquamarine folder, light version.</canvas>
+          <figcaption>Light · white</figcaption>
+        </figure>
+        <figure>
+          <canvas class="glass-icon" data-mode="dark" width="1000" height="1000" role="img" aria-label="Dark KD Explorer: transparent blue and aquamarine folder on a flat dark background">Transparent aquamarine folder, dark version.</canvas>
+          <figcaption>Dark · #1a1a1a</figcaption>
+        </figure>
+      </div>
+      <div class="glass-crops" aria-label="Light and dark adaptive crop previews"></div>
+    </section>
+  </div>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('kd-aquamarine-glass');
+  const board = root.querySelector('.glass-board');
+  const state = { tint: '#29b99d', density: 34, reflections: 80, refraction: 35 };
+  function restore(saved) {
+    if (/^#[0-9a-f]{6}$/i.test(saved?.tint || '')) state.tint = saved.tint;
+    for (const [key, min, max] of [['density',20,60],['reflections',15,80],['refraction',0,70]]) {
+      if (Number.isFinite(saved?.[key])) state[key] = Math.max(min, Math.min(max, saved[key]));
+    }
+  }
+  restore(window.openai?.widgetState?.privateContent);
+  const crops = root.querySelector('.glass-crops');
+  for (const [name, mask] of [['Squircle','squircle'], ['Rounded square','rounded'], ['Circle','circle']]) {
+    const label = document.createElement('span'); label.textContent = name; crops.appendChild(label);
+    for (const mode of ['light','dark']) {
+      const slot = document.createElement('div'); slot.className = 'glass-slot';
+      const icon = document.createElement('canvas'); icon.width = 600; icon.height = 600;
+      icon.className = 'glass-icon glass-' + mask; icon.dataset.mode = mode;
+      icon.setAttribute('role','img'); icon.setAttribute('aria-label', `${name}, ${mode} KD Explorer glass logo`);
+      slot.appendChild(icon); crops.appendChild(slot);
+    }
+  }
+
+  // These coordinates and the KD outlines are shared with the approved Soft geometry study.
+  // A single back outline joins the compact ear without an internal seam.
+  const back = new Path2D('M22.5 24H42.5Q47 24 47 28.5V31H77.5Q82 31 82 35.5V76.5Q82 81 77.5 81H22.5Q18 81 18 76.5V28.5Q18 24 22.5 24Z');
+  const front = new Path2D('M22.5 41H77.5Q82 41 82 45.5V74Q82 81 75 81H25Q18 81 18 74V45.5Q18 41 22.5 41Z');
+  const wordmark = new Path2D('M0,0H3.6V6.2L8.8,0H13.3L6.9,7.4L13.8,16H9.2L3.6,9V16H0ZM14.5,0H20.6C26.1,0 29.6,3 29.6,8C29.6,13 26.1,16 20.6,16H14.5ZM18.1,3.3V12.7H20.4C23.9,12.7 25.8,11.1 25.8,8C25.8,4.9 23.9,3.3 20.4,3.3Z');
+
+  function paint(canvas) {
+    const ctx = canvas.getContext('2d');
+    const dark = canvas.dataset.mode === 'dark';
+    const rgb = state.tint.match(/[a-f0-9]{2}/ig).map(v => parseInt(v,16));
+    const tint = alpha => `rgba(${rgb.join(',')},${alpha})`;
+    const density = state.density / 100;
+    const shine = state.reflections / 100;
+    const gradient = (x1,y1,x2,y2,stops) => {
+      const g = ctx.createLinearGradient(x1,y1,x2,y2);
+      for (const [at,color] of stops) g.addColorStop(at,color);
+      return g;
+    };
+    ctx.setTransform(canvas.width / 100,0,0,canvas.height / 100,0,0);
+    ctx.clearRect(0,0,100,100);
+    ctx.fillStyle = dark ? '#1a1a1a' : '#ffffff'; ctx.fillRect(0,0,100,100);
+
+    // Transmitted color and denser edges make the back read as tinted glass on either ground.
+    ctx.fillStyle = gradient(18,24,79,81,[[0,`rgba(37,129,185,${density + .09})`],[.48,tint(density + .02)],[1,`rgba(63,196,118,${density + .10})`]]);
+    ctx.fill(back);
+    ctx.save(); ctx.clip(back);
+    ctx.fillStyle = gradient(18,30,82,30,[[0,'#0d6a7c55'],[.035,'#5bd3df17'],[.12,'#ffffff00'],[.90,'#ffffff00'],[1,'#0f76583d']]);
+    ctx.fillRect(18,24,64,57);
+    ctx.fillStyle = gradient(19,24,64,56,[[0,`rgba(255,255,255,${shine * .30})`],[.40,'#ffffff00'],[1,'#ffffff00']]);
+    ctx.fillRect(18,24,64,57); ctx.restore();
+    ctx.strokeStyle = dark ? '#9ee8dd70' : '#267f855e'; ctx.lineWidth = .32; ctx.stroke(back);
+    ctx.save(); ctx.clip(back); ctx.translate(.22,.30);
+    ctx.strokeStyle = `rgba(236,255,255,${shine + .15})`; ctx.lineWidth = .35; ctx.stroke(back); ctx.restore();
+
+    function sheets(submerged) {
+      const shift = submerged ? state.refraction / 100 : 0;
+      ctx.save(); ctx.translate(shift * .8,shift * .55);
+      const paper = (x,y,angle,rear) => {
+        ctx.save(); ctx.translate(x + 20,y + 21); ctx.rotate(angle * Math.PI / 180);
+        ctx.beginPath(); ctx.roundRect(-20,-21,40,48,3);
+        ctx.fillStyle = rear ? (dark ? '#b4cbd1' : '#dce8ea') : (dark ? '#e8f3f1' : '#fafffe');
+        ctx.shadowColor = '#16454a25'; ctx.shadowBlur = .7; ctx.shadowOffsetY = .45;
+        ctx.fill(); ctx.shadowColor = 'transparent';
+        ctx.strokeStyle = rear ? '#7499a955' : '#ffffffb3'; ctx.lineWidth = .22; ctx.stroke();
+        ctx.fillStyle = rear ? '#7e9ca66b' : '#a6bdc3b3';
+        if (rear) {
+          for (const yy of [-12,-7,-2,3]) { ctx.beginPath(); ctx.roundRect(-12,yy,21,1, .5); ctx.fill(); }
+        } else {
+          for (const [yy,w] of [[-13.4,22],[-8.9,22],[-4.4,17],[.1,22],[4.6,18],[9.1,21]]) {
+            ctx.beginPath(); ctx.roundRect(-12.8,yy,w,1.25,.625); ctx.fill();
+          }
+        }
+        ctx.restore();
+      };
+      paper(26,28,-6,true); paper(33,29,5,false); ctx.restore();
+    }
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,100,41.25); ctx.clip(); sheets(false); ctx.restore();
+    // A tiny displacement at the glass lip mimics refraction without blurring the paper.
+    ctx.save(); ctx.clip(front); sheets(true); ctx.restore();
+
+    // The front is alpha-composited over the sheets, never painted as an opaque panel.
+    ctx.fillStyle = gradient(19,41,79,81,[[0,`rgba(49,149,198,${density * .83})`],[.44,tint(density * .72)],[1,`rgba(65,193,135,${density + .05})`]]);
+    ctx.fill(front);
+    ctx.save(); ctx.clip(front);
+    ctx.fillStyle = gradient(18,52,82,52,[[0,'#08778552'],[.035,'#1ba9b22b'],[.12,'#6ee7da00'],[.88,'#6ee7da00'],[.975,'#0c967540'],[1,'#125a6973']]);
+    ctx.fillRect(18,41,64,40);
+    ctx.fillStyle = gradient(28,41,55,80,[[0,`rgba(245,255,255,${shine * .48})`],[.20,`rgba(245,255,255,${shine * .16})`],[.56,'#ffffff00'],[1,'#ffffff00']]);
+    ctx.fillRect(18,41,64,40);
+    // A restrained diagonal reflection echoes the Vista reference's polished surface.
+    ctx.fillStyle = gradient(25,42,67,75,[[0,'#ffffff00'],[.35,'#ffffff00'],[.42,`rgba(255,255,255,${shine * .12})`],[.60,`rgba(255,255,255,${shine * .05})`],[.67,'#ffffff00'],[1,'#ffffff00']]);
+    ctx.fillRect(18,41,64,40);
+    ctx.strokeStyle = `rgba(235,255,251,${shine * .60})`; ctx.lineWidth = .75;
+    ctx.translate(.3,-.5); ctx.stroke(front); ctx.restore();
+
+    ctx.strokeStyle = dark ? '#94e4da90' : '#247d8690'; ctx.lineWidth = .35; ctx.stroke(front);
+    ctx.save(); ctx.clip(front);
+    ctx.strokeStyle = `rgba(242,255,255,${shine + .25})`; ctx.lineWidth = .42;
+    ctx.beginPath(); ctx.moveTo(18.5,74); ctx.lineTo(18.5,45.5); ctx.quadraticCurveTo(18.5,41.5,22.5,41.5); ctx.lineTo(77.2,41.5); ctx.stroke();
+    ctx.strokeStyle = `rgba(198,255,235,${shine * .80})`; ctx.lineWidth = .28;
+    ctx.beginPath(); ctx.moveTo(25,80.3); ctx.lineTo(74.8,80.3); ctx.quadraticCurveTo(81.3,80.3,81.3,74); ctx.lineTo(81.3,46); ctx.stroke();
+    ctx.restore();
+
+    // The unfilled groove leaves the glass untouched inside KD. Its glint follows
+    // the same reflection strength and cool-to-green lighting as the folder edges.
+    ctx.save(); ctx.translate(35.2,53);
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = gradient(0,0,29.6,16,[[0,`rgba(34,94,102,${.32 + shine * .16})`],[.55,'#286c734d'],[1,'#28796752']]);
+    ctx.lineWidth = .38; ctx.stroke(wordmark);
+    ctx.save(); ctx.translate(.10,.12);
+    ctx.strokeStyle = gradient(0,0,29.6,16,[[0,`rgba(242,255,255,${shine * .70})`],[.45,`rgba(224,255,250,${shine * .25})`],[1,`rgba(198,255,235,${shine * .40})`]]);
+    ctx.lineWidth = .35; ctx.stroke(wordmark); ctx.restore();
+    ctx.restore();
+  }
+  function render() { root.querySelectorAll('canvas').forEach(paint); }
+  function changed() {
+    render();
+    window.openai?.setWidgetState?.({
+      privateContent: { ...state },
+      modelContent: { study: 'KD Explorer aquamarine glass experiment', glassTint: state.tint, glassDensity: state.density, reflections: state.reflections, refraction: state.refraction }
+    }).catch(() => {});
+  }
+  render();
+  window.addEventListener('openai:set_globals', event => {
+    const saved = event.detail?.globals?.widgetState?.privateContent;
+    if (saved) { restore(saved); render(); }
+  });
+  if (globalThis.Tweak) {
+    const tweak = new Tweak({ container: board, onChange: changed });
+    tweak.addColorPicker(state, 'tint', { label: 'Glass tint', reference: 'glass.tint' });
+    tweak.addSlider(state, 'density', { label: 'Glass density', min: 20, max: 60, unit: '%', reference: 'glass.density' });
+    tweak.addSlider(state, 'reflections', { label: 'Edge reflections', min: 15, max: 80, unit: '%', reference: 'glass.reflections' });
+    tweak.addSlider(state, 'refraction', { label: 'Paper refraction', min: 0, max: 70, unit: '%', reference: 'glass.refraction' });
+  }
+})();
+</script>
