@@ -11,6 +11,8 @@ windows, including Googlebook. Built with Kotlin, Jetpack Compose, and Material 
   recovery.
 - **[KD Paint](docs/PAINT.md)** — A drawing and image editor with brushes, shapes,
   selections, text, image transforms, PNG/JPEG files, multiple windows, and draft recovery.
+- **[KD Explorer](docs/EXPLORER.md)** — A blank tabbed app with independent windows
+  for UI validation. File browsing is not implemented yet.
 
 The apps support Android 8.0 / API 26 and newer, touch, keyboard, mouse, and
 trackpad. Layouts adapt as windows resize, with system light/dark appearance and
@@ -29,7 +31,7 @@ no fixed orientation or aspect ratio.
 1. Open the repository in Android Studio Rabbit 2 RC 1 or newer and let Gradle sync.
 2. Install Android 17 / API 37, Build Tools 36.0.0, and Android Emulator through
    SDK Manager. Use the separate API 37.1 desktop system image for desktop testing.
-3. Start the local **Small Desktop** emulator, select the `notepad` or `paint`
+3. Start the local **Small Desktop** emulator, select the `notepad`, `paint`, or `explorer`
    run configuration, and run.
 
 See [Development](docs/DEVELOPMENT.md) for command-line builds and SDK setup.
@@ -52,4 +54,5 @@ recovery data. Paint flattens opened transparent images onto white.
 
 Original K Desktop Suite code is licensed under the [MIT License](LICENSE).
 Third-party libraries, icons, and fonts retain their respective licenses.
-Both apps provide bundled notices under **About > Open-source licenses**.
+Notepad and Paint provide bundled notices under **About > Open-source licenses**.
+Explorer's validation shell bundles notices in its APK assets.

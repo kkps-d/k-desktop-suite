@@ -1,6 +1,10 @@
 # KD Explorer — basic file browsing specification
 
-Updated 24 October 2026. Status: proposed requirements; the `:explorer` application module is not implemented.
+Updated 5 November 2026. Status: proposed browsing requirements. The `:explorer`
+module now provides a blank tabbed, multi-window UI validation shell; see the
+[Explorer guide](EXPLORER.md) for implemented behavior. Tabs and independent
+windows were brought forward from the original deferred scope. Browsing remains
+unimplemented; the layout below is a future browsing reference.
 
 KD Explorer is a native Android file browser for phones, tablets, foldables, and desktop windows. Preserve Microsoft File Explorer's recognizable arrangement and navigation model, styled with Jetpack Compose and Material 3 Expressive. Follow the [suite design guidelines](DESIGN_GUIDELINES.md), including KD branding, system appearance, dynamic color, and a green fallback palette.
 
@@ -11,7 +15,7 @@ This first version lets people reach a folder, browse its contents, find an item
 | Included in the first version | Deferred |
 |---|---|
 | Add and revisit user-authorized folder locations | Unrestricted device storage, Windows drive letters, network shares, account setup |
-| Folder navigation, breadcrumbs, Back, Forward, Up, Refresh | Tabs, multiple browser windows, split browsing panes |
+| Folder navigation, breadcrumbs, Back, Forward, Up, Refresh | Split browsing panes |
 | A leading locations pane and an expandable folder tree | Recent-file feeds, recommendations, favorites beyond saved locations |
 | Details and icon views; sorting; current-folder name filtering | Recursive/indexed search, content search, grouping, advanced filters |
 | Single and multiple selection; basic item information | Copy, cut, paste, move, rename, delete, create, file drag-and-drop |
@@ -178,7 +182,7 @@ Use current window constraints, Material 3 Adaptive, height, and folding feature
 
 On a narrow window, opening Locations does not replace navigation history. Choosing a folder closes the panel and returns focus to the listing; cancelling restores focus to the opener. Search and all commands remain available when panes collapse.
 
-Respect system captions, bars, cutouts, IME, and dragging regions. Do not integrate controls into the caption in this first version. Never place a control or filename across a separating hinge; use separate panes when space permits, otherwise place browsing in one uninterrupted region. Preserve current location, selection, search, and scroll when resizing or changing posture.
+Respect system captions, bars, cutouts, IME, and dragging regions. The shell integrates tabs into the caption when they fit safely, with compact clearance beside system controls and draggable unused header space; preserve that behavior when adding browsing. Never place a control or filename across a separating hinge; use separate panes when space permits, otherwise place browsing in one uninterrupted region. Preserve current location, selection, search, and scroll when resizing or changing posture.
 
 ## 10. State, loading, and errors
 
@@ -214,6 +218,6 @@ The basic browsing milestone is complete when all of the following are verified:
 7. Empty, loading, error, and no-match states are distinguishable. Slow or large directories do not block input, and results from an abandoned folder cannot overwrite the current view.
 8. Activity recreation and live resizing preserve browsing state. Relaunch restores saved locations/preferences and safely validates the last folder. Removing a location does not modify its files.
 9. Verify compact, medium, expanded, extra-large, and short windows; fold changes; desktop maximize/restore; 200% fonts; RTL; TalkBack; keyboard-only operation; light/dark and dynamic/fallback colors; reduced motion; caption and IME insets.
-10. No write operations, placeholder management commands, tabs, thumbnails, recursive search, or unrestricted-storage claims ship in this milestone.
+10. No write operations, placeholder management commands, thumbnails, recursive search, or unrestricted-storage claims ship in this milestone. Preserve the shell's tabs and independent windows when adding browsing.
 
 Use unit tests for meaningful browsing state, sort/filter rules, and stale-result handling; provider-backed tests for access/revocation and file launch grants; Compose/device checks for adaptive layout and input. Run the future module's relevant unit tests, assemble, lint, and instrumented checks, and report device/provider combinations that could not be verified. This specification itself does not establish implementation or runtime validation.

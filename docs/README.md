@@ -4,6 +4,7 @@
 
 - [KD Notepad](NOTEPAD.md): documents, tabs, windows, shortcuts, and recovery.
 - [KD Paint](PAINT.md): drawing tools, image editing, settings, and recovery.
+- [KD Explorer](EXPLORER.md): blank tabs, independent windows, and UI validation.
 
 ## Contributing
 
@@ -23,7 +24,7 @@ one is written, keep it focused on a concrete scope. Historical layout reference
 do not define current app behavior.
 
 - [Windows 7 Paint baseline](WINDOWS_7_PAINT_SPEC.md) (original reference proposal)
-- [Explorer specification](KD_EXPLORER_SPEC.md) (planned app)
+- [Explorer specification](KD_EXPLORER_SPEC.md) (planned browsing functionality)
 - [Tab visual references](references/chrome-android-tabs/) (historical Chrome examples)
 - [Paint layout references](references/kd-paint/README.md)
 - [Logo design studies](references/logos/README.md): selected Printed KD logos,

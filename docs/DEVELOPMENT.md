@@ -10,9 +10,9 @@ Follow the [contributor instructions](CONTRIBUTING.md) and
    Emulator. The desktop API 37.1 system image is a separate emulator package;
    it does not require changing the app's compile SDK.
 3. Create or start the **Small Desktop** local virtual device with the desktop
-   image. Select the `notepad` or `paint` run configuration.
+   image. Select the `notepad`, `paint`, or `explorer` run configuration.
 
-Both apps compile and target API 37 and support Android 8.0 / API 26 onward.
+All three apps compile and target API 37 and support Android 8.0 / API 26 onward.
 They use standard Android APIs, with no fixed orientation or aspect ratio and no
 touchscreen requirement or Googlebook-specific detection.
 
@@ -36,17 +36,20 @@ Run commands from the repository root. On Windows PowerShell, replace
 ```sh
 ./gradlew :notepad:assembleDebug :notepad:lintDebug :notepad:assembleDebugAndroidTest
 ./gradlew :paint:assembleDebug :paint:lintDebug :paint:assembleDebugAndroidTest
+./gradlew :explorer:assembleDebug :explorer:lintDebug :explorer:assembleDebugAndroidTest
 ```
 
 | App | Module | Application ID | Debug APK |
 | --- | --- | --- | --- |
 | KD Notepad | `:notepad` | `com.kkps.kdesktopsuite.notepad` | `notepad/build/outputs/apk/debug/notepad-debug.apk` |
 | KD Paint | `:paint` | `com.kkps.kdesktopsuite.paint` | `paint/build/outputs/apk/debug/paint-debug.apk` |
+| KD Explorer | `:explorer` | `com.kkps.kdesktopsuite.explorer` | `explorer/build/outputs/apk/debug/explorer-debug.apk` |
 
-The apps install independently. Both include shared Android Studio launch
-configurations for [Notepad](../.run/notepad.run.xml) and
-[Paint](../.run/paint.run.xml). If a module is missing from the
-run configurations, use **File > Sync Project with Gradle Files** first.
+The apps install independently. They include shared Android Studio launch
+configurations for [Notepad](../.run/notepad.run.xml),
+[Paint](../.run/paint.run.xml), and [Explorer](../.run/explorer.run.xml). If a
+module is missing from the run configurations, use **File > Sync Project with
+Gradle Files** first.
 
 See [Testing](TESTING.md) for JVM tests, instrumented tests, and manual checks.
 
@@ -76,6 +79,7 @@ compatibility, instead of relying on Compose's older transitive test dependency.
 ```text
 notepad/                     Notepad editor, documents, tabs, and recovery
 paint/                       Paint editor, raster operations, and recovery
+explorer/                    Blank tabbed UI validation app and independent windows
 core/ui/                     Shared theme, fonts, menus, settings, and caption support
 docs/                        Usage guides, contributor instructions, and specs
 gradle/libs.versions.toml    Dependency and plugin versions
@@ -84,6 +88,13 @@ gradle/libs.versions.toml    Dependency and plugin versions
 Keep document and editing behavior in the owning app. Share platform-independent
 logic where useful and keep Android adapters in their appropriate modules.
 Extract shared UI when both apps demonstrate reuse.
+
+Explorer currently owns a small window-local `ExplorerViewModel` backed by
+`SavedStateHandle`. New windows launch separate tasks; no global tab registry or
+file/session repository exists yet. Its tabs enter the native caption when a
+readable tab and both header buttons fit, using shared geometry/input support
+and an 8dp drag clearance. Otherwise the header stays below the caption. See the
+[Explorer guide](EXPLORER.md) for shell scope.
 
 Notepad's `LiteralSearch` defines ordered, nonoverlapping UTF-16 literal ranges.
 `NotepadSearch`, owned by each window's ViewModel, scans on the Default dispatcher
@@ -103,8 +114,9 @@ state. See [Localization](LOCALIZATION.md) for resource ownership and locale set
 - Use the actual caption height, system control bounds, cutouts, and content
   origin when integrating controls into a desktop title bar. Geometry is in
   physical window pixels; RTL must not mirror system control positions.
-- Integrate only when controls and scaled text fit an unobstructed span. Keep
-  window buttons clear and reserve blank space for system dragging. Fall back
+- Integrate whenever controls and scaled text fit an unobstructed span. Keep
+  window buttons clear with minimal spacing; the tabbed apps use an 8dp drag gap.
+  Leave unused custom header space draggable instead of reserving a wide strip. Fall back
   below the caption when geometry is missing, blocked, too short, or too narrow.
 - Exclude app controls from caption dragging only within their visible, clipped
   bounds. Excluding the whole strip would prevent system window dragging.

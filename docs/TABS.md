@@ -14,9 +14,11 @@ owns its document content, commands, and behavior when the last tab closes.
   shift control positions. Keep keyboard focus distinct from selection.
 - Use theme tokens, respect font scaling and reduced motion, and expose full
   titles and unsaved/saving/error states accessibly.
-- Integrate tabs into the desktop caption only when controls and scaled text
-  fit safely. Preserve system buttons and blank window-dragging space; otherwise
-  place tabs below the caption. Follow the
+- Integrate tabs into the desktop caption whenever controls and scaled text
+  fit safely. Keep clearance beside system elements compact (8dp in the current
+  tabbed apps), and let unused custom header space remain draggable. Exclude only
+  interactive controls from dragging; avoid a wide dedicated drag gap. Preserve
+  system buttons; otherwise place tabs below the caption. Follow the
   [shared desktop UI constraints](DEVELOPMENT.md#shared-desktop-ui-constraints).
 
 Keep exact dimensions and caption thresholds with the implementation and tests

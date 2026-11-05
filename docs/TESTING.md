@@ -12,6 +12,7 @@ JVM tests where available:
 ```sh
 ./gradlew :notepad:testDebugUnitTest :notepad:assembleDebug :notepad:lintDebug :notepad:assembleDebugAndroidTest
 ./gradlew :paint:testDebugUnitTest :paint:assembleDebug :paint:lintDebug :paint:assembleDebugAndroidTest
+./gradlew :explorer:testDebugUnitTest :explorer:assembleDebug :explorer:lintDebug :explorer:assembleDebugAndroidTest
 ```
 
 ## Instrumented tests
@@ -69,6 +70,7 @@ macOS/Linux:
 ```sh
 ANDROID_SERIAL=emulator-5554 ./gradlew :notepad:connectedDebugAndroidTest
 ANDROID_SERIAL=emulator-5554 ./gradlew :paint:connectedDebugAndroidTest
+ANDROID_SERIAL=emulator-5554 ./gradlew :explorer:connectedDebugAndroidTest
 ```
 
 ## Coverage
@@ -133,6 +135,35 @@ tests and 17 instrumented tests on the API 37 desktop emulator, with no lint
 issues. This is historical evidence, not verification of subsequent changes.
 The [earlier implementation reference](references/kd-paint/classic-implemented.png)
 shows the former ribbon layout.
+
+### Explorer shell
+
+`ExplorerViewModelTest` checks independent tab sessions, closing neighbors,
+stable IDs, tab cycling, and restoration from saved state. `ExplorerCaptionTest`
+checks physical system-control clearance, density, RTL, and integration thresholds.
+`ExplorerShellTest`
+checks visible tab controls, overflow and keyboard focus, the compact selector
+at 200% fonts, activity recreation, menu/keyboard new-window launches into
+separate tasks, and closing only the intended window. Caption checks cover
+integration/fallback, large text, missing geometry, RTL, the compact 8dp system
+clearance, native button input, and dragging through unused header space.
+
+Run the Explorer commands above and instrumented tests only on local Small
+Desktop. Also inspect the blank workspace and native caption, resize narrow
+and short windows, maximize/restore, and check touch, mouse, keyboard-only input,
+RTL, light/dark appearance, TalkBack, and system New window. The shell has no
+file/provider behavior, drag reordering/transfers, or on-disk session recovery
+to validate yet. Compose previews cover desktop, compact, short dark, and
+200% text configurations.
+
+Shell and caption verification on 5 November 2026: all seven JVM tests and seven instrumented
+checks passed on local Small Desktop (`emulator-5554`, regular desktop user 10).
+Debug assembly, lint, and test-APK compilation passed; lint reported no errors
+and one backup-configuration warning. Visual checks covered desktop and 320dp
+window layouts, native captions, live resizing, and actual Ctrl+T input. Native
+caption button input and window dragging passed; RTL and large-text caption
+fallback have fixture coverage. Full TalkBack, system-locale RTL,
+fold/external-display, theme, and system New window checks remain manual follow-up work.
 
 ## Manual verification
 
