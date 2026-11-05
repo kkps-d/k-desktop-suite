@@ -8,16 +8,19 @@ and do not require a server or a network connection.
 
 ## Selected direction
 
-[Printed KD — square originals and launcher crops](kd-printed-blue-cup.html)
+[Printed KD — compact white cup and wooden paintbrush](kd-compact-white-cup.html)
 contains the current design for both apps:
 
 - **KD Notepad:** a light-blue notebook and matching pen, with KD printed on
   the notebook.
-- **KD Paint:** a terracotta cup printed with KD, holding a golden pencil,
-  teal paintbrush, and purple marker.
+- **KD Paint:** a compact white cup with a small handle and dark KD lettering,
+  holding a golden pencil, a brown wooden paintbrush with a silver collar and
+  pointed bristles, and a purple capped marker. The pencil and marker use
+  slightly richer colors than the earlier explorations.
 - Square originals with squircle, rounded-square, and circle crop previews.
 - White icon backgrounds in light mode and neutral very dark gray (`#1a1a1a`)
-  backgrounds in dark mode. Foreground colors and KD lettering adjust by mode.
+  backgrounds in dark mode. Colored foregrounds adjust by mode; the cup stays
+  white with dark KD lettering.
 - Subtle dark outlines on light icons and light outlines on dark icons.
 - The icon appearance selector affects the originals and crops independently
   of the surrounding preview's theme.
@@ -32,6 +35,11 @@ its foreground items.
 - [Material branding variants](kd-material-branded.html): corner seal, printed
   KD, brand band, and KD centerpiece. Printed KD was selected and refined into
   the current design above.
+- [First Printed KD pair](kd-printed-blue-cup.html): the blue notebook and a
+  terracotta utensil cup, with square originals and launcher crops.
+- [Paint refinements](kd-paint-refinements.html): balanced pot, compact cup,
+  and two-tool pot. Compact cup was selected, then refined with white ceramic,
+  richer utensil colors, and a wooden brush with a pointed tip.
 
 ## Sources and verification
 
