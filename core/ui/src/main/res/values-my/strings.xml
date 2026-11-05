@@ -19,4 +19,14 @@
     <string name="license_dependencies">အက်ပ်လုပ်ဆောင်ရေး လိုင်ဘရီများ</string>
     <string name="license_dependencies_summary">AndroidX၊ Kotlin နှင့် ပြင်ပအစိတ်အပိုင်း အသိပေးချက်များ</string>
     <string name="license_load_error">ပါဝင်သော လိုင်စင်ကို မဖတ်နိုင်ပါ။ ဤစာမျက်နှာကို ပြန်ဖွင့်ပြီး ထပ်စမ်းကြည့်ပါ။</string>
+
+    <string name="ui_tabs_new_tab">စာရွက်စာတမ်းအသစ်</string>
+    <string name="ui_tabs_switch_document">စာရွက်စာတမ်း ပြောင်းရန် — %1$s</string>
+    <string name="ui_tabs_close_tab">%1$s ကို ပိတ်ရန်</string>
+    <string name="ui_tabs_unsaved_tab">%1$s၊ မသိမ်းရသေးသော အပြောင်းအလဲများ ရှိသည်</string>
+    <string name="ui_tabs_move_tab_left">ဘယ်သို့ ရွှေ့ရန်</string>
+    <string name="ui_tabs_move_tab_right">ညာသို့ ရွှေ့ရန်</string>
+    <string name="ui_tabs_move_to_window">ဝင်းဒိုးသို့ ရွှေ့ရန်…</string>
+    <string name="ui_tabs_close_document">ပိတ်ရန်</string>
+    <string name="ui_tabs_welcome">ကြိုဆိုပါသည်</string>
 </resources>

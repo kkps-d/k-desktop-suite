@@ -1,10 +1,12 @@
 package com.kkps.kdesktopsuite.notepad
 
-import com.kkps.kdesktopsuite.ui.DesktopCaption
-import com.kkps.kdesktopsuite.ui.captionGestureRects
-
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import com.kkps.kdesktopsuite.ui.CaptionMode
+import com.kkps.kdesktopsuite.ui.DesktopCaption
+import com.kkps.kdesktopsuite.ui.DesktopCaptionDimensions
+import com.kkps.kdesktopsuite.ui.captionGestureRects
+import com.kkps.kdesktopsuite.ui.captionLayout
 import org.junit.Assert.*
 import org.junit.Test
 

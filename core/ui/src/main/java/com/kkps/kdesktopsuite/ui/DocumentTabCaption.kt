@@ -1,19 +1,17 @@
-package com.kkps.kdesktopsuite.notepad
+package com.kkps.kdesktopsuite.ui
 
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.dp
-import com.kkps.kdesktopsuite.ui.DesktopCaption
-import com.kkps.kdesktopsuite.ui.desktopCaptionSpan
 
-internal object DesktopCaptionDimensions {
+object DesktopCaptionDimensions {
     val dragAreaWidth = 8.dp
     val minContentHeight = 24.dp
     val minTabStripWidth get() = TabBarDimensions.minTabWidth + TabBarDimensions.buttonSize + dragAreaWidth
 }
 
-internal enum class CaptionMode { Regular, Tabs, BelowCaption }
+enum class CaptionMode { Regular, Tabs, BelowCaption }
 
-internal data class CaptionLayout(val mode: CaptionMode, val span: Rect = Rect.Zero) {
+data class CaptionLayout(val mode: CaptionMode, val span: Rect = Rect.Zero) {
     val integrated: Boolean get() = mode == CaptionMode.Tabs
 
     fun controls(density: Float, rtl: Boolean): Rect = when {
@@ -22,7 +20,7 @@ internal data class CaptionLayout(val mode: CaptionMode, val span: Rect = Rect.Z
     }
 }
 
-internal fun captionLayout(
+fun captionLayout(
     caption: DesktopCaption, region: Rect, density: Float,
     minRowHeight: Float = DesktopCaptionDimensions.minContentHeight.value * density,
 ): CaptionLayout {

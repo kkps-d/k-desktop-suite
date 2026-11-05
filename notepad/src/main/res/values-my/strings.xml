@@ -70,10 +70,6 @@
     <string name="zoom_description">စာတည်းဖြတ်မြင်ကွင်း အချဲ့နှုန်း — %1$d%%</string>
     <string name="cursor_position">စာကြောင်း %1$d၊ ကော်လံ %2$d</string>
     <string name="document_editor">KD Notepad စာရွက်စာတမ်း တည်းဖြတ်ကိရိယာ</string>
-    <string name="new_tab">စာရွက်စာတမ်းအသစ်</string>
-    <string name="switch_document">စာရွက်စာတမ်း ပြောင်းရန် — %1$s</string>
-    <string name="close_tab">%1$s ကို ပိတ်ရန်</string>
-    <string name="unsaved_tab">%1$s၊ မသိမ်းရသေးသော အပြောင်းအလဲများ ရှိသည်</string>
     <string name="document_error">စာရွက်စာတမ်းကို စစ်ဆေးရန် လိုအပ်သည်</string>
     <string name="loading">စာရွက်စာတမ်းများ ပြန်ဖွင့်နေသည်…</string>
     <string name="saving">သိမ်းနေသည်…</string>
@@ -98,8 +94,6 @@
     <string name="error_drop">တစ်ကြိမ်လျှင် စာသားဖိုင်တစ်ခုသာ ဆွဲထည့်ပါ။</string>
     <string name="error_clipboard">ကလစ်ဘုတ်ကို အသုံးမပြုနိုင်ပါ။</string>
     <string name="error_window">ဤတဘ်ကို ဝင်းဒိုးအသစ်သို့ မရွှေ့နိုင်ပါ။ စာရွက်စာတမ်းကို ဖွင့်ထားဆဲဖြစ်သည်။</string>
-    <string name="move_tab_left">ဘယ်သို့ ရွှေ့ရန်</string>
-    <string name="move_tab_right">ညာသို့ ရွှေ့ရန်</string>
     <string name="move_to_window">ဝင်းဒိုးသို့ ရွှေ့ရန်…</string>
     <string name="new_window">ဝင်းဒိုးအသစ်</string>
     <string name="new_window_command">ဝင်းဒိုးအသစ်</string>

@@ -1,26 +1,29 @@
 package com.kkps.kdesktopsuite.notepad
 
-import android.app.Application
 import android.app.ActivityManager
+import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowInsetsController
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.SystemBarStyle
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.graphics.luminance
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import java.io.File
+import kotlinx.coroutines.launch
 
 internal class NotepadApplication : Application() {
     val sessions by lazy { SessionStore(File(filesDir, "notepad-session.json")) }
@@ -80,11 +83,12 @@ class NotepadActivity : AppCompatActivity() {
             task?.moveToFront()
         }
 
-        setContent {
-            LaunchedEffect(notepad.loading, notepad.window.closed) {
-                if (notepad.window.closed) {
+        lifecycleScope.launch {
+            // Transfers may close a stopped source window without another composition frame.
+            snapshotFlow { notepad.loading to notepad.window.closed }.collect { (loading, closed) ->
+                if (closed) {
                     finishAndRemoveTask()
-                } else if (!notepad.loading) {
+                } else if (!loading) {
                     // The launch intent can outlive an acknowledged transfer across recreation.
                     val token = intent.getStringExtra(TabWindows.transferExtra).takeIf { savedInstanceState == null }
                     if (token != null) {
@@ -103,6 +107,8 @@ class NotepadActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+        setContent {
             val active = notepad.active
             val title = active?.let { documentTitle(it) }
                 ?: if (!notepad.loading) getString(R.string.welcome) else null

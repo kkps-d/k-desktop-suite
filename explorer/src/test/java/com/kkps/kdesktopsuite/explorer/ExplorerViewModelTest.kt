@@ -10,59 +10,111 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [32])
 class ExplorerViewModelTest {
-    @Test fun closingInactiveTabPreservesSelectionAndClosingActiveChoosesRightThenLeft() {
+    @Test fun closingKeepsActiveIdentityChoosesRightThenLeftAndReturnsToWelcome() {
         val model = ExplorerViewModel(SavedStateHandle())
         repeat(3) { model.newTab() }
-        model.select(2)
-        assertFalse(model.close(1))
-        assertEquals(2, model.activeId)
-        assertFalse(model.close(2))
-        assertEquals(3, model.activeId)
-        model.select(4)
-        assertFalse(model.close(4))
-        assertEquals(3, model.activeId)
-        assertTrue(model.close(3))
-        assertEquals(listOf(3), model.tabs)
+        val tabs = model.tabs.toList()
+        model.select(tabs[1].id)
+        model.close(tabs[0].id)
+        assertEquals(tabs[1].id, model.activeId)
+        model.close(tabs[1].id)
+        assertEquals(tabs[2].id, model.activeId)
+        model.select(tabs[3].id)
+        model.close(tabs[3].id)
+        assertEquals(tabs[2].id, model.activeId)
+        model.close(tabs[2].id)
+        assertTrue(model.tabs.isEmpty())
+        assertEquals("", model.activeId)
+        assertFalse(model.closed)
+        model.selectRelative(1)
+        model.newTab()
+        assertEquals(5, model.tabs.single().number)
     }
 
-    @Test fun savedStateRestoresStableIdsSelectionAndNextNumber() {
-        val handle = SavedStateHandle()
-        val model = ExplorerViewModel(handle)
+    @Test fun savedStateRestoresStableIdsSelectionOrderAndNumbering() {
+        val state = SavedStateHandle()
+        val model = ExplorerViewModel(state)
         repeat(4) { model.newTab() }
-        model.close(4)
-        model.select(2)
-        val restored = ExplorerViewModel(SavedStateHandle(handle.keys().associateWith { handle.get<Any>(it) }))
-        assertEquals(listOf(1, 2, 3, 5), restored.tabs)
-        assertEquals(2, restored.activeId)
+        model.close(model.tabs[3].id)
+        model.reorder(model.tabs.last().id, 0)
+        model.select(model.tabs[1].id)
+        val restored = ExplorerViewModel(SavedStateHandle(state.keys().associateWith { state.get<Any>(it) }))
+        assertEquals(model.tabs, restored.tabs)
+        assertEquals(model.activeId, restored.activeId)
+        assertEquals(model.windowId, restored.windowId)
         restored.newTab()
-        assertEquals(6, restored.activeId)
-        assertEquals(listOf(1, 2, 3, 5, 6), restored.tabs)
+        assertEquals(6, restored.tabs.last().number)
     }
 
-    @Test fun tabCyclingWrapsAndUnknownIdsDoNotChangeState() {
+    @Test fun cyclingWrapsAndUnknownIdsLeaveStateIntact() {
         val model = ExplorerViewModel(SavedStateHandle())
         model.newTab()
         model.selectRelative(1)
-        assertEquals(1, model.activeId)
+        assertEquals(model.tabs.first().id, model.activeId)
         model.selectRelative(-1)
-        assertEquals(2, model.activeId)
-        model.select(99)
-        assertFalse(model.close(99))
-        assertEquals(2, model.activeId)
-        assertEquals(listOf(1, 2), model.tabs)
+        assertEquals(model.tabs.last().id, model.activeId)
+        val before = model.tabs
+        model.select("unknown")
+        model.close("unknown")
+        assertFalse(model.reorder("unknown", 0))
+        assertEquals(before, model.tabs)
     }
 
-    @Test fun windowsOwnIndependentTabSessions() {
-        val first = ExplorerViewModel(SavedStateHandle())
-        val second = ExplorerViewModel(SavedStateHandle())
-        first.newTab()
-        first.newTab()
-        second.newTab()
-        second.select(1)
-        first.close(1)
-        assertEquals(listOf(2, 3), first.tabs)
-        assertEquals(3, first.activeId)
-        assertEquals(listOf(1, 2), second.tabs)
-        assertEquals(1, second.activeId)
+    @Test fun transferMovesTheSameTabOnceAndClosesOnlyAnEmptySource() {
+        val workspace = ExplorerWorkspace()
+        val source = ExplorerViewModel(SavedStateHandle(), workspace)
+        val destination = ExplorerViewModel(SavedStateHandle(), workspace)
+        source.newTab()
+        val moved = source.tabs.first()
+        val transfer = workspace.beginTransfer(source, moved.id)!!
+        assertTrue(workspace.move(transfer.token, destination, 0))
+        assertSame(moved, destination.tabs.first())
+        assertEquals(moved.id, destination.activeId)
+        assertEquals(1, source.tabs.size)
+        assertFalse(source.closed)
+        assertFalse(workspace.move(transfer.token, destination, 0))
+        val last = workspace.beginTransfer(source, source.tabs.single().id)!!
+        assertTrue(workspace.move(last.token, destination, destination.tabs.size))
+        assertTrue(source.closed)
+        assertFalse(destination.closed)
+        assertEquals(3, destination.tabs.size)
+    }
+
+    @Test fun cancelledStaleBlockedAndSingleTabDetachNeverRemoveSource() {
+        val workspace = ExplorerWorkspace()
+        val source = ExplorerViewModel(SavedStateHandle(), workspace)
+        val destination = ExplorerViewModel(SavedStateHandle(), workspace)
+        val tab = source.tabs.single()
+        val single = workspace.beginTransfer(source, tab.id)!!
+        assertFalse(workspace.move(single.token, destination, 0, newWindow = true))
+        workspace.endDrag()
+        assertNotNull(workspace.transfer(single.token))
+        workspace.cancelTransfer(single.token)
+        assertFalse(workspace.move(single.token, destination, 0))
+        source.newTab()
+        val stale = workspace.beginTransfer(source, tab.id)!!
+        val current = workspace.beginTransfer(source, tab.id)!!
+        assertFalse(workspace.move(stale.token, destination, 0))
+        destination.modalOpen = true
+        assertFalse(workspace.move(current.token, destination, 0))
+        destination.modalOpen = false
+        workspace.cancelTransfer(current.token)
+        assertEquals(tab, source.tabs.first())
+        assertEquals(2, source.tabs.size)
+        assertEquals(1, destination.tabs.size)
+    }
+
+    @Test fun newWindowAcknowledgementReplacesOnlyItsInitialBlankTab() {
+        val workspace = ExplorerWorkspace()
+        val source = ExplorerViewModel(SavedStateHandle(), workspace)
+        val destination = ExplorerViewModel(SavedStateHandle(), workspace)
+        source.newTab()
+        val tab = source.tabs.last()
+        val transfer = workspace.beginTransfer(source, tab.id)!!
+        assertTrue(workspace.move(transfer.token, destination, 0, newWindow = true))
+        assertEquals(listOf(tab), destination.tabs)
+        assertEquals(1, source.tabs.size)
+        assertFalse(source.closed)
+        assertNull(workspace.dragging)
     }
 }

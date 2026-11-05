@@ -1,5 +1,6 @@
 package com.kkps.kdesktopsuite.notepad
 
+import com.kkps.kdesktopsuite.ui.tabInsertionIndex
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

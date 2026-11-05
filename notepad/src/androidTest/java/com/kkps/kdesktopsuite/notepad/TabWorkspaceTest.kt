@@ -5,6 +5,9 @@ package com.kkps.kdesktopsuite.notepad
 import androidx.compose.ui.text.TextRange
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.platform.app.InstrumentationRegistry
+import com.kkps.kdesktopsuite.ui.previewTabOrder
+import java.io.File
+import java.util.UUID
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -12,8 +15,6 @@ import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Test
-import java.io.File
-import java.util.UUID
 
 class TabWorkspaceTest {
     private val workspaces = mutableListOf<NotepadWorkspace>()
@@ -89,7 +90,7 @@ class TabWorkspaceTest {
             val before = window.documents.toList()
             val active = window.activeId
             val transfer = workspace.beginTransfer(window, before.first().id)!!
-            assertEquals(listOf(before[1], before[2], before[0]), previewTabOrder(before, before[0], 2))
+            assertEquals(listOf(before[1], before[2], before[0]), previewTabOrder(before, before[0], 2) { it.id })
             workspace.endDrag()
             assertEquals(before, window.documents)
             assertEquals(active, window.activeId)

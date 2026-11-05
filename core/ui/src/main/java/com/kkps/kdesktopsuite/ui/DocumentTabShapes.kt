@@ -1,4 +1,4 @@
-package com.kkps.kdesktopsuite.notepad
+package com.kkps.kdesktopsuite.ui
 
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.CornerRadius
@@ -10,14 +10,14 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
-internal object DocumentTabShapeDimensions {
+object DocumentTabShapeDimensions {
     val topCornerRadius = 12.dp
     val bottomFootRadius = 12.dp
     val overlap = 16.dp
     val hoverBottomGap = 4.dp
 }
 
-internal object DocumentTabShape : Shape {
+object DocumentTabShape : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val foot = minOf(with(density) { DocumentTabShapeDimensions.bottomFootRadius.toPx() }, size.width / 4f, size.height / 2f)
         val corner = minOf(with(density) { DocumentTabShapeDimensions.topCornerRadius.toPx() }, (size.width - 2f * foot) / 2f, size.height / 2f)
@@ -38,7 +38,7 @@ internal object DocumentTabShape : Shape {
     }
 }
 
-internal object DocumentTabHoverShape : Shape {
+object DocumentTabHoverShape : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val foot = minOf(with(density) { DocumentTabShapeDimensions.bottomFootRadius.toPx() }, size.width / 4f, size.height / 2f)
         val bottom = (size.height - with(density) { DocumentTabShapeDimensions.hoverBottomGap.toPx() }).coerceAtLeast(0f)

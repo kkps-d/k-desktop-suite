@@ -1,7 +1,9 @@
 # Document tabs
 
-Shared guidance for suite apps that support multiple documents in tabs. Each app
-owns its document content, commands, and behavior when the last tab closes.
+All tabbed suite apps use the shared Notepad-derived `SuiteTabHeader` in
+`core/ui`. Notepad defines the exact appearance, dimensions, spacing, layout,
+and interaction behavior. Changes to tabs belong in the shared component and
+apply to every tabbed app. Each app owns its document content and storage.
 
 ## Layout and appearance
 
@@ -21,9 +23,12 @@ owns its document content, commands, and behavior when the last tab closes.
   system buttons; otherwise place tabs below the caption. Follow the
   [shared desktop UI constraints](DEVELOPMENT.md#shared-desktop-ui-constraints).
 
-Keep exact dimensions and caption thresholds with the implementation and tests
-that own them. Reuse established constraints when introducing another tabbed app;
-document intentional differences and their reasons.
+Keep exact dimensions and caption thresholds in the shared implementation and
+its regression tests. Use the same selected-tab feet, hover inset, 16dp overlap,
+120–240dp tab widths, 22dp/8dp content padding, 8dp top inset, 48dp New/Close
+targets, 14sp/20sp title typography, and caption-height adaptation as Notepad.
+New follows the visible tabs immediately, including RTL; it is never pushed
+to the far edge of a mostly empty header.
 
 ## Input and document state
 
@@ -53,12 +58,15 @@ document intentional differences and their reasons.
 
 ## Current implementation references
 
-Notepad is the current implementation reference. Tab UI and session ownership
-remain in its module; the shared caption geometry/input support lives in
-`core/ui`. This guide does not imply that a shared tab component already exists.
+Notepad is the implementation reference; both Notepad and Explorer now render
+through the same shared component. Document ownership and recovery remain in
+each application. Explorer's blank tabs support reordering, drag cancellation,
+window transfer acknowledgement, and a Welcome tab after closing the final tab.
 
-- [NotepadScreen](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadScreen.kt): tab dimensions, sizing, overflow, focus, and controls.
-- [NotepadChrome](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadChrome.kt): tab shape and surface treatment.
-- [Caption layout](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/DesktopCaption.kt): current caption eligibility and fallback thresholds.
-- [Testing](TESTING.md#tab-and-caption-regressions): reusable regression checks and existing Notepad test coverage.
-- [Notepad guide](NOTEPAD.md): current shortcuts, Welcome behavior, recovery, and window-specific commands.
+- [Shared tabs](../core/ui/src/main/java/com/kkps/kdesktopsuite/ui/DocumentTabs.kt): complete header, tab/switcher layout, sizes, typography, controls, tooltips, and focus.
+- [Shared shapes](../core/ui/src/main/java/com/kkps/kdesktopsuite/ui/DocumentTabShapes.kt): selected feet and hover shape.
+- [Shared caption layout](../core/ui/src/main/java/com/kkps/kdesktopsuite/ui/DocumentTabCaption.kt): eligibility, clearances, and fallback.
+- [Shared interactions](../core/ui/src/main/java/com/kkps/kdesktopsuite/ui/DocumentTabInteractions.kt): drag shadow, drop handling, accessible commands, and context menu actions.
+- [Notepad adapter](../notepad/src/main/java/com/kkps/kdesktopsuite/notepad/NotepadScreen.kt): document status and editor callbacks.
+- [Explorer adapter](../explorer/src/main/java/com/kkps/kdesktopsuite/explorer/ExplorerScreen.kt): browsing-tab state and window callbacks.
+- [Testing](TESTING.md#tab-and-caption-regressions): reusable regression checks and app coverage.

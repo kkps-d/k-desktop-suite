@@ -48,7 +48,7 @@ Follow the shared [document tab guidance](TABS.md) for apps that use tabs.
 - Each tab owns its document, file association, selection, scroll position, and undo history. Preserve working state across tab switches, resizing, and activity recreation; keep focus predictable.
 - Show document titles, unsaved indicators, and save/error states. Closing or replacing unsaved content offers Save / Discard / Cancel; failed or cancelled saves preserve the document.
 - Recover drafts and the tab session from durable private storage on relaunch. Recovery must not overwrite original files; keep document bodies out of saved instance state and perform file I/O off the UI thread.
-- Reuse established tab behavior across tabbed apps. Extract shared controls when another app demonstrates reuse; keep document-specific behavior inside each app.
+- All tabbed apps must use the shared Notepad-derived `SuiteTabHeader` in `core/ui`. Notepad is the reference for every tab detail: shapes and outward feet, hover/focus feedback, typography, dimensions, padding, overlap, adjacent New button, caption integration, overflow, input, reordering, and window transfers. Keep these identical across apps; do not build separate approximations. Each app owns its document content and storage.
 
 ## Verification
 

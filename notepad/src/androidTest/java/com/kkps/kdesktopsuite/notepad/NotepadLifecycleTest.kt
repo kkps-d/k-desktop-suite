@@ -1,16 +1,16 @@
 package com.kkps.kdesktopsuite.notepad
 
-import com.kkps.kdesktopsuite.ui.DesktopCaption
-
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
-import org.junit.Rule
-import org.junit.Test
+import com.kkps.kdesktopsuite.ui.DesktopCaption
+import com.kkps.kdesktopsuite.ui.captionLayout
 import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
-import androidx.compose.ui.geometry.Rect
+import org.junit.Rule
+import org.junit.Test
 
 class NotepadLifecycleTest {
     @get:Rule

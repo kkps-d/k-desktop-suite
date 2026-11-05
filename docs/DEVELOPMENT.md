@@ -89,12 +89,23 @@ Keep document and editing behavior in the owning app. Share platform-independent
 logic where useful and keep Android adapters in their appropriate modules.
 Extract shared UI when both apps demonstrate reuse.
 
-Explorer currently owns a small window-local `ExplorerViewModel` backed by
-`SavedStateHandle`. New windows launch separate tasks; no global tab registry or
-file/session repository exists yet. Its tabs enter the native caption when a
-readable tab and both header buttons fit, using shared geometry/input support
-and an 8dp drag clearance. Otherwise the header stays below the caption. See the
-[Explorer guide](EXPLORER.md) for shell scope.
+Explorer owns blank tab state in each window's `ExplorerViewModel`, backed by
+`SavedStateHandle`. Its application-owned `ExplorerWorkspace` coordinates stable
+tab identities, transfer tokens, and destination acknowledgement before removing
+a source tab. New windows launch separate tasks. Reordering/transfers update
+both windows' saved state; moving the final tab to an existing window closes
+its source. Closed-window observers run independently of recomposition so stopped
+source tasks finish after a transfer too. A single tab cannot detach into a new
+window. There is no browsing repository or on-disk session recovery yet.
+
+All tabbed apps use the Notepad-derived `SuiteTabHeader` in `core/ui`, including
+its dimensions, shapes, typography, New/Close buttons, tooltip timing, overflow,
+keyboard focus, caption layout, drag shadow/preview/edge scrolling, and context
+and accessibility actions. Apps adapt their own state through `DocumentTab` and
+`DocumentTabInteractions`; native task launches and live document ownership stay
+in each app. Keep Notepad's editor state, save guards, and recovery out of the
+shared presentation component. Keep native drag callbacks stable across state
+updates so recomposition cannot interrupt an active gesture. See [Document tabs](TABS.md).
 
 Notepad's `LiteralSearch` defines ordered, nonoverlapping UTF-16 literal ranges.
 `NotepadSearch`, owned by each window's ViewModel, scans on the Default dispatcher

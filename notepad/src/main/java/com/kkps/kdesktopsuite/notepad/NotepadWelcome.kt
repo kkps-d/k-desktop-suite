@@ -1,21 +1,14 @@
 package com.kkps.kdesktopsuite.notepad
 
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -24,9 +17,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kkps.kdesktopsuite.ui.AppLogo
@@ -69,26 +59,6 @@ internal fun NotepadWelcome(
                     WelcomeRecent(recentFiles, openRecent, openEnabled, Modifier.fillMaxWidth())
                 }
             }
-        }
-    }
-}
-
-@Composable
-internal fun WelcomeTab(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val interaction = remember { MutableInteractionSource() }
-    val focused by interaction.collectIsFocusedAsState()
-    Surface(
-        modifier = modifier.testTag("welcome-tab").clip(DocumentTabShape)
-            .then(if (focused) Modifier.border(TabBarDimensions.focusOutlineWidth, MaterialTheme.colorScheme.primary, DocumentTabShape) else Modifier)
-            .semantics { selected = true }
-            .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = onClick),
-        shape = DocumentTabShape,
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        Box(Modifier.padding(start = TabBarDimensions.contentStartPadding, end = TabBarDimensions.contentEndPadding),
-            contentAlignment = Alignment.CenterStart) {
-            Text(stringResource(R.string.welcome), style = NotepadTabTypography.title,
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

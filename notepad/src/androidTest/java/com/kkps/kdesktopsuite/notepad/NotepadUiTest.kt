@@ -2,40 +2,40 @@
 
 package com.kkps.kdesktopsuite.notepad
 
-import com.kkps.kdesktopsuite.ui.DesktopCaption
-
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.runtime.*
-import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.height
-import androidx.compose.ui.unit.width
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.material3.adaptive.HingeInfo
+import androidx.compose.material3.adaptive.Posture
+import androidx.compose.material3.adaptive.WindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.InputModeManager
-import androidx.compose.material3.adaptive.WindowAdaptiveInfo
-import androidx.compose.material3.adaptive.Posture
-import androidx.compose.material3.adaptive.HingeInfo
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
 import androidx.test.platform.app.InstrumentationRegistry
-import org.junit.Rule
-import org.junit.Test
+import com.kkps.kdesktopsuite.ui.DesktopCaption
+import com.kkps.kdesktopsuite.ui.DesktopCaptionDimensions
 import java.io.File
 import java.util.UUID
+import org.junit.Rule
+import org.junit.Test
 
 class NotepadUiTest {
     @get:Rule

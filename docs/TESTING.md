@@ -138,32 +138,42 @@ shows the former ribbon layout.
 
 ### Explorer shell
 
-`ExplorerViewModelTest` checks independent tab sessions, closing neighbors,
-stable IDs, tab cycling, and restoration from saved state. `ExplorerCaptionTest`
-checks physical system-control clearance, density, RTL, and integration thresholds.
-`ExplorerShellTest`
-checks visible tab controls, overflow and keyboard focus, the compact selector
-at 200% fonts, activity recreation, menu/keyboard new-window launches into
-separate tasks, and closing only the intended window. Caption checks cover
-integration/fallback, large text, missing geometry, RTL, the compact 8dp system
-clearance, native button input, and dragging through unused header space.
+`ExplorerViewModelTest` covers stable IDs, Welcome after final close, saved-state
+restoration, reorder/cycling, same-tab transfers, destination acknowledgement,
+single-tab detach rejection, cancellation, stale tokens, and blocked destinations.
+`ExplorerShellTest` checks the shared Notepad dimensions and adjacent New button,
+16dp overlap, caption/RTL fallback, compact selector at 200% fonts, wrapping
+keyboard focus, recreation, independent tasks, native mouse reorder/cancel, and
+new/existing window transfers.
 
-Run the Explorer commands above and instrumented tests only on local Small
-Desktop. Also inspect the blank workspace and native caption, resize narrow
-and short windows, maximize/restore, and check touch, mouse, keyboard-only input,
-RTL, light/dark appearance, TalkBack, and system New window. The shell has no
-file/provider behavior, drag reordering/transfers, or on-disk session recovery
-to validate yet. Compose previews cover desktop, compact, short dark, and
-200% text configurations.
+Notepad's existing `NotepadUiTest` tab cases verify the exact visual/input baseline
+used by both apps: outward feet, hover insets, separators, typography/dimensions,
+button feedback, tooltip timing, compression/scrolling, compact overflow, caption
+fallback, RTL, and keyboard focus. `TabWindowTest`, `TabWorkspaceTest`, and
+`CaptionInputTest` cover native drag preview, transfers, source preservation,
+input exclusions, and session ownership through the shared adapter. The existing
+Notepad caption/reordering JVM tests now exercise shared implementations.
 
-Shell and caption verification on 5 November 2026: all seven JVM tests and seven instrumented
-checks passed on local Small Desktop (`emulator-5554`, regular desktop user 10).
-Debug assembly, lint, and test-APK compilation passed; lint reported no errors
-and one backup-configuration warning. Visual checks covered desktop and 320dp
-window layouts, native captions, live resizing, and actual Ctrl+T input. Native
-caption button input and window dragging passed; RTL and large-text caption
-fallback have fixture coverage. Full TalkBack, system-locale RTL,
-fold/external-display, theme, and system New window checks remain manual follow-up work.
+Run instrumented tests only on local Small Desktop. Keep its temporary display
+large enough for Notepad's existing 1200dp fixtures and restore it afterward.
+Also inspect real compact and short windows, maximize/restore, theme appearance,
+TalkBack, locale RTL, folding/external displays, and system New window. Explorer
+still has no file/provider behavior or private on-disk session recovery.
+
+Shared-tab verification on 5 November 2026: 29 JVM tests, both app debug builds,
+lint, test-APK compilation, and Paint's compatibility build passed. Lint reported
+no errors (19 existing/toolchain Notepad warnings and one Explorer backup warning).
+All eight Explorer UI/window checks and 33 focused Notepad tab/caption/workspace
+regressions passed across the focused runs on local Small Desktop under user 10.
+Native drag checks ran at its normal display size; the temporary larger display
+used for Notepad's visual fixtures was restored. The recreated-window check
+asserts the close request separately from Android's deferred task destruction.
+All five native Notepad window checks also passed together after keeping the
+shared drag callback stable through recomposition. The older five-second source
+teardown timeouts reproduced on unchanged revision `8882051`. Explorer's normal
+and maximized native-caption layouts were visually reviewed. All 442 localization
+resource checks passed. TalkBack, physical folding/external
+displays, and pre-35 native window behavior still need manual verification.
 
 ## Manual verification
 
@@ -225,7 +235,7 @@ Apply these checks to each tabbed app using the [document tab guidance](TABS.md)
   System window controls and blank dragging space must remain usable.
 - Check keyboard focus separately from selection, inactive-tab closing, active
   neighbor selection, and the app's empty-window behavior after the final tab
-  closes. Notepad returns to Welcome.
+  closes. Both Notepad and Explorer return to the shared Welcome tab.
 - Verify cancelled reorder/transfer operations leave documents intact. Successful
   transfers preserve text, selection, scroll, and undo/redo; process recovery
   restores retained documents without duplication or overwriting their files.

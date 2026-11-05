@@ -1,13 +1,11 @@
 <resources>
     <string name="app_name">KD Explorer</string>
     <string name="tab_title">New tab %1$d</string>
-    <string name="new_tab">New tab</string>
-    <string name="close_tab">Close tab</string>
-    <string name="close_named_tab">Close %1$s</string>
     <string name="new_window">New window</string>
     <string name="close_window">Close window</string>
-    <string name="window_menu">Window menu</string>
-    <string name="choose_tab">Choose tab</string>
     <string name="blank_workspace">Blank workspace</string>
     <string name="error_new_window">Could not open a new window. Try again.</string>
+    <string name="file_menu">File</string>
+    <string name="cancel">Cancel</string>
+    <string name="window_title">Window %1$d: %2$s</string>
 </resources>

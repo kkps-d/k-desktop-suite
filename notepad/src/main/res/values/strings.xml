@@ -71,10 +71,6 @@
     <string name="zoom_description">Editor zoom: %1$d%%</string>
     <string name="cursor_position">Ln %1$d, Col %2$d</string>
     <string name="document_editor">KD Notepad document editor</string>
-    <string name="new_tab">New document</string>
-    <string name="switch_document">Switch document: %1$s</string>
-    <string name="close_tab">Close %1$s</string>
-    <string name="unsaved_tab">%1$s, unsaved changes</string>
     <string name="document_error">Document needs attention</string>
     <string name="loading">Restoring documents…</string>
     <string name="saving">Saving…</string>
@@ -99,8 +95,6 @@
     <string name="error_drop">Drop one text document at a time.</string>
     <string name="error_clipboard">Could not access the clipboard.</string>
     <string name="error_window">Could not move this tab to a new window. Your document is still open.</string>
-    <string name="move_tab_left">Move left</string>
-    <string name="move_tab_right">Move right</string>
     <string name="move_to_window">Move to window…</string>
     <string name="new_window">New window</string>
     <string name="new_window_command">New Window</string>

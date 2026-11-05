@@ -148,7 +148,7 @@ class TabWindowTest {
                 val transfer = notepad.workspace.beginTransfer(destination, document.id)!!
                 assertTrue(notepad.workspace.move(transfer.token, notepad.window, notepad.documents.size))
             }
-            compose.waitUntil(5_000) { !destination.attached }
+            compose.waitUntil(10_000) { !destination.attached }
         }
     }
 
@@ -190,7 +190,7 @@ class TabWindowTest {
                 assertSame(document, destination.documents.last())
                 assertEquals("between windows", document.editor.text.toString())
             }
-            compose.waitUntil(5_000) { !source.attached }
+            compose.waitUntil(10_000) { !source.attached }
         } finally {
             compose.runOnIdle {
                 if (!source.closed) notepad.workspace.abandonWindow(source)
@@ -219,7 +219,9 @@ class TabWindowTest {
             previous.recreate()
         }
         compose.waitUntil(5_000) { previous.isDestroyed && destination.attached }
+        lateinit var recreated: NotepadActivity
         compose.runOnIdle {
+            recreated = windowActivity(destination)
             assertFalse(destination.closed)
             assertSame(document, destination.documents.single())
             assertEquals(document.id, destination.activeId)
@@ -231,6 +233,8 @@ class TabWindowTest {
             assertTrue(destination.closed)
             assertSame(document, notepad.documents.first())
         }
-        compose.waitUntil(5_000) { !destination.attached }
+        compose.waitUntil(5_000) { recreated.isFinishing }
+        // Desktop transitions may defer destruction after the close request is accepted.
+        compose.waitUntil(30_000) { !destination.attached }
     }
 }

@@ -16,4 +16,14 @@
     <string name="license_dependencies">Runtime libraries</string>
     <string name="license_dependencies_summary">AndroidX, Kotlin, and third-party notices</string>
     <string name="license_load_error">The bundled license could not be loaded. Please reopen this page to try again.</string>
+
+    <string name="ui_tabs_new_tab">New document</string>
+    <string name="ui_tabs_switch_document">Switch document: %1$s</string>
+    <string name="ui_tabs_close_tab">Close %1$s</string>
+    <string name="ui_tabs_unsaved_tab">%1$s, unsaved changes</string>
+    <string name="ui_tabs_move_tab_left">Move left</string>
+    <string name="ui_tabs_move_tab_right">Move right</string>
+    <string name="ui_tabs_move_to_window">Move to window…</string>
+    <string name="ui_tabs_close_document">Close</string>
+    <string name="ui_tabs_welcome">Welcome</string>
 </resources>
