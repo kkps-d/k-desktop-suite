@@ -1,0 +1,179 @@
+<style>
+  #kd-logo-studies { color-scheme: light dark; }
+  #kd-logo-studies .kd-board {
+    --kd-bg: light-dark(#f5f6f0, #20251f);
+    --kd-ink: light-dark(#26352b, #e7eee4);
+    --kd-muted: light-dark(#59675d, #b4c2b5);
+    --kd-rule: light-dark(#dce2d6, #3d493d);
+    --kd-paper: light-dark(#fffef5, #e8eee1);
+    --kd-green: #28704e;
+    --kd-green-dark: #174d35;
+    --kd-mint: #b5d8a5;
+    --kd-orange: #bd502f;
+    --kd-orange-dark: #813723;
+    --kd-peach: #f4c29a;
+    --kd-size: 132px;
+    color: var(--kd-ink);
+    background: var(--kd-bg);
+    font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+    border-radius: 22px;
+    padding: 24px 28px;
+    min-height: 422px;
+    box-sizing: border-box;
+  }
+  #kd-logo-studies .kd-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 20px; padding-right: 76px; }
+  #kd-logo-studies .kd-heading h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.03em; }
+  #kd-logo-studies .kd-heading span { color: var(--kd-muted); font-size: 12px; }
+  #kd-logo-studies .kd-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 32px 0 28px; }
+  #kd-logo-studies .kd-app { display: flex; flex-direction: column; align-items: center; min-width: 0; gap: 17px; }
+  #kd-logo-studies .kd-app h3 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: -.025em; }
+  #kd-logo-studies .kd-logo { width: 1em; height: 1em; flex: 0 0 auto; position: relative; font-size: var(--kd-size); }
+  #kd-logo-studies .kd-logo *, #kd-logo-studies .kd-logo *::before, #kd-logo-studies .kd-logo *::after { position: absolute; box-sizing: border-box; }
+  #kd-logo-studies .kd-notepad { --kd-accent: var(--kd-green); --kd-deep: var(--kd-green-dark); --kd-tint: var(--kd-mint); }
+  #kd-logo-studies .kd-paint { --kd-accent: var(--kd-orange); --kd-deep: var(--kd-orange-dark); --kd-tint: var(--kd-peach); }
+  #kd-logo-studies .kd-sizes { border-top: 1px solid var(--kd-rule); padding-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  #kd-logo-studies .kd-size-group { display: flex; gap: 16px; align-items: center; justify-content: center; min-height: 48px; }
+  #kd-logo-studies .kd-size-group .kd-logo:nth-child(1) { font-size: 48px; }
+  #kd-logo-studies .kd-size-group .kd-logo:nth-child(2) { font-size: 32px; }
+  #kd-logo-studies .kd-size-group .kd-logo:nth-child(3) { font-size: 24px; }
+  #kd-logo-studies .kd-footer { margin-top: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; color: var(--kd-muted); font-size: 11px; }
+
+  /* Material: a quiet sheet and a broad brush, inside matching soft tiles. */
+  #kd-logo-studies .kd-material .kd-tile { inset: 0; background: var(--kd-tint); border-radius: 28%; }
+  #kd-logo-studies .kd-material .kd-sheet { width: 52%; height: 65%; left: 24%; top: 17%; background: var(--kd-paper); border-radius: .055em; transform: rotate(-7deg); box-shadow: .035em .045em 0 color-mix(in srgb, var(--kd-accent) 25%, transparent); }
+  #kd-logo-studies .kd-material .kd-sheet::before { content: ''; left: 21%; top: 26%; width: 58%; height: 6%; background: var(--kd-accent); border-radius: .02em; box-shadow: 0 .12em 0 var(--kd-accent); }
+  #kd-logo-studies .kd-material .kd-sheet::after { content: ''; left: 21%; top: 64%; width: 37%; height: 6%; background: var(--kd-accent); border-radius: .02em; }
+  #kd-logo-studies .kd-material .kd-pen { width: 13%; height: 52%; left: 64%; top: 37%; transform: rotate(34deg); background: var(--kd-accent); border-radius: .025em .025em 0 0; border-top: .045em solid var(--kd-deep); }
+  #kd-logo-studies .kd-material .kd-pen::after { content: ''; top: 100%; left: 0; width: 100%; height: .12em; background: var(--kd-deep); clip-path: polygon(0 0,100% 0,50% 100%); }
+  #kd-logo-studies .kd-material .kd-daub { left: 18%; top: 39%; width: 64%; height: 34%; background: var(--kd-accent); border-radius: 60% 34% 56% 35%; transform: rotate(-25deg); }
+  #kd-logo-studies .kd-material .kd-daub::after { content: ''; width: 63%; height: 18%; left: 17%; top: 38%; border-radius: 50%; background: var(--kd-tint); transform: rotate(-6deg); }
+  #kd-logo-studies .kd-material .kd-brush { left: 59%; top: 12%; width: 14%; height: 50%; border-radius: .08em .08em .02em .02em; background: var(--kd-paper); transform: rotate(37deg); }
+  #kd-logo-studies .kd-material .kd-brush::before { content: ''; top: 70%; width: 100%; height: 17%; background: var(--kd-deep); }
+  #kd-logo-studies .kd-material .kd-brush::after { content: ''; left: -14%; top: 86%; width: 128%; height: 43%; border-radius: .01em .01em .1em .03em; background: var(--kd-accent); }
+
+  /* Folded paper: asymmetric silhouettes, hard folds, shared diagonal. */
+  #kd-logo-studies .kd-folded .kd-back { width: 60%; height: 75%; left: 16%; top: 14%; background: var(--kd-tint); transform: rotate(-12deg); clip-path: polygon(0 0,100% 0,100% 88%,84% 100%,0 100%); }
+  #kd-logo-studies .kd-folded .kd-front { width: 62%; height: 79%; left: 25%; top: 8%; background: var(--kd-accent); clip-path: polygon(0 0,69% 0,100% 25%,100% 100%,0 100%); }
+  #kd-logo-studies .kd-folded .kd-front::before { content: ''; right: 0; top: 0; width: 31%; height: 25%; background: var(--kd-tint); clip-path: polygon(0 0,100% 100%,0 100%); }
+  #kd-logo-studies .kd-folded .kd-front::after { content: ''; left: 20%; top: 40%; width: 57%; height: 5%; background: var(--kd-paper); box-shadow: 0 .12em 0 var(--kd-paper),0 .24em 0 var(--kd-paper); }
+  #kd-logo-studies .kd-folded .kd-canvas { inset: 13%; background: var(--kd-tint); transform: rotate(8deg); clip-path: polygon(0 0,100% 0,100% 78%,78% 100%,0 100%); }
+  #kd-logo-studies .kd-folded .kd-canvas::before { content: ''; right: 0; bottom: 0; width: 22%; height: 22%; background: var(--kd-accent); clip-path: polygon(0 0,100% 0,0 100%); }
+  #kd-logo-studies .kd-folded .kd-ribbon { left: 8%; top: 35%; width: 85%; height: 28%; background: var(--kd-accent); transform: rotate(-39deg); clip-path: polygon(12% 0,100% 0,88% 100%,0 100%); }
+  #kd-logo-studies .kd-folded .kd-ribbon::after { content: ''; right: 12%; top: 0; width: 18%; height: 100%; background: var(--kd-deep); transform: skewX(-20deg); }
+  #kd-logo-studies .kd-folded .kd-fleck { width: 16%; height: 16%; border-radius: 50%; background: var(--kd-paper); left: 30%; top: 19%; }
+
+  /* Monogram: the KD initials are built from a shared geometric skeleton. */
+  #kd-logo-studies .kd-monogram .kd-tile { inset: 0; border-radius: 23%; background: var(--kd-accent); }
+  #kd-logo-studies .kd-monogram .kd-k { left: 21%; top: 23%; width: 9%; height: 43%; background: var(--kd-paper); border-radius: .012em; }
+  #kd-logo-studies .kd-monogram .kd-k::before, #kd-logo-studies .kd-monogram .kd-k::after { content: ''; width: .105em; height: .30em; left: .10em; background: var(--kd-paper); transform-origin: center bottom; bottom: 43%; transform: rotate(40deg); }
+  #kd-logo-studies .kd-monogram .kd-k::after { transform-origin: center top; top: 43%; bottom: auto; transform: rotate(-40deg); }
+  #kd-logo-studies .kd-monogram .kd-d { left: 54%; top: 23%; width: 27%; height: 43%; border: .085em solid var(--kd-paper); border-left-width: .075em; border-radius: 0 .25em .25em 0; }
+  #kd-logo-studies .kd-monogram .kd-textmark { left: 21%; top: 77%; width: 43%; height: 3.5%; background: var(--kd-tint); }
+  #kd-logo-studies .kd-monogram .kd-textmark::after { content: ''; left: 0; top: .065em; width: 68%; height: .035em; background: var(--kd-tint); }
+  #kd-logo-studies .kd-monogram .kd-strokemark { left: 21%; top: 77%; width: 58%; height: 9%; background: var(--kd-tint); transform: rotate(-8deg); clip-path: polygon(7% 18%,100% 0,95% 75%,0 100%); }
+
+  /* Desktop: familiar stationery, crisp outlines, and restrained depth. */
+  #kd-logo-studies .kd-desktop .kd-cover { left: 16%; top: 12%; width: 63%; height: 79%; border-radius: .035em; background: var(--kd-accent); transform: rotate(-7deg); box-shadow: .035em .035em 0 var(--kd-deep); }
+  #kd-logo-studies .kd-desktop .kd-page { left: 22%; top: 17%; width: 52%; height: 66%; background: var(--kd-paper); border-radius: .015em; transform: rotate(-7deg); }
+  #kd-logo-studies .kd-desktop .kd-page::before { content: ''; top: 30%; left: 20%; width: 63%; height: 3%; background: var(--kd-accent); box-shadow: 0 .105em 0 var(--kd-accent),0 .21em 0 var(--kd-accent),0 .315em 0 var(--kd-accent); }
+  #kd-logo-studies .kd-desktop .kd-binding { top: 10%; left: 29%; width: 5%; height: 13%; background: var(--kd-deep); border-radius: .025em; transform: rotate(-7deg); box-shadow: .15em .018em 0 var(--kd-deep),.30em .036em 0 var(--kd-deep); }
+  #kd-logo-studies .kd-desktop .kd-pencil { width: 11%; height: 64%; left: 70%; top: 30%; background: linear-gradient(90deg,#e8a342 0 50%,#c17d29 50%); transform: rotate(32deg); border-top: .07em solid #cf7b6c; }
+  #kd-logo-studies .kd-desktop .kd-pencil::after { content: ''; top: 100%; width: 100%; height: .14em; background: var(--kd-deep); clip-path: polygon(0 0,100% 0,50% 100%); }
+  #kd-logo-studies .kd-desktop .kd-palette { left: 8%; top: 24%; width: 80%; height: 62%; background: var(--kd-tint); border: .025em solid var(--kd-deep); border-radius: 58% 45% 48% 44%; transform: rotate(-27deg); box-shadow: 0 .035em 0 var(--kd-accent); }
+  #kd-logo-studies .kd-desktop .kd-hole { width: 17%; height: 22%; left: 22%; top: 34%; background: var(--kd-bg); border: .02em solid var(--kd-deep); border-radius: 50%; }
+  #kd-logo-studies .kd-desktop .kd-dot { width: 16%; height: 21%; left: 23%; top: 9%; border-radius: 50%; background: #327b59; }
+  #kd-logo-studies .kd-desktop .kd-dot:nth-of-type(3) { left: 49%; top: 12%; background: #b34d36; }
+  #kd-logo-studies .kd-desktop .kd-dot:nth-of-type(4) { left: 68%; top: 35%; background: #e2a83b; }
+  #kd-logo-studies .kd-desktop .kd-dot:nth-of-type(5) { left: 53%; top: 66%; background: #477fa3; }
+  #kd-logo-studies .kd-desktop .kd-paintbrush { left: 68%; top: 7%; width: 10%; height: 59%; background: #875135; border-radius: .06em .06em 0 0; transform: rotate(37deg); }
+  #kd-logo-studies .kd-desktop .kd-paintbrush::before { content: ''; top: 69%; width: 100%; height: 20%; background: #c1c7c0; border-bottom: .02em solid #7c8984; }
+  #kd-logo-studies .kd-desktop .kd-paintbrush::after { content: ''; left: -20%; top: 87%; width: 140%; height: 40%; background: var(--kd-accent); border-radius: 0 0 65% 30%; }
+  #kd-logo-studies .kd-mono .kd-logo { filter: grayscale(1); }
+  @media (max-width: 480px) {
+    #kd-logo-studies .kd-board { padding: 22px 16px; min-height: 416px; }
+    #kd-logo-studies .kd-heading { padding-right: 65px; display: block; }
+    #kd-logo-studies .kd-heading span { display: block; margin-top: 3px; }
+    #kd-logo-studies .kd-pair { gap: 12px; margin-top: 32px; }
+    #kd-logo-studies .kd-app > .kd-logo { font-size: min(var(--kd-size), 29vw); }
+    #kd-logo-studies .kd-app h3 { font-size: 16px; }
+    #kd-logo-studies .kd-sizes { gap: 12px; }
+    #kd-logo-studies .kd-size-group { gap: 9px; }
+    #kd-logo-studies .kd-footer span:first-child { display: none; }
+  }
+</style>
+<div id="kd-logo-studies">
+  <div class="viz-carousel viz-dotted-background" aria-label="KD Notepad and KD Paint logo directions">
+    <section data-variant="Material" aria-label="Material logo direction">
+      <div class="kd-board kd-material" aria-label="Material logo settings">
+        <header class="kd-heading"><h2>Material</h2><span>Soft tiles · bold tools</span></header>
+        <div class="kd-pair">
+          <article class="kd-app"><div class="kd-logo kd-notepad" role="img" aria-label="Green rounded tile with a sheet of paper and pencil"><div class="kd-tile"></div><div class="kd-sheet"></div><div class="kd-pen"></div></div><h3>KD Notepad</h3></article>
+          <article class="kd-app"><div class="kd-logo kd-paint" role="img" aria-label="Apricot rounded tile with a terracotta paint stroke and brush"><div class="kd-tile"></div><div class="kd-daub"></div><div class="kd-brush"></div></div><h3>KD Paint</h3></article>
+        </div>
+        <div class="kd-sizes" aria-label="Small launcher icon previews"><div class="kd-size-group" data-app="kd-notepad"></div><div class="kd-size-group" data-app="kd-paint"></div></div>
+        <footer class="kd-footer"><span>K DESKTOP / LOGO STUDIES</span><span>Launcher scale · 48 / 32 / 24</span></footer>
+      </div>
+    </section>
+    <section data-variant="Folded paper" aria-label="Folded paper logo direction" hidden>
+      <div class="kd-board kd-folded" aria-label="Folded paper logo settings">
+        <header class="kd-heading"><h2>Folded paper</h2><span>Sharp folds · tactile layers</span></header>
+        <div class="kd-pair">
+          <article class="kd-app"><div class="kd-logo kd-notepad" role="img" aria-label="Layered green document with a folded corner"><div class="kd-back"></div><div class="kd-front"></div></div><h3>KD Notepad</h3></article>
+          <article class="kd-app"><div class="kd-logo kd-paint" role="img" aria-label="Apricot folded canvas crossed by a terracotta ribbon of paint"><div class="kd-canvas"></div><div class="kd-fleck"></div><div class="kd-ribbon"></div></div><h3>KD Paint</h3></article>
+        </div>
+        <div class="kd-sizes" aria-label="Small launcher icon previews"><div class="kd-size-group" data-app="kd-notepad"></div><div class="kd-size-group" data-app="kd-paint"></div></div>
+        <footer class="kd-footer"><span>K DESKTOP / LOGO STUDIES</span><span>Launcher scale · 48 / 32 / 24</span></footer>
+      </div>
+    </section>
+    <section data-variant="KD monogram" aria-label="KD monogram logo direction" hidden>
+      <div class="kd-board kd-monogram" aria-label="KD monogram logo settings">
+        <header class="kd-heading"><h2>KD monogram</h2><span>Shared initials · distinct signatures</span></header>
+        <div class="kd-pair">
+          <article class="kd-app"><div class="kd-logo kd-notepad" role="img" aria-label="Cream KD monogram on green with two text lines"><div class="kd-tile"></div><div class="kd-k"></div><div class="kd-d"></div><div class="kd-textmark"></div></div><h3>KD Notepad</h3></article>
+          <article class="kd-app"><div class="kd-logo kd-paint" role="img" aria-label="Cream KD monogram on terracotta with a paint stroke"><div class="kd-tile"></div><div class="kd-k"></div><div class="kd-d"></div><div class="kd-strokemark"></div></div><h3>KD Paint</h3></article>
+        </div>
+        <div class="kd-sizes" aria-label="Small launcher icon previews"><div class="kd-size-group" data-app="kd-notepad"></div><div class="kd-size-group" data-app="kd-paint"></div></div>
+        <footer class="kd-footer"><span>K DESKTOP / LOGO STUDIES</span><span>Launcher scale · 48 / 32 / 24</span></footer>
+      </div>
+    </section>
+    <section data-variant="Desktop classic" aria-label="Desktop classic logo direction" hidden>
+      <div class="kd-board kd-desktop" aria-label="Desktop classic logo settings">
+        <header class="kd-heading"><h2>Desktop classic</h2><span>Familiar objects · a little nostalgia</span></header>
+        <div class="kd-pair">
+          <article class="kd-app"><div class="kd-logo kd-notepad" role="img" aria-label="Green spiral notepad with a golden pencil"><div class="kd-cover"></div><div class="kd-page"></div><div class="kd-binding"></div><div class="kd-pencil"></div></div><h3>KD Notepad</h3></article>
+          <article class="kd-app"><div class="kd-logo kd-paint" role="img" aria-label="Classic artist palette with four paint colors and a wooden brush"><div class="kd-palette"><div class="kd-hole"></div><div class="kd-dot"></div><div class="kd-dot"></div><div class="kd-dot"></div><div class="kd-dot"></div></div><div class="kd-paintbrush"></div></div><h3>KD Paint</h3></article>
+        </div>
+        <div class="kd-sizes" aria-label="Small launcher icon previews"><div class="kd-size-group" data-app="kd-notepad"></div><div class="kd-size-group" data-app="kd-paint"></div></div>
+        <footer class="kd-footer"><span>K DESKTOP / LOGO STUDIES</span><span>Launcher scale · 48 / 32 / 24</span></footer>
+      </div>
+    </section>
+  </div>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('kd-logo-studies');
+  for (const board of root.querySelectorAll('.kd-board')) {
+    for (const group of board.querySelectorAll('.kd-size-group')) {
+      const original = board.querySelector('.kd-app > .' + group.dataset.app);
+      for (let i = 0; i < 3; i++) {
+        const copy = original.cloneNode(true);
+        copy.removeAttribute('role');
+        copy.removeAttribute('aria-label');
+        copy.setAttribute('aria-hidden', 'true');
+        group.appendChild(copy);
+      }
+    }
+    const state = { size: 132, grayscale: false };
+    const render = () => {
+      board.style.setProperty('--kd-size', state.size + 'px');
+      board.classList.toggle('kd-mono', state.grayscale);
+    };
+    render();
+    if (globalThis.Tweak) {
+      const tweak = new Tweak({ container: board, onChange: render });
+      tweak.addSlider(state, 'size', { label: 'Hero logo size', min: 96, max: 152, unit: 'px' });
+      tweak.addToggle(state, 'grayscale', { label: 'Grayscale preview' });
+    }
+  }
+})();
+</script>

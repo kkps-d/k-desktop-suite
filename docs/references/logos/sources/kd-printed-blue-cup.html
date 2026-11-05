@@ -1,0 +1,202 @@
+<style>
+  #kd-printed-blue-cup { color-scheme: light dark; }
+  #kd-printed-blue-cup .kd-board {
+    --kd-stage: light-dark(#edf2f6, #1e2630);
+    --kd-text: light-dark(#24394b, #e9f0f7);
+    --kd-muted: light-dark(#53687b, #b1c2d2);
+    --kd-rule: light-dark(#cfdbe5, #3d4d5d);
+    --kd-control: light-dark(#f9fbfd, #2a3745);
+    --kd-size: 120px;
+    color: var(--kd-text);
+    background: var(--kd-stage);
+    border-radius: 22px;
+    padding: 24px 28px;
+    font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+    box-sizing: border-box;
+  }
+  #kd-printed-blue-cup .kd-logo {
+    --kd-tile-surface: light-dark(#ffffff, #1a1a1a);
+    --kd-outline-color: light-dark(rgb(26 26 26 / 45%), rgb(255 255 255 / 50%));
+    --kd-outline-width: clamp(.35px, .005em, .75px);
+    --kd-sheet: light-dark(#b9e0fa, #8dc7f0);
+    --kd-cover: light-dark(#72b3e0, #4888b7);
+    --kd-blue: light-dark(#80c3ef, #8bcbf5);
+    --kd-blue-edge: light-dark(#438cbd, #5b9ed0);
+    --kd-blue-ink: light-dark(#245d87, #123a58);
+    --kd-cup: light-dark(#c56c50, #ecaa8e);
+    --kd-cup-edge: light-dark(#a6513b, #ce896e);
+    --kd-cup-inner: light-dark(#7f4032, #9d634d);
+    --kd-cup-ink: light-dark(#ffffff, #542719);
+    --kd-yellow: light-dark(#efb44e, #f5c76d);
+    --kd-yellow-edge: light-dark(#c6892d, #c9963d);
+    --kd-wood: light-dark(#efd5ac, #f0d2a6);
+    --kd-graphite: #3a4652;
+    --kd-teal: light-dark(#62b5ad, #81d4cb);
+    --kd-teal-edge: light-dark(#2e7978, #56aca7);
+    --kd-purple: light-dark(#a68acb, #c5ace9);
+    --kd-purple-edge: light-dark(#6c5197, #9b7bc9);
+    --kd-metal: light-dark(#c4d5e2, #dbe4ed);
+  }
+  #kd-printed-blue-cup .kd-heading { padding-right: 76px; }
+  #kd-printed-blue-cup .kd-heading h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.025em; }
+  #kd-printed-blue-cup .kd-heading p { margin: 3px 0 0; color: var(--kd-muted); font-size: 12px; }
+  #kd-printed-blue-cup .kd-appearance { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 20px; }
+  #kd-printed-blue-cup .kd-appearance label { font-size: 12px; color: var(--kd-muted); }
+  #kd-printed-blue-cup .kd-appearance select { color: var(--kd-text); background: var(--kd-control); border: 1px solid var(--kd-rule); border-radius: 10px; padding: 9px 32px 9px 12px; min-height: 44px; font: inherit; }
+  #kd-printed-blue-cup .kd-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 27px 0; }
+  #kd-printed-blue-cup .kd-app { display: flex; flex-direction: column; align-items: center; min-width: 0; gap: 17px; }
+  #kd-printed-blue-cup .kd-app h3 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: -.025em; }
+  #kd-printed-blue-cup .kd-logo { width: 1em; height: 1em; position: relative; flex: 0 0 auto; font-size: var(--kd-size); overflow: hidden; }
+  #kd-printed-blue-cup .kd-logo *, #kd-printed-blue-cup .kd-logo *::before, #kd-printed-blue-cup .kd-logo *::after { position: absolute; box-sizing: border-box; }
+  #kd-printed-blue-cup .kd-tile { inset: 0; background: var(--kd-tile-surface); }
+  #kd-printed-blue-cup .kd-mask-squircle { clip-path: var(--kd-squircle-mask); }
+  #kd-printed-blue-cup .kd-mask-rounded { clip-path: inset(0 round 22%); }
+  #kd-printed-blue-cup .kd-mask-circle { clip-path: circle(50%); }
+  /* Outline the composed silhouette, including clipped shapes and tool tips. */
+  #kd-printed-blue-cup .kd-art {
+    inset: 0;
+    filter:
+      drop-shadow(var(--kd-outline-width) 0 0 var(--kd-outline-color))
+      drop-shadow(calc(-1 * var(--kd-outline-width)) 0 0 var(--kd-outline-color))
+      drop-shadow(0 var(--kd-outline-width) 0 var(--kd-outline-color))
+      drop-shadow(0 calc(-1 * var(--kd-outline-width)) 0 var(--kd-outline-color));
+  }
+  #kd-printed-blue-cup .kd-brand { display: flex; align-items: center; justify-content: center; }
+  #kd-printed-blue-cup .kd-brand span { position: static; font: 800 .23em/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: -.045em; }
+
+  /* A blue cover and matching pen keep the printed-paper silhouette. */
+  #kd-printed-blue-cup .kd-notebook { left: 22%; top: 17%; width: 53%; height: 66%; background: var(--kd-cover); border-radius: .055em; transform: rotate(-7deg); }
+  #kd-printed-blue-cup .kd-page { left: 6%; right: 0; top: 0; bottom: 5%; background: var(--kd-sheet); border-radius: 0 .04em .04em 0; }
+  #kd-printed-blue-cup .kd-page::after { content: ''; left: 18%; top: 65%; width: 55%; height: 5%; background: var(--kd-blue-ink); border-radius: .015em; box-shadow: 0 .10em 0 var(--kd-blue-ink); }
+  #kd-printed-blue-cup .kd-notebook .kd-brand { inset: 11% 8% 40% 9%; color: var(--kd-blue-ink); }
+  #kd-printed-blue-cup .kd-pen { left: 66%; top: 37%; width: 12%; height: 46%; background: var(--kd-blue); border-radius: .025em .025em 0 0; border-left: .025em solid var(--kd-blue-edge); transform: rotate(34deg); }
+  #kd-printed-blue-cup .kd-pen::before { content: ''; left: 65%; top: 5%; width: .025em; height: .14em; border-radius: .02em; background: var(--kd-blue-ink); }
+  #kd-printed-blue-cup .kd-pen::after { content: ''; left: -.025em; top: 100%; width: .12em; height: .13em; background: var(--kd-blue-ink); clip-path: polygon(0 0,100% 0,50% 100%); }
+
+  /* The open cup sits in front of three distinctly shaped drawing tools. */
+  #kd-printed-blue-cup .kd-cup-handle { left: 67%; top: 52%; width: 18%; height: 24%; border: .055em solid var(--kd-cup-edge); border-radius: 0 50% 50% 0; }
+  #kd-printed-blue-cup .kd-cup-opening { left: 24%; top: 43%; width: 52%; height: 10%; background: var(--kd-cup-inner); border-radius: 50%; }
+  #kd-printed-blue-cup .kd-pencil { left: 33%; top: 17%; width: 9%; height: 45%; background: var(--kd-yellow); border-left: .025em solid var(--kd-yellow-edge); transform: rotate(-17deg); transform-origin: center bottom; }
+  #kd-printed-blue-cup .kd-pencil::before { content: ''; left: -.025em; top: -.13em; width: .09em; height: .13em; background: var(--kd-wood); clip-path: polygon(50% 0,100% 100%,0 100%); }
+  #kd-printed-blue-cup .kd-pencil::after { content: ''; left: .006em; top: -.13em; width: .029em; height: .05em; background: var(--kd-graphite); clip-path: polygon(50% 0,100% 100%,0 100%); }
+  #kd-printed-blue-cup .kd-paintbrush { left: 47%; top: 22%; width: 8%; height: 39%; background: var(--kd-teal); border-radius: 0 0 .03em .03em; transform: rotate(5deg); transform-origin: center bottom; }
+  #kd-printed-blue-cup .kd-paintbrush::before { content: ''; left: -23%; top: -.14em; width: 146%; height: .16em; background: var(--kd-teal-edge); border-radius: 70% 20% 8% 8%; }
+  #kd-printed-blue-cup .kd-paintbrush::after { content: ''; left: -10%; top: 0; width: 120%; height: .085em; background: var(--kd-metal); border-bottom: .015em solid var(--kd-teal-edge); }
+  #kd-printed-blue-cup .kd-marker { left: 58%; top: 19%; width: 10%; height: 42%; background: var(--kd-purple); border-radius: .025em; transform: rotate(21deg); transform-origin: center bottom; }
+  #kd-printed-blue-cup .kd-marker::before { content: ''; left: 0; top: 0; width: 100%; height: 31%; background: var(--kd-purple-edge); border-radius: .025em .025em 0 0; }
+  #kd-printed-blue-cup .kd-marker::after { content: ''; left: 65%; top: 4%; width: .018em; height: .09em; background: var(--kd-purple); border-radius: .01em; }
+  #kd-printed-blue-cup .kd-cup { left: 24%; top: 48%; width: 52%; height: 39%; background: var(--kd-cup); border-radius: 0 0 20% 20%; clip-path: polygon(0 0,100% 0,88% 100%,12% 100%); }
+  #kd-printed-blue-cup .kd-cup::after { content: ''; left: 10%; right: 10%; bottom: 0; height: 6%; background: var(--kd-cup-edge); }
+  #kd-printed-blue-cup .kd-cup .kd-brand { inset: 12% 9% 14%; color: var(--kd-cup-ink); }
+  #kd-printed-blue-cup .kd-cup .kd-brand span { font-size: .225em; }
+
+  #kd-printed-blue-cup .kd-crops { border-top: 1px solid var(--kd-rule); padding-top: 18px; display: grid; gap: 16px; }
+  #kd-printed-blue-cup .kd-crop-row { display: grid; grid-template-columns: minmax(80px, .9fr) repeat(2, minmax(0, 1fr)); gap: 12px; align-items: center; }
+  #kd-printed-blue-cup .kd-crop-row > span { font-size: 12px; color: var(--kd-muted); }
+  #kd-printed-blue-cup .kd-crop-head > span:not(:first-child) { text-align: center; }
+  #kd-printed-blue-cup .kd-crop-slot { display: flex; justify-content: center; }
+  #kd-printed-blue-cup .kd-crop-slot .kd-logo { font-size: 64px; }
+  #kd-printed-blue-cup .kd-footer { margin-top: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; color: var(--kd-muted); font-size: 11px; }
+  @media (max-width: 480px) {
+    #kd-printed-blue-cup .kd-board { padding: 22px 16px; }
+    #kd-printed-blue-cup .kd-heading { padding-right: 65px; }
+    #kd-printed-blue-cup .kd-pair { gap: 12px; }
+    #kd-printed-blue-cup .kd-app > .kd-logo { font-size: min(var(--kd-size), 29vw); }
+    #kd-printed-blue-cup .kd-app h3 { font-size: 16px; }
+    #kd-printed-blue-cup .kd-appearance select { font-size: 16px; }
+    #kd-printed-blue-cup .kd-footer span:first-child { display: none; }
+  }
+</style>
+<div id="kd-printed-blue-cup" class="viz-dotted-background">
+  <div class="kd-board" aria-label="Printed KD blue notebook and utensil cup">
+    <header class="kd-heading"><h2>Printed KD</h2><p>Square originals · launcher crop previews</p></header>
+    <div class="kd-appearance">
+      <label for="kd-printed-appearance">Icon appearance</label>
+      <select id="kd-printed-appearance" class="cursor-interaction"><option value="system">Follow system</option><option value="light">Light</option><option value="dark">Dark</option></select>
+    </div>
+    <div class="kd-pair">
+      <article class="kd-app">
+        <div class="kd-logo kd-notepad" role="img" aria-label="Square KD Notepad logo with a light-blue notebook, printed KD initials and a matching blue pen">
+          <div class="kd-tile"></div>
+          <div class="kd-art">
+            <div class="kd-notebook"><div class="kd-page"><div class="kd-brand"><span>KD</span></div></div></div>
+            <div class="kd-pen"></div>
+          </div>
+        </div>
+        <h3>KD Notepad</h3>
+      </article>
+      <article class="kd-app">
+        <div class="kd-logo kd-paint" role="img" aria-label="Square KD Paint logo with a terracotta KD cup holding a golden pencil, teal paintbrush and purple marker">
+          <div class="kd-tile"></div>
+          <div class="kd-art">
+            <div class="kd-cup-handle"></div><div class="kd-cup-opening"></div>
+            <div class="kd-pencil"></div><div class="kd-paintbrush"></div><div class="kd-marker"></div>
+            <div class="kd-cup"><div class="kd-brand"><span>KD</span></div></div>
+          </div>
+        </div>
+        <h3>KD Paint</h3>
+      </article>
+    </div>
+    <div class="kd-crops" role="group" aria-label="Launcher crop previews">
+      <div class="kd-crop-row kd-crop-head"><span>Crop</span><span>KD Notepad</span><span>KD Paint</span></div>
+      <div class="kd-crop-row"><span>Squircle</span><div class="kd-crop-slot" data-app="kd-notepad" data-mask="squircle"></div><div class="kd-crop-slot" data-app="kd-paint" data-mask="squircle"></div></div>
+      <div class="kd-crop-row"><span>Rounded square</span><div class="kd-crop-slot" data-app="kd-notepad" data-mask="rounded"></div><div class="kd-crop-slot" data-app="kd-paint" data-mask="rounded"></div></div>
+      <div class="kd-crop-row"><span>Circle</span><div class="kd-crop-slot" data-app="kd-notepad" data-mask="circle"></div><div class="kd-crop-slot" data-app="kd-paint" data-mask="circle"></div></div>
+    </div>
+    <footer class="kd-footer"><span>PRINTED KD / ADAPTIVE COLORS</span><span>Square originals · 64px crops</span></footer>
+    <span id="kd-printed-mode-status" class="sr-only" aria-live="polite"></span>
+  </div>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('kd-printed-blue-cup');
+  const board = root.querySelector('.kd-board');
+  const picker = root.querySelector('select');
+  const status = root.querySelector('#kd-printed-mode-status');
+  // A fourth-order superellipse gives a continuous squircle rather than circular corners.
+  const squircle = Array.from({ length: 128 }, (_, i) => {
+    const angle = i * 2 * Math.PI / 128;
+    const x = Math.cos(angle), y = Math.sin(angle);
+    return `${(50 + 50 * Math.sign(x) * Math.sqrt(Math.abs(x))).toFixed(3)}% ${(50 + 50 * Math.sign(y) * Math.sqrt(Math.abs(y))).toFixed(3)}%`;
+  });
+  root.style.setProperty('--kd-squircle-mask', 'polygon(' + squircle.join(',') + ')');
+  const maskLabels = { squircle: 'squircle', rounded: 'rounded square', circle: 'circle' };
+  for (const slot of root.querySelectorAll('.kd-crop-slot')) {
+    const original = root.querySelector('.kd-app > .' + slot.dataset.app);
+    const copy = original.cloneNode(true);
+    copy.classList.add('kd-mask-' + slot.dataset.mask);
+    copy.setAttribute('aria-label', (slot.dataset.app === 'kd-notepad' ? 'KD Notepad' : 'KD Paint') + ', ' + maskLabels[slot.dataset.mask] + ' crop');
+    slot.appendChild(copy);
+  }
+  const state = { size: 120, appearance: 'system' };
+  const applyAppearance = () => {
+    for (const logo of root.querySelectorAll('.kd-logo')) {
+      logo.style.colorScheme = state.appearance === 'system' ? 'light dark' : state.appearance;
+    }
+    picker.value = state.appearance;
+  };
+  const restore = saved => {
+    const appearance = saved?.privateContent?.appearance;
+    if (['light', 'dark', 'system'].includes(appearance)) state.appearance = appearance;
+    applyAppearance();
+  };
+  restore(window.openai?.widgetState);
+  window.addEventListener('openai:set_globals', event => {
+    if (event.detail?.globals?.widgetState) restore(event.detail.globals.widgetState);
+  });
+  picker.addEventListener('change', () => {
+    state.appearance = picker.value;
+    applyAppearance();
+    status.textContent = 'Appearance: ' + picker.selectedOptions[0].textContent;
+    if (window.openai?.setWidgetState) {
+      window.openai.setWidgetState({ privateContent: { appearance: state.appearance } }).catch(() => {});
+    }
+  });
+  const render = () => board.style.setProperty('--kd-size', state.size + 'px');
+  render();
+  if (globalThis.Tweak) {
+    const tweak = new Tweak({ container: board, onChange: render });
+    tweak.addSlider(state, 'size', { label: 'Hero logo size', min: 96, max: 152, unit: 'px' });
+  }
+})();
+</script>

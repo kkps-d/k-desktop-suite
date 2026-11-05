@@ -26,6 +26,8 @@ do not define current app behavior.
 - [Explorer specification](KD_EXPLORER_SPEC.md) (planned app)
 - [Tab visual references](references/chrome-android-tabs/) (historical Chrome examples)
 - [Paint layout references](references/kd-paint/README.md)
+- [Logo design studies](references/logos/README.md): selected Printed KD logos,
+  light/dark palettes, launcher crops, and earlier explorations.
 
 Android platform references:
 

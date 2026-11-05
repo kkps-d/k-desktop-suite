@@ -1,0 +1,176 @@
+<style>
+  #kd-material-branded { color-scheme: light dark; }
+  #kd-material-branded .kd-board {
+    --kd-bg: light-dark(#f5f6f0, #20251f);
+    --kd-ink: light-dark(#26352b, #e7eee4);
+    --kd-muted: light-dark(#59675d, #b4c2b5);
+    --kd-rule: light-dark(#dce2d6, #3d493d);
+    --kd-paper: light-dark(#fffef5, #e8eee1);
+    --kd-green: #28704e;
+    --kd-green-dark: #174d35;
+    --kd-mint: #b5d8a5;
+    --kd-orange: #bd502f;
+    --kd-orange-dark: #813723;
+    --kd-peach: #f4c29a;
+    --kd-size: 120px;
+    color: var(--kd-ink);
+    background: var(--kd-bg);
+    font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+    border-radius: 22px;
+    padding: 24px 28px;
+    min-height: 422px;
+    box-sizing: border-box;
+  }
+  #kd-material-branded .kd-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 20px; padding-right: 76px; }
+  #kd-material-branded .kd-heading h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.03em; }
+  #kd-material-branded .kd-heading span { color: var(--kd-muted); font-size: 12px; }
+  #kd-material-branded .kd-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 32px 0 28px; }
+  #kd-material-branded .kd-app { display: flex; flex-direction: column; align-items: center; min-width: 0; gap: 17px; }
+  #kd-material-branded .kd-app h3 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: -.025em; }
+  #kd-material-branded .kd-logo { width: 1em; height: 1em; flex: 0 0 auto; position: relative; font-size: var(--kd-size); }
+  #kd-material-branded .kd-logo *, #kd-material-branded .kd-logo *::before, #kd-material-branded .kd-logo *::after { position: absolute; box-sizing: border-box; }
+  #kd-material-branded .kd-notepad { --kd-accent: var(--kd-green); --kd-deep: var(--kd-green-dark); --kd-tint: var(--kd-mint); }
+  #kd-material-branded .kd-paint { --kd-accent: var(--kd-orange); --kd-deep: var(--kd-orange-dark); --kd-tint: var(--kd-peach); }
+  #kd-material-branded .kd-sizes { border-top: 1px solid var(--kd-rule); padding-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  #kd-material-branded .kd-size-group { display: flex; gap: 16px; align-items: center; justify-content: center; min-height: 48px; }
+  #kd-material-branded .kd-size-group .kd-logo:nth-child(1) { font-size: 48px; }
+  #kd-material-branded .kd-size-group .kd-logo:nth-child(2) { font-size: 32px; }
+  #kd-material-branded .kd-size-group .kd-logo:nth-child(3) { font-size: 24px; }
+  #kd-material-branded .kd-footer { margin-top: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; color: var(--kd-muted); font-size: 11px; }
+
+  #kd-material-branded .kd-tile { inset: 0; background: var(--kd-tint); border-radius: 28%; }
+  #kd-material-branded .kd-art { inset: 0; }
+  #kd-material-branded .kd-sheet { width: 52%; height: 65%; left: 24%; top: 17%; background: var(--kd-paper); border-radius: .055em; transform: rotate(-7deg); box-shadow: .035em .045em 0 color-mix(in srgb, var(--kd-accent) 25%, transparent); }
+  #kd-material-branded .kd-sheet::before { content: ''; left: 21%; top: 26%; width: 58%; height: 6%; background: var(--kd-accent); border-radius: .02em; box-shadow: 0 .12em 0 var(--kd-accent); }
+  #kd-material-branded .kd-sheet::after { content: ''; left: 21%; top: 64%; width: 37%; height: 6%; background: var(--kd-accent); border-radius: .02em; }
+  #kd-material-branded .kd-pen { width: 13%; height: 52%; left: 64%; top: 37%; transform: rotate(34deg); background: var(--kd-accent); border-radius: .025em .025em 0 0; border-top: .045em solid var(--kd-deep); }
+  #kd-material-branded .kd-pen::after { content: ''; top: 100%; left: 0; width: 100%; height: .12em; background: var(--kd-deep); clip-path: polygon(0 0,100% 0,50% 100%); }
+  #kd-material-branded .kd-daub { left: 18%; top: 39%; width: 64%; height: 34%; background: var(--kd-accent); border-radius: 60% 34% 56% 35%; transform: rotate(-25deg); }
+  #kd-material-branded .kd-daub::after { content: ''; width: 63%; height: 18%; left: 17%; top: 38%; border-radius: 50%; background: var(--kd-tint); transform: rotate(-6deg); }
+  #kd-material-branded .kd-brush { left: 59%; top: 12%; width: 14%; height: 50%; border-radius: .08em .08em .02em .02em; background: var(--kd-paper); transform: rotate(37deg); }
+  #kd-material-branded .kd-brush::before { content: ''; top: 70%; width: 100%; height: 17%; background: var(--kd-deep); }
+  #kd-material-branded .kd-brush::after { content: ''; left: -14%; top: 86%; width: 128%; height: 43%; border-radius: .01em .01em .1em .03em; background: var(--kd-accent); }
+  #kd-material-branded .kd-brand { display: flex; align-items: center; justify-content: center; }
+  #kd-material-branded .kd-brand span { position: static; font: 800 .18em/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: -.04em; }
+
+  /* A shared seal keeps the original illustrations intact. */
+  #kd-material-branded .kd-seal .kd-brand { left: 12%; top: 14%; width: 34%; height: 27%; background: var(--kd-deep); color: var(--kd-paper); border-radius: .07em; box-shadow: 0 .02em .01em color-mix(in srgb, var(--kd-deep) 18%, transparent); }
+
+  /* Put the initials on the objects themselves. */
+  #kd-material-branded .kd-printed .kd-sheet::before { display: none; }
+  #kd-material-branded .kd-printed .kd-sheet::after { top: 64%; width: 52%; box-shadow: 0 .10em 0 var(--kd-accent); }
+  #kd-material-branded .kd-printed .kd-sheet .kd-brand { inset: 11% 10% 40%; color: var(--kd-accent); }
+  #kd-material-branded .kd-printed .kd-sheet .kd-brand span { font-size: .23em; }
+  #kd-material-branded .kd-printed .kd-daub { left: 14%; top: 42%; width: 72%; height: 36%; transform: rotate(-15deg); }
+  #kd-material-branded .kd-printed .kd-daub::after { display: none; }
+  #kd-material-branded .kd-printed .kd-daub .kd-brand { inset: 0 21% 0 9%; color: var(--kd-paper); }
+  #kd-material-branded .kd-printed .kd-daub .kd-brand span { font-size: .21em; }
+  #kd-material-branded .kd-printed .kd-brush { left: 77%; top: 15%; width: 11%; height: 38%; transform: rotate(30deg); }
+
+  /* A base strip makes the family name independent of the tool silhouette. */
+  #kd-material-branded .kd-band .kd-logo { border-radius: 28%; overflow: hidden; }
+  #kd-material-branded .kd-band .kd-art { transform: translateY(-9%) scale(.78); }
+  #kd-material-branded .kd-band .kd-brand { inset: 73% 0 0; background: var(--kd-accent); color: var(--kd-paper); }
+  #kd-material-branded .kd-band .kd-brand span { font-size: .20em; letter-spacing: .015em; }
+
+  /* Bigger initials become the main mark; the tools still identify each app. */
+  #kd-material-branded .kd-center .kd-sheet { left: 15%; top: 18%; width: 66%; height: 64%; }
+  #kd-material-branded .kd-center .kd-sheet::before { display: none; }
+  #kd-material-branded .kd-center .kd-sheet::after { left: 17%; top: 75%; width: 46%; height: 4%; }
+  #kd-material-branded .kd-center .kd-sheet .kd-brand { inset: 11% 10% 18%; color: var(--kd-accent); }
+  #kd-material-branded .kd-center .kd-brand span { font-size: .34em; }
+  #kd-material-branded .kd-center .kd-pen { left: 73%; top: 35%; width: 11%; height: 50%; }
+  #kd-material-branded .kd-center .kd-daub { left: 13%; top: 29%; width: 73%; height: 49%; transform: rotate(-9deg); border-radius: 55% 35% 46% 31%; }
+  #kd-material-branded .kd-center .kd-daub::after { display: none; }
+  #kd-material-branded .kd-center .kd-daub .kd-brand { inset: 5% 22% 0 0; color: var(--kd-paper); }
+  #kd-material-branded .kd-center .kd-daub .kd-brand span { font-size: .32em; }
+  #kd-material-branded .kd-center .kd-brush { left: 75%; top: 10%; width: 11%; height: 45%; transform: rotate(31deg); }
+  #kd-material-branded .kd-mono .kd-logo { filter: grayscale(1); }
+  @media (max-width: 480px) {
+    #kd-material-branded .kd-board { padding: 22px 16px; min-height: 422px; }
+    #kd-material-branded .kd-heading { padding-right: 65px; display: block; }
+    #kd-material-branded .kd-heading span { display: block; margin-top: 3px; }
+    #kd-material-branded .kd-pair { gap: 12px; margin-top: 32px; }
+    #kd-material-branded .kd-app > .kd-logo { font-size: min(var(--kd-size), 29vw); }
+    #kd-material-branded .kd-app h3 { font-size: 16px; }
+    #kd-material-branded .kd-sizes { gap: 12px; }
+    #kd-material-branded .kd-size-group { gap: 9px; }
+    #kd-material-branded .kd-footer span:first-child { display: none; }
+  }
+</style>
+<div id="kd-material-branded">
+  <div class="viz-carousel viz-dotted-background" aria-label="Material icons with KD branding">
+    <section data-variant="Corner seal" aria-label="Corner seal design">
+      <div class="kd-board kd-seal" aria-label="Corner seal logo settings">
+        <header class="kd-heading"><h2>Corner seal</h2><span>Shared KD stamp</span></header>
+        <div class="kd-pair">
+          <article class="kd-app"><div class="kd-logo kd-notepad" role="img" aria-label="Green Material notepad and pencil with a dark KD corner seal"><div class="kd-tile"></div><div class="kd-sheet"></div><div class="kd-pen"></div><div class="kd-brand"><span>KD</span></div></div><h3>KD Notepad</h3></article>
+          <article class="kd-app"><div class="kd-logo kd-paint" role="img" aria-label="Apricot Material brush and paint stroke with a dark KD corner seal"><div class="kd-tile"></div><div class="kd-daub"></div><div class="kd-brush"></div><div class="kd-brand"><span>KD</span></div></div><h3>KD Paint</h3></article>
+        </div>
+        <div class="kd-sizes" aria-label="Launcher size previews"><div class="kd-size-group" data-app="kd-notepad"></div><div class="kd-size-group" data-app="kd-paint"></div></div>
+        <footer class="kd-footer"><span>K DESKTOP / MATERIAL + KD</span><span>Launcher scale · 48 / 32 / 24</span></footer>
+      </div>
+    </section>
+    <section data-variant="Printed KD" aria-label="Printed KD design" hidden>
+      <div class="kd-board kd-printed" aria-label="Printed KD logo settings">
+        <header class="kd-heading"><h2>Printed KD</h2><span>Initials on the paper and paint</span></header>
+        <div class="kd-pair">
+          <article class="kd-app"><div class="kd-logo kd-notepad" role="img" aria-label="Green Material icon with KD printed on the paper beside a pencil"><div class="kd-tile"></div><div class="kd-sheet"><div class="kd-brand"><span>KD</span></div></div><div class="kd-pen"></div></div><h3>KD Notepad</h3></article>
+          <article class="kd-app"><div class="kd-logo kd-paint" role="img" aria-label="Apricot Material icon with cream KD lettering inside the paint stroke"><div class="kd-tile"></div><div class="kd-daub"><div class="kd-brand"><span>KD</span></div></div><div class="kd-brush"></div></div><h3>KD Paint</h3></article>
+        </div>
+        <div class="kd-sizes" aria-label="Launcher size previews"><div class="kd-size-group" data-app="kd-notepad"></div><div class="kd-size-group" data-app="kd-paint"></div></div>
+        <footer class="kd-footer"><span>K DESKTOP / MATERIAL + KD</span><span>Launcher scale · 48 / 32 / 24</span></footer>
+      </div>
+    </section>
+    <section data-variant="Brand band" aria-label="Brand band design" hidden>
+      <div class="kd-board kd-band" aria-label="Brand band logo settings">
+        <header class="kd-heading"><h2>Brand band</h2><span>Matching KD base strip</span></header>
+        <div class="kd-pair">
+          <article class="kd-app"><div class="kd-logo kd-notepad" role="img" aria-label="Green Material notepad and pencil above a green band labeled KD"><div class="kd-tile"></div><div class="kd-art"><div class="kd-sheet"></div><div class="kd-pen"></div></div><div class="kd-brand"><span>KD</span></div></div><h3>KD Notepad</h3></article>
+          <article class="kd-app"><div class="kd-logo kd-paint" role="img" aria-label="Apricot Material brush and paint stroke above a terracotta band labeled KD"><div class="kd-tile"></div><div class="kd-art"><div class="kd-daub"></div><div class="kd-brush"></div></div><div class="kd-brand"><span>KD</span></div></div><h3>KD Paint</h3></article>
+        </div>
+        <div class="kd-sizes" aria-label="Launcher size previews"><div class="kd-size-group" data-app="kd-notepad"></div><div class="kd-size-group" data-app="kd-paint"></div></div>
+        <footer class="kd-footer"><span>K DESKTOP / MATERIAL + KD</span><span>Launcher scale · 48 / 32 / 24</span></footer>
+      </div>
+    </section>
+    <section data-variant="KD centerpiece" aria-label="KD centerpiece design" hidden>
+      <div class="kd-board kd-center" aria-label="KD centerpiece logo settings">
+        <header class="kd-heading"><h2>KD centerpiece</h2><span>Larger initials · supporting tools</span></header>
+        <div class="kd-pair">
+          <article class="kd-app"><div class="kd-logo kd-notepad" role="img" aria-label="Large green KD letters on cream paper with a pencil on a soft green tile"><div class="kd-tile"></div><div class="kd-sheet"><div class="kd-brand"><span>KD</span></div></div><div class="kd-pen"></div></div><h3>KD Notepad</h3></article>
+          <article class="kd-app"><div class="kd-logo kd-paint" role="img" aria-label="Large cream KD letters in a terracotta paint stroke with a small brush on an apricot tile"><div class="kd-tile"></div><div class="kd-daub"><div class="kd-brand"><span>KD</span></div></div><div class="kd-brush"></div></div><h3>KD Paint</h3></article>
+        </div>
+        <div class="kd-sizes" aria-label="Launcher size previews"><div class="kd-size-group" data-app="kd-notepad"></div><div class="kd-size-group" data-app="kd-paint"></div></div>
+        <footer class="kd-footer"><span>K DESKTOP / MATERIAL + KD</span><span>Launcher scale · 48 / 32 / 24</span></footer>
+      </div>
+    </section>
+  </div>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('kd-material-branded');
+  for (const board of root.querySelectorAll('.kd-board')) {
+    for (const group of board.querySelectorAll('.kd-size-group')) {
+      const original = board.querySelector('.kd-app > .' + group.dataset.app);
+      for (let i = 0; i < 3; i++) {
+        const copy = original.cloneNode(true);
+        copy.removeAttribute('role');
+        copy.removeAttribute('aria-label');
+        copy.setAttribute('aria-hidden', 'true');
+        group.appendChild(copy);
+      }
+    }
+    const state = { size: 120, grayscale: false };
+    const render = () => {
+      board.style.setProperty('--kd-size', state.size + 'px');
+      board.classList.toggle('kd-mono', state.grayscale);
+    };
+    render();
+    if (globalThis.Tweak) {
+      const tweak = new Tweak({ container: board, onChange: render });
+      tweak.addSlider(state, 'size', { label: 'Hero logo size', min: 96, max: 152, unit: 'px' });
+      tweak.addToggle(state, 'grayscale', { label: 'Grayscale preview' });
+    }
+  }
+})();
+</script>
