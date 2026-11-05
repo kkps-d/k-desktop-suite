@@ -9,6 +9,10 @@ Run the `paint` configuration in Android Studio; see
 [Development](DEVELOPMENT.md) for setup and builds. Controls follow system
 appearance and dynamic color, with the suite's green fallback palette.
 
+The launcher uses the beveled white KD cup with a golden pencil, wooden brush,
+and purple marker. About shows its square version in the selected app appearance;
+the adaptive launcher icon follows Android appearance and the launcher's mask.
+
 Settings offers English, Burmese, and Follow system. Android 13+ opens the system
 app-language page and provides an in-app fallback; older versions use the in-app
 picker. The language applies to all Paint windows while preserving their images

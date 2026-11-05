@@ -1,6 +1,5 @@
 package com.kkps.kdesktopsuite.notepad
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -22,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -31,6 +29,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.kkps.kdesktopsuite.ui.AppLogo
 
 @Composable
 internal fun NotepadWelcome(
@@ -56,7 +55,7 @@ internal fun NotepadWelcome(
                 verticalArrangement = Arrangement.spacedBy(32.dp),
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Image(painterResource(R.drawable.ic_notepad), null, Modifier.size(64.dp))
+                    AppLogo(R.drawable.ic_notepad,R.drawable.ic_notepad_dark,null,Modifier.size(64.dp))
                     Text(stringResource(R.string.welcome), style = MaterialTheme.typography.headlineLarge,
                         modifier = Modifier.semantics { heading() })
                 }

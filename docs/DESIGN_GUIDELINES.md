@@ -6,8 +6,12 @@ Build focused Android productivity apps optimized for desktop windows and tablet
 
 Name apps **KD [App]**, where **KD** means **K Desktop**: **KD Notepad** (K Desktop Notepad) and **KD Paint** (K Desktop Paint). Use the short name consistently in launcher labels, window titles, and user-facing text.
 
-See [Logo design studies](references/logos/README.md) for the current
-user-preferred logo mockups, design decisions, and earlier explorations.
+Use the selected beveled KD logos: blue-accented Notepad with silver bindings,
+and Paint's white utensil cup. Keep icon backgrounds flat white or neutral dark
+gray; gradients belong only on foreground materials. In-app logos follow the
+app's appearance, while launcher resources follow Android appearance. See
+[Logo design studies](references/logos/README.md) for native assets, the current
+user-preferred preview, and earlier explorations.
 
 ## Appearance
 

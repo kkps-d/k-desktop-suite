@@ -50,6 +50,16 @@ run configurations, use **File > Sync Project with Gradle Files** first.
 
 See [Testing](TESTING.md) for JVM tests, instrumented tests, and manual checks.
 
+## Branding assets
+
+The native launcher and in-app logo vectors are generated with Python's standard
+library: `python3 scripts/generate_app_logos.py`. Edit the generator rather than
+its output XML. Keep it aligned with the [preferred logo design](references/logos/README.md),
+including the light/dark foreground palettes and flat backgrounds. Launcher
+foregrounds include proportional safe-area margins; in-app originals stay square.
+The shared `AppLogo` chooses the palette from the active Material theme so an
+app appearance override also changes Welcome/About artwork.
+
 ## Toolchain
 
 Versions are maintained in [the version catalog](../gradle/libs.versions.toml)

@@ -8,7 +8,6 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.focus.FocusRequester
@@ -23,6 +22,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import com.kkps.kdesktopsuite.ui.AppAboutDialog
+import com.kkps.kdesktopsuite.ui.AppLogo
 
 @Composable
 internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenLicenses: () -> Unit, onOpenDebug: () -> Unit) {
@@ -62,7 +62,7 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenLicenses
             version = stringResource(R.string.ui_about_version,BuildConfig.VERSION_NAME),developer = stringResource(R.string.ui_about_developer),
             sourceLabel = stringResource(R.string.ui_source_code),dismissLabel = stringResource(R.string.ui_dismiss),
             icon = {
-                Image(painterResource(R.drawable.ic_paint),stringResource(R.string.ui_open_debug),
+                AppLogo(R.drawable.ic_paint,R.drawable.ic_paint_dark,stringResource(R.string.ui_open_debug),
                     Modifier.size(48.dp).testTag("about-paint-logo").clickable(
                         interactionSource = remember { MutableInteractionSource() },indication = null,onClick = onOpenDebug))
             },

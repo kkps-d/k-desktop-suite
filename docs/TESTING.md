@@ -136,6 +136,26 @@ shows the former ribbon layout.
 
 ## Manual verification
 
+For branding changes, regenerate the vectors and check that a second generation
+does not change them. On Small Desktop, inspect both launcher icons at small sizes,
+then Notepad Welcome and both About dialogs in light/dark appearance. Override
+each app's appearance against Android's appearance to verify they are independent.
+Check adaptive circle, rounded-square, and squircle masks for clipping where the
+launcher supports them; backgrounds must stay flat and the KD print readable.
+
+Branding verification on 5 November 2026: both debug builds, test-APK compilation,
+all 71 JVM tests, and lint passed with no errors (19 Notepad warnings and three
+Paint warnings, including the redundant API-26 resource qualifier). Two focused
+Notepad Welcome/About checks and two Paint About/debug-navigation checks passed
+on local Small Desktop under regular desktop user 10. Paint's 1200 × 800 dp
+fixture needed a temporary 2000 × 1400 display; the original size was restored.
+Native Welcome/About logos were visually reviewed in light/dark appearance,
+including Light app overrides while Android stayed dark. Both adaptive launcher
+icons were reviewed in light/dark mode; Launcher3 needed a process restart to
+refresh its cached icon palette. Android appearance and both app preferences
+were restored. Other launchers/masks and Android's optional themed-icon colors
+were not manually verified. Regenerating all 16 XML resources produced no changes.
+
 Check the affected flows on the local Small Desktop emulator:
 
 - Free-form resizing, maximize/restore, narrow and short windows, and split screen.

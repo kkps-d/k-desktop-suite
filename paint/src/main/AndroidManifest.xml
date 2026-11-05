@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <application android:name=".PaintApplication" android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/backup_rules"
-        android:icon="@drawable/ic_paint" android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:label="@string/app_name"
         android:supportsRtl="true" android:theme="@style/Theme.KDPaint"
         android:localeConfig="@xml/core_ui_supported_locales" tools:targetApi="33">
         <property android:name="android.window.PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI" android:value="true" />
