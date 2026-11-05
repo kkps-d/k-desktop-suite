@@ -1,12 +1,15 @@
 # Logo design studies
 
-Design checkpoint: 5 November 2026. The preferred beveled pair is now used by
-both Android apps. The HTML previews preserve the design studies.
+Design checkpoint: 5 November 2026. The preferred beveled Notepad/Paint pair is
+used by those Android apps. KD Preview has a selected logo study for its planned
+app. The HTML previews preserve the design studies.
 
 Open the previews directly in a browser. They include their styling and scripts
 and do not require a server or a network connection.
 
-## Current user-preferred version
+## Current user-preferred versions
+
+### KD Notepad and KD Paint
 
 **Beveled edges with silver bindings** is the user's latest selection.
 Open the [preferred preview](kd-logo-beveled.html) or edit its
@@ -34,6 +37,39 @@ and black Notepad bindings; the studies below preserve those explorations.
 
 The crop previews mask the square artwork without repositioning or rescaling
 its foreground items.
+
+### KD Preview (planned)
+
+**Lens-only mosaic** is the user's selection. Open the
+[standalone preview](kd-preview-liquid-mosaic.html) or edit its
+[source](sources/kd-preview-liquid-mosaic.html). It opens on the selected variant;
+the earlier full-background mosaic remains available for comparison.
+
+| Setting | Selected value |
+| --- | --- |
+| Mosaic items | 23 |
+| Glass refraction | 110% |
+| Aqua tint | 10% |
+
+- A centered looking glass with a thick silver rim and handle exiting diagonally
+  at the bottom right. Light mode uses darker silver for contrast.
+- A diagonal masonry mosaic with irregular widths and proportional file-type
+  symbols for images, text, audio, archives, PDFs, spreadsheets, and video.
+  The mosaic is clipped to the lens; the exterior stays white or `#1a1a1a`.
+- Centered KD uses the same outlined lettering and dimensions as the shipped
+  Paint logo. Refraction affects only the mosaic; an aqua tint covers both
+  mosaic and KD, with a darker tint in dark mode.
+- Light-mode mosaic colors are more saturated. Crop previews include squircle,
+  rounded square, and circle masks.
+
+Square 1024 × 1024 PNG renders: [light](kd-preview-light.png) and
+[dark](kd-preview-dark.png). These preserve the selected browser rendering,
+including the glass distortion. KD Preview Android integration is still planned.
+
+The optical map is an independent implementation informed by the
+[JavaScript liquid-glass displacement approach](https://github.com/jbbixler/liquid-glass).
+The file symbols use the export runtime's bundled Lucide artwork. No network
+connection is needed to open the standalone preview.
 
 ## Earlier explorations
 
@@ -92,11 +128,22 @@ exports with a bundled preview runtime. Edit the fragments and regenerate the
 corresponding exports with the visualize skill's `scripts/render.py` helper.
 The fragments also work directly in the inline preview host.
 
+The KD Preview standalone export additionally inlines its pinned Lucide 1.17.0
+and Floating UI core 1.7.3 / DOM 1.7.4 dependencies, with licenses preserved in
+[notices](kd-preview-NOTICES.txt). Re-inline these scripts after regenerating that
+export to retain offline operation. Its PNGs capture each selected square original
+at 1024px in Chrome; the KD canvas redraws at the output resolution.
+
 Browser checks covered the current square originals, all six crop previews,
 light/dark icon palettes, unchanged preview appearance when switching icon
 modes, centered and evenly spaced silver bindings, foreground gradients with
 flat icon backgrounds, and layout at 320px and 768px viewport widths. Earlier
 explorations were checked for variant navigation, light/dark rendering, and
 narrow layouts.
+The KD Preview export was checked offline in Chrome at 320px and 768px widths,
+with the selected 23/110%/10% defaults and Lens-only mosaic first. Both variants,
+all crop masks, centered frame/glass geometry, sharp KD under refraction changes,
+and the light/dark 1024px PNG renders were checked. The Preview study changes no
+Android resources, so Android builds/tests were not rerun for this checkpoint.
 The HTML previews are design references; Android uses the native resources above.
 See [Testing](../../TESTING.md) for production icon verification.
