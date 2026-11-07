@@ -1,7 +1,7 @@
 # Alternate glass logo style
 
-Approved references: **KD Explorer aquamarine glass** and **KD Notepad glass**,
-5 November 2026.
+Approved references: **KD Explorer aquamarine glass** and **KD Notepad glass**
+(5 November 2026), and **KD Paint glass, Rolled rim** (7 November 2026).
 This is a second visual style for the suite. It does not replace Explorer's
 amber Soft geometry selection or the beveled Notepad/Paint Android artwork.
 
@@ -74,6 +74,29 @@ silver. Square originals and all six crop previews use these same defaults.
 The standalone export uses the same bundled runtime and regeneration process
 described above.
 
+## Paint checkpoint
+
+**Rolled rim** is the selected Paint glass design. Open the
+[preview](kd-paint-glass.html), edit its [source](sources/kd-paint-glass.html),
+or inspect the square 1024 × 1024 renders: [light](kd-paint-glass-light.png) and
+[dark](kd-paint-glass-dark.png). The preview opens on Rolled rim and retains
+**Soft joins** as a second accepted alternative.
+
+Only the cup and handle use glass. The golden pencil, wooden brush with silver
+ferrule and brown bristles, and purple marker retain their original materials.
+The cup retains its original 48 × 35 body, bottom corners, and handle footprint.
+The rolled lip is slightly rounded; its shallow rear curve mirrors the front
+curve. Softly flared handle roots join behind the cup wall without a visible
+attachment bar across the face. The tools extend inside the transparent cup,
+and KD uses Explorer's unfilled etched outline with reflection-linked highlights.
+
+Defaults remain `#29b99d` tint, 34% density, 80% edge reflections, and 35% cup
+refraction. The pencil's gray graphite fills the upper half of its sharpened
+tip, sharing the wood triangle's sloping edges so there is no pale gap beside
+the graphite. The correction applies to both retained alternatives.
+The standalone export uses the same bundled runtime and regeneration process
+described above. The beveled white cup remains the native Paint artwork.
+
 ## Verification and scope
 
 The light/dark artwork and small crop contact sheet were visually reviewed using
@@ -82,6 +105,11 @@ density changes, reflection changes in the KD area, and saved-state restoration.
 Notepad's light/dark artwork, glass pen cone, silver writing tip, and small crops
 were also visually reviewed. Runtime checks covered its tint, density,
 reflections, pen refraction, and saved-state restoration.
+Paint's selected light/dark renders and crop previews were visually reviewed,
+including the pencil's corrected graphite edges. Checks covered both retained
+variants, 16 canvases, eight independent controls, refraction, reflection changes,
+and saved-state restoration. The rear and front rim curves are mirrored, and
+the graphite triangle's two sides align with the sharpened wood tip.
 The PNGs were rendered directly from the approved canvas code at 1024 × 1024.
 The exported document was checked for bundled scripts and local documentation
 links. Browser layout verification remains pending because local file previews

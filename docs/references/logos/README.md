@@ -118,6 +118,18 @@ It uses the same tint, density, reflection, and refraction defaults as Explorer.
 This is an approved alternate design reference; Android still uses the beveled
 Notepad artwork.
 
+**KD Paint glass (Rolled rim)** is the selected Paint alternate style. Only the
+cup and handle use glass; the original colored tools remain intact. The shallow
+rear rim matches the front curve, the rounded lip and handle joins retain the
+original cup proportions, and KD uses Explorer's unfilled etched outlines. The
+pencil's graphite now follows the full width of the sharpened tip's upper half.
+Open its [preview](kd-paint-glass.html) or edit the
+[source](sources/kd-paint-glass.html). Rolled rim opens first; Soft joins remains
+available as a second accepted alternative. Square 1024px renders:
+[light](kd-paint-glass-light.png) and [dark](kd-paint-glass-dark.png).
+The [glass style guide](GLASS_STYLE.md) records the selected values and scope;
+Android still uses the beveled white cup.
+
 ## Earlier explorations
 
 - [Explorer directions](kd-explorer-logo-directions.html): Classic folder,
