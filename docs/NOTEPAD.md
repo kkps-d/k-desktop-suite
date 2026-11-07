@@ -34,7 +34,8 @@ and open-source licenses. Compact windows put About at the bottom of Commands.
 Dismiss, system Back, and Escape return to the active draft.
 
 Settings > App icon offers Classic (beveled blue notebook) and Glass (transparent
-backing and pen with a silver writing tip), with live previews. Choose Light,
+backing and pen with a silver writing tip), with live previews rounded using the
+Material 3 medium shape token. Choose Light,
 Dark, or System independently of the editor appearance. The choice is saved for
 all Notepad windows and applies to Welcome, About, and the launcher. System uses
 Android appearance in the launcher and the app appearance for in-app logos.

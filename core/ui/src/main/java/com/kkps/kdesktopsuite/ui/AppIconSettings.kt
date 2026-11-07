@@ -17,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -126,7 +127,8 @@ fun AppIconSettingsSection(assets: AppIconAssets, availableWidth: Dp) {
                     colors = CardDefaults.outlinedCardColors(containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface)) {
                     Row(Modifier.padding(12.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Image(painterResource(assets.resource(choice.copy(style = style), dark)), null, Modifier.size(56.dp))
+                        Image(painterResource(assets.resource(choice.copy(style = style), dark)), null,
+                            Modifier.size(56.dp).clip(MaterialTheme.shapes.medium))
                         Text(stringResource(if (style == AppIconStyle.Classic) R.string.app_icon_classic else R.string.app_icon_glass),
                             Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
                         RadioButton(selected, onClick = null)

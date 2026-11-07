@@ -12,7 +12,8 @@ appearance and dynamic color, with the suite's green fallback palette.
 The launcher uses the refined white ceramic KD cup with a shallow rolled rim,
 softened handle joins, a golden pencil with a flush graphite tip, wooden brush,
 and purple marker. Its light palette keeps the white handle outlined against the
-background. Settings > App icon offers Classic and Glass with live previews.
+background. Settings > App icon offers Classic and Glass with live previews,
+rounded using the Material 3 medium shape token.
 Glass uses the approved rolled glass cup and handle, original colored tools,
 and etched KD outlines. Choose Light, Dark, or System independently of the editor
 appearance. The saved choice applies to About and the launcher across all Paint
