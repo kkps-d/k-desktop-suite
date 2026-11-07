@@ -1,0 +1,38 @@
+{
+  "capture_date": "2026-11-07",
+  "device": "Small_Desktop",
+  "serial": "emulator-5554",
+  "android_user": 10,
+  "display_pixels": [
+    1366,
+    768
+  ],
+  "density_dpi": 160,
+  "system_night_mode": "no (unchanged)",
+  "app_version": "0.1.0",
+  "version_code": 1,
+  "min_sdk": 26,
+  "target_sdk": 37,
+  "source_head": "3f87d7932d3aaab0a06919823664f13cbe07fab9",
+  "source_state": "Existing dirty checkout; includes pre-existing shared UI changes. No application source edited for capture.",
+  "build_command": ":notepad:assembleDebug :paint:assembleDebug",
+  "build_result": "BUILD SUCCESSFUL; no instrumented or regression test suite run for this asset-only phase.",
+  "apk_sha256": {
+    "notepad": "458ebde997b1a18ecf53750d29001d4fe796f54a94eb926e96ae0307d2b5cc21",
+    "paint": "3e29978dfeec6c5c1c6083f9dd21147f773e77aca40aadacea7266f0b819ceb7"
+  },
+  "artwork_sha256": "a000610436e947532e5411d45051470b761e78fbc518463e0ca118d07f80c51a",
+  "supplemental_floating_capture": {
+    "date": "2026-11-07",
+    "serial": "emulator-5554",
+    "user": 10,
+    "full_frame_pixels": [
+      1366,
+      768
+    ],
+    "density_dpi": 160,
+    "framing": "uncropped full desktop",
+    "window_mode": "native overlapping freeform windows, not split screen",
+    "verification": "Visual capture only; no new builds or instrumented tests. Device access serialized with the other active emulator task. Original private files restored and hash-verified."
+  }
+}

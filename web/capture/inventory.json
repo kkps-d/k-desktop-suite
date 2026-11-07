@@ -1,0 +1,657 @@
+[
+  {
+    "id": "notepad-01-desktop-field-notes-light",
+    "app": "notepad",
+    "caption": "UTF-8 field notes in the light desktop editor.",
+    "role": "hero",
+    "appearance": "Light",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/notepad/01-desktop-field-notes-light.png",
+    "optimized": "assets/screenshots/optimized/notepad/01-desktop-field-notes-light.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      32,
+      1254,
+      678
+    ],
+    "original_sha256": "f6aab68f19550e5eba13e3eb326f029f7f96ffe5bc56f9e7303e0f5e57fdad9f",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "1104eab96eb51fb999b7dc4c8bfabb6eb88755399aeccc15e5473b470db9a520",
+    "original_bytes": 210528,
+    "optimized_bytes": 118502
+  },
+  {
+    "id": "notepad-02-desktop-tabs-checklist",
+    "app": "notepad",
+    "caption": "A studio checklist alongside other document tabs.",
+    "role": "detail",
+    "appearance": "Light",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/notepad/02-desktop-tabs-checklist.png",
+    "optimized": "assets/screenshots/optimized/notepad/02-desktop-tabs-checklist.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "087e73734b045079610e5a1110a41824ac87904c3dc35299641704db64d27ac4",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "43a892f212dd53da33aefa8f8e04ea96b87a6c05715e9e771ccfa7d89e46ac0f",
+    "original_bytes": 269588,
+    "optimized_bytes": 75950
+  },
+  {
+    "id": "notepad-03-desktop-find-replace",
+    "app": "notepad",
+    "caption": "Literal search highlights two matches, with a replacement ready.",
+    "role": "detail",
+    "appearance": "Light",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/notepad/03-desktop-find-replace.png",
+    "optimized": "assets/screenshots/optimized/notepad/03-desktop-find-replace.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "b9006703f76e931c9c0d3b828027bab222576f597561c724056221b92237265d",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "797e157f46c26eba7104a56c9504c929512b6c2e3e5f1913eb2f2eedff4cc252",
+    "original_bytes": 289244,
+    "optimized_bytes": 118629
+  },
+  {
+    "id": "notepad-04-settings-light",
+    "app": "notepad",
+    "caption": "Light settings with appearance, independent icon choices, and font styles.",
+    "role": "detail",
+    "appearance": "Light",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/notepad/04-settings-light.png",
+    "optimized": "assets/screenshots/optimized/notepad/04-settings-light.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "24c87e8212366f7ef798fb1c38182551ede1d6e33a3c5e00a8f74b4b7e5297e1",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "1d73038ab02edd338a8677b72146504c0b567640fb560ea78b46739da97ae381",
+    "original_bytes": 265280,
+    "optimized_bytes": 62483
+  },
+  {
+    "id": "notepad-05-settings-dark",
+    "app": "notepad",
+    "caption": "Dark settings and live icon previews.",
+    "role": "alternate",
+    "appearance": "Dark",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/notepad/05-settings-dark.png",
+    "optimized": "assets/screenshots/optimized/notepad/05-settings-dark.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "2d8affbc0a4d7287fb601525be75aa96f8e5f72abc8245e270e9a202c9dfd051",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "264e392c1e0929da277d4b170a7a6f760436156ea366eacb6e1f350b037c5d66",
+    "original_bytes": 266861,
+    "optimized_bytes": 63222
+  },
+  {
+    "id": "notepad-06-desktop-field-notes-dark",
+    "app": "notepad",
+    "caption": "The same plain-text document in the dark desktop editor.",
+    "role": "alternate hero",
+    "appearance": "Dark",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/notepad/06-desktop-field-notes-dark.png",
+    "optimized": "assets/screenshots/optimized/notepad/06-desktop-field-notes-dark.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      32,
+      1254,
+      678
+    ],
+    "original_sha256": "82933f740c31ebcef0c21909fc416665e56db21d731bc82755537ccb790bd5e4",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "3e4a2731e1b3bf552b87e961f30d3f160151b4995fec276149b2deabbeb199e2",
+    "original_bytes": 211453,
+    "optimized_bytes": 124617
+  },
+  {
+    "id": "notepad-07-compact-editor-dark",
+    "app": "notepad",
+    "caption": "Wrapped notes and consolidated commands in a resized 420dp Small Desktop window.",
+    "role": "compact hero",
+    "appearance": "Dark",
+    "layout": "compact resized Small Desktop window (not a physical phone)",
+    "original": "assets/screenshots/originals/notepad/07-compact-editor-dark.png",
+    "optimized": "assets/screenshots/optimized/notepad/07-compact-editor-dark.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      470,
+      36,
+      420,
+      664
+    ],
+    "original_sha256": "bc9302c6ea1a2258b7ce06b2e46b022784ebbef025a84328f5f8505267ab7825",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "577d6636e7f907a974fbbdaa05866d6ec3219d1af627894317946daa9fa275ca",
+    "original_bytes": 801404,
+    "optimized_bytes": 77328
+  },
+  {
+    "id": "notepad-08-compact-find-replace",
+    "app": "notepad",
+    "caption": "Two literal matches and the adaptive Replace field in a resized 420dp Small Desktop window.",
+    "role": "detail",
+    "appearance": "Dark",
+    "layout": "compact resized Small Desktop window (not a physical phone)",
+    "original": "assets/screenshots/originals/notepad/08-compact-find-replace.png",
+    "optimized": "assets/screenshots/optimized/notepad/08-compact-find-replace.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      470,
+      36,
+      420,
+      664
+    ],
+    "original_sha256": "a3d916f762b25682778aff2bda7cad6ead908e69d73e630c2b43daa9f3c0f5df",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "fd73874408fb2bf344614200e16f624baeb9a1074b5bcef7e1a7e4a2bad4a9c3",
+    "original_bytes": 280709,
+    "optimized_bytes": 65502
+  },
+  {
+    "id": "notepad-09-welcome-recent-dark",
+    "app": "notepad",
+    "caption": "Welcome with New/Open actions and two real recently opened sample files.",
+    "role": "alternate",
+    "appearance": "Dark",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/notepad/09-welcome-recent-dark.png",
+    "optimized": "assets/screenshots/optimized/notepad/09-welcome-recent-dark.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "9c0880fd3adbedeb55cd05f49a026cb1c8910490bfb57d4f318f20d696366919",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "6e60349d1ac8c363554ae37c75269460d3425313a96f0fa76b3462c1dbcc49f9",
+    "original_bytes": 231817,
+    "optimized_bytes": 35903
+  },
+  {
+    "id": "notepad-10-welcome-recent-light",
+    "app": "notepad",
+    "caption": "Light Welcome with recent files in a wide window.",
+    "role": "detail",
+    "appearance": "Light",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/notepad/10-welcome-recent-light.png",
+    "optimized": "assets/screenshots/optimized/notepad/10-welcome-recent-light.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "064add1ce5d4d6cdd3fb3c7e37c3a6042eaaad259bb8400fa47e4ee035103e2b",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "66b32828fc4f1b9b4a7303be115118ad767ad2457a3bb9ec32e0362bfd37a32d",
+    "original_bytes": 231254,
+    "optimized_bytes": 34716
+  },
+  {
+    "id": "notepad-11-independent-windows",
+    "app": "notepad",
+    "caption": "Notes with search beside an independent Welcome window.",
+    "role": "detail",
+    "appearance": "Light",
+    "layout": "multiple Small Desktop windows",
+    "original": "assets/screenshots/originals/notepad/11-independent-windows.png",
+    "optimized": "assets/screenshots/optimized/notepad/11-independent-windows.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      24,
+      52,
+      1318,
+      640
+    ],
+    "original_sha256": "8ebf5a9343091c0a5ac853226e2bcdbd64e0292bc62ea85e65b524f8adb64f32",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "c925693e476aeed3f81c767b401001b4b6162885e4ebb7456334ea65645ee619",
+    "original_bytes": 281595,
+    "optimized_bytes": 129802
+  },
+  {
+    "id": "paint-01-desktop-shrimp-light",
+    "app": "paint",
+    "caption": "The user-created super shrimp artwork open in KD Paint with brush controls.",
+    "role": "hero",
+    "appearance": "Light",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/paint/01-desktop-shrimp-light.png",
+    "optimized": "assets/screenshots/optimized/paint/01-desktop-shrimp-light.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "99cb791dfe20d5ffbd0c308bd1f29ba9ab90d8804002df3cbeaf0e4e2bc96f35",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "ce41c6c1c4321caee969379fdc3b18ff4cd5ceb68f6d7470e7af1d96a5726669",
+    "original_bytes": 290269,
+    "optimized_bytes": 105710
+  },
+  {
+    "id": "paint-02-shrimp-color-palette",
+    "app": "paint",
+    "caption": "The original artwork beside Paint’s primary-color palette.",
+    "role": "detail",
+    "appearance": "Light",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/paint/02-shrimp-color-palette.png",
+    "optimized": "assets/screenshots/optimized/paint/02-shrimp-color-palette.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "6a82a51cef5857d50e3a74cdd2586ab526fcef56ad5e6c53f1f3a4d5f0e53179",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "db8aad8f1ac8f8cc595d3e1f93bb710461645a9700f543026fd1a48a90865e32",
+    "original_bytes": 295872,
+    "optimized_bytes": 117149
+  },
+  {
+    "id": "paint-03-brush-style-gallery",
+    "app": "paint",
+    "caption": "Nine real brush-style previews over the original artwork.",
+    "role": "detail",
+    "appearance": "Light",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/paint/03-brush-style-gallery.png",
+    "optimized": "assets/screenshots/optimized/paint/03-brush-style-gallery.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "144f8f11048e55542a23dc41f62c9da404c8a1c1737183b35371fa9011671177",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "8166a75ae65d34c353125ac67cb3aa73a072c342009e2959f7ad2bd46bcb9b82",
+    "original_bytes": 316075,
+    "optimized_bytes": 119978
+  },
+  {
+    "id": "paint-04-artwork-actual-size-pan",
+    "app": "paint",
+    "caption": "Hand-tool navigation at 100% zoom; the artwork intentionally extends beyond the viewport.",
+    "role": "detail",
+    "appearance": "Light",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/paint/04-artwork-actual-size-pan.png",
+    "optimized": "assets/screenshots/optimized/paint/04-artwork-actual-size-pan.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "dbbff09881e868a3e13d8c22a680052de781de48284a59e8fa2b7bb81a630c3d",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "4267f3c799e5ed0177316eed09c5114b66a4553d9e3f5523c6d57d09761993ba",
+    "original_bytes": 270147,
+    "optimized_bytes": 117757
+  },
+  {
+    "id": "paint-05-settings-light",
+    "app": "paint",
+    "caption": "Light appearance, Classic/Glass icon choices, and startup recovery settings.",
+    "role": "detail",
+    "appearance": "Light",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/paint/05-settings-light.png",
+    "optimized": "assets/screenshots/optimized/paint/05-settings-light.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "13260551f99ad2835ee288947e064c132d56019ce4d455d2816f8563df1f3fed",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "637fb0b5bde79a93196b6a62a209659d81aeb6136cd6812ceb6f9069f4e1fc3f",
+    "original_bytes": 256490,
+    "optimized_bytes": 54793
+  },
+  {
+    "id": "paint-06-settings-dark",
+    "app": "paint",
+    "caption": "Dark appearance with independent icon preferences and startup settings.",
+    "role": "alternate",
+    "appearance": "Dark",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/paint/06-settings-dark.png",
+    "optimized": "assets/screenshots/optimized/paint/06-settings-dark.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "42fb5a4cd0e32511ba3c6d2820c5db1cba68d64eaa58636594296ea60d7b7155",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "a5dfa0113c2794fba48bb6f4bd3604578e134e14a3f9eaddf28373c9b7368f11",
+    "original_bytes": 257897,
+    "optimized_bytes": 55903
+  },
+  {
+    "id": "paint-07-desktop-shrimp-dark",
+    "app": "paint",
+    "caption": "Original artwork fitted to the dark Paint workspace.",
+    "role": "alternate hero",
+    "appearance": "Dark",
+    "layout": "desktop 1254dp Small Desktop window",
+    "original": "assets/screenshots/originals/paint/07-desktop-shrimp-dark.png",
+    "optimized": "assets/screenshots/optimized/paint/07-desktop-shrimp-dark.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      56,
+      52,
+      1254,
+      640
+    ],
+    "original_sha256": "9ab92b381af2fe24192553c4d7fde37ab7ef0e1b37c8be413d201b1f27c777f5",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "9e10213d82e16d81acd69f97e5582c8a5c99b7e71a4c6d5e86a6e25f16753998",
+    "original_bytes": 287977,
+    "optimized_bytes": 102466
+  },
+  {
+    "id": "paint-08-compact-shrimp-dark",
+    "app": "paint",
+    "caption": "The whole artwork fitted in a resized 420dp Small Desktop window.",
+    "role": "compact hero",
+    "appearance": "Dark",
+    "layout": "compact resized Small Desktop window (not a physical phone)",
+    "original": "assets/screenshots/originals/paint/08-compact-shrimp-dark.png",
+    "optimized": "assets/screenshots/optimized/paint/08-compact-shrimp-dark.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      470,
+      36,
+      420,
+      664
+    ],
+    "original_sha256": "8aa7513cef8eef7dfd7888068f62a3b225ee0222ad18250963774c39a9e3b342",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "fd255f31eaef8b2c12affc51b5967fd2d0af505f301898dbfbc4be0fd7aa42e5",
+    "original_bytes": 764244,
+    "optimized_bytes": 49100
+  },
+  {
+    "id": "paint-09-compact-color-toolbar",
+    "app": "paint",
+    "caption": "Scrollable tool and color rows in a resized 420dp Small Desktop window.",
+    "role": "detail",
+    "appearance": "Dark",
+    "layout": "compact resized Small Desktop window (not a physical phone)",
+    "original": "assets/screenshots/originals/paint/09-compact-color-toolbar.png",
+    "optimized": "assets/screenshots/optimized/paint/09-compact-color-toolbar.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      470,
+      36,
+      420,
+      664
+    ],
+    "original_sha256": "2953613df48a577c1f212fd5da8bec1fa4adb2ff0f4b2a726bdb6a4ae6ec7a0a",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "dcc0b7aaa5bd74ef0874db15bc6cd419acda20b51a6bf7bf3046fcdeeea53f6f",
+    "original_bytes": 769883,
+    "optimized_bytes": 54165
+  },
+  {
+    "id": "paint-10-tablet-shapes-gallery",
+    "app": "paint",
+    "caption": "Paint’s real shape gallery over a separate geometric sample made in the app.",
+    "role": "detail",
+    "appearance": "Dark",
+    "layout": "tablet-size 900dp Small Desktop window",
+    "original": "assets/screenshots/originals/paint/10-tablet-shapes-gallery.png",
+    "optimized": "assets/screenshots/optimized/paint/10-tablet-shapes-gallery.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      240,
+      52,
+      900,
+      640
+    ],
+    "original_sha256": "470816fad5700a2f1aa9a01ba1b263f5d91b2468dbd1741a15f85a143006ffe0",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays. The selected Ellipse tooltip is native app UI.",
+    "optimized_sha256": "3f3dcad2d1c450b25b8a6b500dbb217f223e77807099e2d0cd27035f2fa37eb9",
+    "original_bytes": 390561,
+    "optimized_bytes": 84511
+  },
+  {
+    "id": "paint-11-tablet-editable-text",
+    "app": "paint",
+    "caption": "Native editable text and font controls on a separate geometric sample.",
+    "role": "detail",
+    "appearance": "Dark",
+    "layout": "tablet-size 900dp Small Desktop window",
+    "original": "assets/screenshots/originals/paint/11-tablet-editable-text.png",
+    "optimized": "assets/screenshots/optimized/paint/11-tablet-editable-text.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      240,
+      52,
+      900,
+      640
+    ],
+    "original_sha256": "58497e41879e87f82c31187c5c8284d5656d9e0718a21b9659e060203cbbc33b",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "1305a7ec005d40cba70a2ce30f731abe2216ba53010dd0ba58b5df705e19b0cc",
+    "original_bytes": 374798,
+    "optimized_bytes": 79898
+  },
+  {
+    "id": "paint-12-independent-windows",
+    "app": "paint",
+    "caption": "The shrimp artwork and the separate geometric sample in independent Paint windows.",
+    "role": "detail",
+    "appearance": "Dark",
+    "layout": "multiple Small Desktop windows",
+    "original": "assets/screenshots/originals/paint/12-independent-windows.png",
+    "optimized": "assets/screenshots/optimized/paint/12-independent-windows.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      24,
+      52,
+      1318,
+      640
+    ],
+    "original_sha256": "206897979347a0034febb3793190115b3add6acae86f5eb6da00f99b407cdfe5",
+    "review": "Visually reviewed: authentic app UI; intentional menus/settings and canvas/text edit handles retained; no errors or external pointer overlays.",
+    "optimized_sha256": "e1f79dc3c6adbf46a25ff08d48e047b4dc4749b89f4c9a454032f951dc7fe297",
+    "original_bytes": 263262,
+    "optimized_bytes": 133304
+  },
+  {
+    "id": "notepad-12-floating-windows-desktop",
+    "app": "notepad",
+    "caption": "Field notes and Welcome in overlapping floating Notepad windows, with the entire desktop visible.",
+    "role": "full-desktop floating-window showcase",
+    "appearance": "Light",
+    "layout": "overlapping native freeform windows on local Small Desktop",
+    "original": "assets/screenshots/originals/notepad/12-floating-windows-desktop.png",
+    "optimized": "assets/screenshots/optimized/notepad/12-floating-windows-desktop.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      0,
+      0,
+      1366,
+      768
+    ],
+    "window_bounds": [
+      [
+        76,
+        54,
+        1016,
+        590
+      ],
+      [
+        500,
+        210,
+        1290,
+        680
+      ]
+    ],
+    "framing": "uncropped full desktop; no pixels removed",
+    "original_sha256": "85ef7cba3bbf0c195b1ea725f87f1d811891e6a27cc78b09f2644dea897d5024",
+    "review": "Visually reviewed: two authentic overlapping freeform windows; full wallpaper, dock, system bar, shadows, and controls retained. Native desktop pointer retained. No errors or dialogs.",
+    "original_bytes": 382837,
+    "optimized_sha256": "83fe41f3cd6418e873f4ac49ea154e9f8d689b58a5755f11f9eaaa9f1eb4a874",
+    "optimized_bytes": 115144
+  },
+  {
+    "id": "paint-13-floating-windows-desktop",
+    "app": "paint",
+    "caption": "The original shrimp artwork and a separate brush sketch in overlapping floating Paint windows, with the entire desktop visible.",
+    "role": "full-desktop floating-window showcase",
+    "appearance": "Light",
+    "layout": "overlapping native freeform windows on local Small Desktop",
+    "original": "assets/screenshots/originals/paint/13-floating-windows-desktop.png",
+    "optimized": "assets/screenshots/optimized/paint/13-floating-windows-desktop.jpg",
+    "original_dimensions": [
+      1366,
+      768
+    ],
+    "crop": [
+      0,
+      0,
+      1366,
+      768
+    ],
+    "window_bounds": [
+      [
+        76,
+        54,
+        1016,
+        590
+      ],
+      [
+        500,
+        210,
+        1290,
+        680
+      ]
+    ],
+    "framing": "uncropped full desktop; no pixels removed",
+    "original_sha256": "6356bae431fd23570a5a9ccc91fca097fb822efd28515069b65b4c3d6ce56e50",
+    "review": "Visually reviewed: two authentic overlapping freeform windows; full wallpaper, dock, system bar, shadows, and controls retained. Native desktop pointer retained. No errors or dialogs.",
+    "original_bytes": 409405,
+    "optimized_sha256": "57ff1eb1ed35f32dfb3ac2586d12e14fc469a78b86338c3e918efe99a017d8a3",
+    "optimized_bytes": 155105
+  }
+]
