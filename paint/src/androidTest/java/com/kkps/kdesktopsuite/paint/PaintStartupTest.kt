@@ -28,6 +28,7 @@ class PaintStartupTest {
     private suspend fun withSession(
         behavior: PaintStartupBehavior, recoverySnapshot: RecoverySnapshot? = snapshot,
         savedState: SavedStateHandle = SavedStateHandle(),
+        canvasWidth: Int = 12, canvasHeight: Int = 8,
         block: suspend (PaintViewModel, PaintRecovery) -> Unit,
     ) {
         val settings = (context.applicationContext as PaintApplication).settings
@@ -37,7 +38,7 @@ class PaintStartupTest {
         val recovery = PaintRecovery(root)
         var model: PaintViewModel? = null
         try {
-            settings.save(original.copy(startupBehavior = behavior,defaultCanvasWidth = 12,defaultCanvasHeight = 8))
+            settings.save(original.copy(startupBehavior = behavior,defaultCanvasWidth = canvasWidth,defaultCanvasHeight = canvasHeight))
             assertEquals(behavior,settings.preferences.first().startupBehavior)
             recoverySnapshot?.let { recovery.write(it.copy(sequence = recovery.nextSequence())) }
             main { model = PaintViewModel(ImageRepository(context),recovery,settings,savedState,scope) }
@@ -77,6 +78,85 @@ class PaintStartupTest {
             assertEquals(8,state.raster.height)
             assertTrue(state.raster.pixels.all { it == WHITE })
             assertFalse(state.dirty)
+        }
+    }
+
+    @Test fun freshStartupUsesActualSizeOrShrinksAfterFirstLayout() = runBlocking {
+        for ((width,height,scale) in listOf(Triple(1200f,900f,1f),Triple(400f,300f,0.42f))) {
+            withSession(PaintStartupBehavior.NewImage,canvasWidth = 800,canvasHeight = 600) { model,_ ->
+                waitFor { !model.state.value.loading }
+                main { model.resizeViewport(width,height,24f) }
+                val view = model.state.value.viewport
+                assertEquals(scale,view.scale,0.001f)
+                assertEquals(Point(400f,300f),view.center)
+                assertEquals(scale < 1f,view.fit)
+            }
+        }
+    }
+
+    @Test fun unusableFirstMeasurementsDoNotConsumeStartupZoom() = runBlocking {
+        withSession(PaintStartupBehavior.NewImage,canvasWidth = 800,canvasHeight = 600) { model,_ ->
+            waitFor { !model.state.value.loading }
+            main {
+                model.resizeViewport(0f,0f,24f)
+                model.resizeViewport(1200f,48f,24f)
+            }
+            assertEquals(1f,model.state.value.viewport.scale,0f)
+            main { model.resizeViewport(1200f,900f,24f) }
+            assertEquals(1f,model.state.value.viewport.scale,0f)
+            assertFalse(model.state.value.viewport.fit)
+        }
+    }
+
+    @Test fun startingFreshAfterMeasuredStartupPromptUsesConfiguredImageBounds() = runBlocking {
+        withSession(PaintStartupBehavior.AskEveryTime) { model,_ ->
+            waitFor { model.state.value.dialog == PaintDialog.ReopenLastEdit }
+            main {
+                model.resizeViewport(400f,300f,24f)
+                model.resolveStartup(false)
+            }
+            val view = model.state.value.viewport
+            assertEquals(1f,view.scale,0f)
+            assertEquals(Point(6f,4f),view.center)
+            assertFalse(view.fit)
+        }
+    }
+
+    @Test fun newImageResetsExplicitZoomAndKeepsActualSizeDuringResize() = runBlocking {
+        withSession(PaintStartupBehavior.NewImage,canvasWidth = 800,canvasHeight = 600) { model,_ ->
+            waitFor { !model.state.value.loading }
+            main {
+                model.resizeViewport(1200f,900f,24f)
+                model.viewport(model.state.value.viewport.zoomed(0.1f))
+                model.newImage()
+                model.resizeViewport(1400f,1000f,24f)
+            }
+            assertEquals(1f,model.state.value.viewport.scale,0f)
+            assertFalse(model.state.value.viewport.fit)
+        }
+    }
+
+    @Test fun recoveredZoomAndPanAreNotReinitializedAtFirstLayout() = runBlocking {
+        val view = Viewport(imageWidth = 1600,imageHeight = 1200,scale = 2f,center = Point(900f,700f),fit = false)
+        val recovered = snapshot.copy(raster = Raster.blank(1600,1200),viewport = view)
+        withSession(PaintStartupBehavior.ReopenLastEdit,recoverySnapshot = recovered) { model,_ ->
+            waitFor { !model.state.value.loading }
+            main { model.resizeViewport(400f,300f,24f) }
+            assertEquals(2f,model.state.value.viewport.scale,0f)
+            assertEquals(view.center,model.state.value.viewport.center)
+            assertFalse(model.state.value.viewport.fit)
+        }
+    }
+
+    @Test fun recoveredFitRecalculatesAtFirstLayoutAndDuringResize() = runBlocking {
+        val recovered = snapshot.copy(raster = Raster.blank(800,600),viewport = Viewport())
+        withSession(PaintStartupBehavior.ReopenLastEdit,recoverySnapshot = recovered) { model,_ ->
+            waitFor { !model.state.value.loading }
+            main { model.resizeViewport(400f,300f,24f) }
+            assertEquals(0.42f,model.state.value.viewport.scale,0.001f)
+            main { model.resizeViewport(1200f,900f,24f) }
+            assertEquals(1.42f,model.state.value.viewport.scale,0.001f)
+            assertTrue(model.state.value.viewport.fit)
         }
     }
 

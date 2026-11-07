@@ -4,6 +4,38 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ViewportTest {
+    @Test fun newImageStartsAtActualSizeWhenItFitsIncludingExactFit() {
+        for ((width,height) in listOf(1200f to 900f,848f to 648f)) {
+            val view = Viewport(width = width,height = height,margin = 24f,scale = 0.1f).forImage(800,600)
+            assertEquals(1f,view.scale,0f)
+            assertEquals(Point(400f,300f),view.center)
+            assertFalse(view.fit)
+            assertEquals(1f,view.resized(1400f,1000f).scale,0f)
+        }
+    }
+
+    @Test fun newImageShrinksToFitAndContinuesFittingDuringResize() {
+        val view = Viewport(width = 400f,height = 300f,margin = 24f).forImage(800,600)
+        assertEquals(0.42f,view.scale,0.001f)
+        assertEquals(Point(400f,300f),view.center)
+        assertEquals(24f,view.origin.y,0.001f)
+        assertTrue(view.fit)
+        assertEquals(1.42f,view.resized(1200f,900f).scale,0.001f)
+    }
+
+    @Test fun newImageWaitsForUsableMeasurementsWithoutShrinking() {
+        for ((width,height) in listOf(0f to 0f,48f to 900f,1200f to 48f)) {
+            val view = Viewport(width = width,height = height,margin = 24f,scale = 0.1f).forImage(800,600)
+            assertFalse(view.hasUsableSize)
+            assertEquals(1f,view.scale,0f)
+            assertEquals(Point(400f,300f),view.center)
+            val measured = view.copy(width = 1200f,height = 900f).forImage(800,600)
+            assertTrue(measured.hasUsableSize)
+            assertEquals(1f,measured.scale,0f)
+            assertFalse(measured.fit)
+        }
+    }
+
     @Test fun zoomIsLimitedToTenThroughFiveHundredPercent() {
         val viewport = Viewport(width = 400f,height = 300f)
         assertEquals(0.1f,viewport.zoomed(0f).scale,0f)

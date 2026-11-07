@@ -155,10 +155,9 @@ internal class PaintViewModel(
     private fun startBlankImage() {
         val preferences = state.value.preferences
         history = RasterHistory(Raster.blank(preferences.defaultCanvasWidth,preferences.defaultCanvasHeight))
+        val view = initialViewport(history.raster)
         mutableState.update { it.copy(raster = history.raster,
-            viewport = it.viewport.copy(fit = history.raster.width > it.viewport.width - it.viewport.margin * 2 ||
-                history.raster.height > it.viewport.height - it.viewport.margin * 2)
-                .resized(it.viewport.width,it.viewport.height,history.raster.width,history.raster.height)) }
+            viewport = view) }
     }
     private fun finishStartup() {
         savedState["sessionStarted"] = true
@@ -585,14 +584,20 @@ internal class PaintViewModel(
     }
     fun redo() { if (!state.value.busy) { cancelPreview(); history.redo(); sync(); updateImageBounds() } }
     private fun updateImageBounds() { val s = state.value; viewport(s.viewport.resized(s.viewport.width,s.viewport.height,s.raster.width,s.raster.height)) }
+    private fun initialViewport(raster: Raster): Viewport {
+        val view = state.value.viewport.forImage(raster.width,raster.height)
+        layoutInitialized = view.hasUsableSize
+        return view
+    }
     fun viewport(value: Viewport) { mutableState.update { it.copy(viewport = value) }; checkpoint() }
     fun resizeViewport(width: Float, height: Float, margin: Float) {
         val s = state.value
+        val measured = s.viewport.copy(width = width,height = height,margin = margin)
         val view = if (!layoutInitialized) {
-            layoutInitialized = true
-            s.viewport.copy(fit = s.raster.width > width-margin*2 || s.raster.height > height-margin*2)
-        } else s.viewport
-        viewport(view.resized(width,height,s.raster.width,s.raster.height,margin))
+            layoutInitialized = measured.hasUsableSize
+            measured.forImage(s.raster.width,s.raster.height)
+        } else measured.resized(width,height,s.raster.width,s.raster.height,margin)
+        viewport(view)
     }
     fun toggleRibbon() { mutableState.update { it.copy(ribbonCollapsed = !it.ribbonCollapsed) } }
     fun toggleInformation() { mutableState.update { it.copy(showInformation = !it.showInformation) } }
@@ -668,10 +673,10 @@ internal class PaintViewModel(
         documentId = UUID.randomUUID().toString()
         textEditor = null
         history = RasterHistory(raster); this.fingerprint = fingerprint
+        val view = initialViewport(raster)
         mutableState.update { it.copy(raster = raster, selection = null, preview = null,
             title = title, uri = uri, mime = mime, dirty = false, canUndo = false, canRedo = false,
-            viewport = it.viewport.copy(fit = raster.width > it.viewport.width-it.viewport.margin*2 || raster.height > it.viewport.height-it.viewport.margin*2,
-                scale = 1f,center = Point(raster.width/2f,raster.height/2f)).resized(it.viewport.width,it.viewport.height,raster.width,raster.height)) }
+            viewport = view) }
         checkpoint()
     }
     private fun launchPicker(kind: PickerKind, mime: String = "image/png") {

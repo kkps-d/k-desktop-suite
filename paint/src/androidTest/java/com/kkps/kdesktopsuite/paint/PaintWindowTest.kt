@@ -104,11 +104,16 @@ class PaintWindowTest {
             val model = ready(original)
             compose.runOnIdle { model.stroke(listOf(Point(10f, 10f))) }
             compose.waitUntil(15_000) { model.state.value.dirty && !model.state.value.busy }
+            compose.runOnIdle { model.viewport(model.state.value.viewport.zoomed(2f)) }
+            val viewport = model.state.value.viewport
             compose.runOnIdle { original.recreate() }
             compose.waitUntil(15_000) { window.activity != null && window.activity !== original && original.isDestroyed }
             val recreated = ready(requireNotNull(window.activity))
             assertSame(model, recreated)
             assertEquals(BLACK, recreated.state.value.raster.pixel(10, 10))
+            assertEquals(viewport.scale,recreated.state.value.viewport.scale,0f)
+            assertEquals(viewport.center,recreated.state.value.viewport.center)
+            assertFalse(recreated.state.value.viewport.fit)
             compose.runOnIdle { recreated.undo() }
             assertFalse(recreated.state.value.dirty)
             val count = workspace.windows.size

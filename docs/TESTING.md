@@ -123,6 +123,26 @@ controlled InputConnection.
 
 ### Paint
 
+`ViewportTest` and `PaintStartupTest` cover fresh-image zoom before and after
+workspace measurement, unusable initial dimensions, exact-fit and smaller
+workspaces, configured canvas sizes, Ask → Start new image, and restored zoom,
+pan, and Fit behavior. Verify launcher → File → Close image → launcher in a tall
+window: an untitled canvas starts centered at 100% when it fits, shrinking only
+when necessary. Explicit Fit may enlarge it. Restore temporary emulator display
+settings after checking this sequence.
+
+Startup zoom verification on 7 November 2026: the new regression failed before
+the fix (expected 100%, observed 10%). All 54 Paint JVM tests, debug build, lint,
+and test-APK compilation passed; lint retains three existing warnings and no
+errors. All 35 focused startup/session/window instrumented checks passed across
+runs on local Small Desktop under user 10. The initial combined run hit a
+settings-selection timing failure and activity-launch interference from retained
+windows; those six checks passed with an isolated session and larger display.
+The actual launcher → File → Close image → launcher sequence was visually checked:
+an 800 × 600 image opened at 100% in the tall workspace and fitted at 54% in the
+smaller freeform window. The original 1366 × 768 display and all nine original
+Paint private files were restored, with file hashes verified.
+
 Tests cover image-space coverage, fill connectivity, masks and cropping,
 region-based history and saved revisions, centered/bounded viewport transforms,
 native text selection across recreation, glyph coverage between preview and

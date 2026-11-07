@@ -172,6 +172,10 @@ resume the matching window regardless of the startup preference. Undo survives
 activity recreation but resets after process restart.
 Default canvas dimensions save automatically when valid; Reset beside the inputs
 restores 800 × 600. These defaults apply to new images only.
+Fresh images open centered at 100% when they fit inside the workspace, or shrink
+to fit when necessary. Paint waits for the workspace to be measured before
+choosing that initial zoom. Recovered images retain their saved zoom and pan;
+the explicit Fit command can enlarge an image to fill a larger workspace.
 
 ## Files and recovery
 

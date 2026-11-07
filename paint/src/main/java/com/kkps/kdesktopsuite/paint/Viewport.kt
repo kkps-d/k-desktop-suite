@@ -9,6 +9,15 @@ internal data class Viewport(
     val margin: Float = 8f,
 ) {
     val origin get() = Point(width / 2 - center.x * scale, height / 2 - center.y * scale)
+    val hasUsableSize get() = width > margin * 2 && height > margin * 2
+    fun forImage(imageWidth: Int, imageHeight: Int): Viewport {
+        val initial = copy(imageWidth = imageWidth, imageHeight = imageHeight, scale = 1f,
+            center = Point(imageWidth / 2f, imageHeight / 2f), fit = true)
+        // Wait for a measured workspace before deciding whether to shrink the image.
+        if (!hasUsableSize) return initial
+        return if (imageWidth > width - margin * 2 || imageHeight > height - margin * 2) initial.fitted()
+            else initial.copy(fit = false)
+    }
     fun imagePoint(point: Point) = Point((point.x - origin.x) / scale, (point.y - origin.y) / scale)
     fun screenPoint(point: Point) = Point(origin.x + point.x * scale, origin.y + point.y * scale)
     fun resized(width: Float, height: Float, imageWidth: Int = this.imageWidth, imageHeight: Int = this.imageHeight, margin: Float = this.margin): Viewport {
