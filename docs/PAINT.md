@@ -12,8 +12,13 @@ appearance and dynamic color, with the suite's green fallback palette.
 The launcher uses the refined white ceramic KD cup with a shallow rolled rim,
 softened handle joins, a golden pencil with a flush graphite tip, wooden brush,
 and purple marker. Its light palette keeps the white handle outlined against the
-background. About shows its square version in the selected app appearance;
-the adaptive launcher icon follows Android appearance and the launcher's mask.
+background. Settings > App icon offers Classic and Glass with live previews.
+Glass uses the approved rolled glass cup and handle, original colored tools,
+and etched KD outlines. Choose Light, Dark, or System independently of the editor
+appearance. The saved choice applies to About and the launcher across all Paint
+windows without changing pending edits. System follows Android appearance in the
+launcher and the app appearance inside Paint. Launcher caches may refresh after
+a short delay; Android themed icons retain the suite silhouette.
 
 Settings offers English, Burmese, and Follow system. Android 13+ opens the system
 app-language page and provides an in-app fallback; older versions use the in-app

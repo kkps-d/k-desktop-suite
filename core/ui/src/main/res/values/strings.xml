@@ -1,4 +1,12 @@
 <resources>
+    <string name="app_icon_title">App icon</string>
+    <string name="app_icon_classic">Classic</string>
+    <string name="app_icon_glass">Glass</string>
+    <string name="app_icon_palette">Icon appearance</string>
+    <string name="app_icon_system">System</string>
+    <string name="app_icon_light">Light</string>
+    <string name="app_icon_dark">Dark</string>
+    <string name="app_icon_summary">Used in the launcher and inside the app. System follows device appearance in the launcher and app appearance inside. Launchers may take a moment to refresh.</string>
     <!-- Shared language settings. Keep both action annotations in every translation. -->
     <string name="core_ui_language_title">Language</string>
     <string name="core_ui_language_follow_system">Follow system</string>

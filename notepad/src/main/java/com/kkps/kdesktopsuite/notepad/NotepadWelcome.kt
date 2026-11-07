@@ -45,7 +45,7 @@ internal fun NotepadWelcome(
                 verticalArrangement = Arrangement.spacedBy(32.dp),
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    AppLogo(R.drawable.ic_notepad,R.drawable.ic_notepad_dark,null,Modifier.size(64.dp))
+                    AppLogo(NotepadLogoAssets,null,Modifier.size(64.dp))
                     Text(stringResource(R.string.welcome), style = MaterialTheme.typography.headlineLarge,
                         modifier = Modifier.semantics { heading() })
                 }

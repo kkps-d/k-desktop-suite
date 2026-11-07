@@ -33,9 +33,13 @@ Help > About KD Notepad shows the app icon, version, developer, source repositor
 and open-source licenses. Compact windows put About at the bottom of Commands.
 Dismiss, system Back, and Escape return to the active draft.
 
-The launcher uses the beveled blue notebook with silver bindings and blue pen.
-Welcome and About show its square version in the selected app appearance;
-the adaptive launcher icon follows Android appearance and the launcher's mask.
+Settings > App icon offers Classic (beveled blue notebook) and Glass (transparent
+backing and pen with a silver writing tip), with live previews. Choose Light,
+Dark, or System independently of the editor appearance. The choice is saved for
+all Notepad windows and applies to Welcome, About, and the launcher. System uses
+Android appearance in the launcher and the app appearance for in-app logos.
+Launcher caches can take a moment to refresh; Android themed icons retain the
+suite silhouette. Changing the icon preserves open drafts.
 
 View contains zoom commands and checked toggles for word wrap and the status
 bar. Turning wrapping off preserves line breaks and enables independent horizontal

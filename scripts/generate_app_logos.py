@@ -311,6 +311,41 @@ def generate(app, draw):
     element(adaptive, "monochrome", drawable=f"@drawable/ic_{app}_monochrome")
     write_xml(res / "mipmap-anydpi-v26/ic_launcher.xml", adaptive)
 
+    # Preserve the approved canvas glass renders exactly, including transmission
+    # and refraction that Android VectorDrawable cannot reproduce.
+    raster = res / "drawable-nodpi"
+    raster.mkdir(exist_ok=True)
+    for mode in ("light", "dark"):
+        suffix = "" if mode == "light" else "_dark"
+        (raster / f"ic_{app}_glass{suffix}.png").write_bytes(
+            (ROOT / f"docs/references/logos/kd-{app}-glass-{mode}.png").read_bytes())
+
+    colors = ET.Element("resources")
+    for mode, color in (("light", "#FFFFFF"), ("dark", "#1A1A1A")):
+        ET.SubElement(colors, "color", {"name": f"icon_background_{mode}"}).text = color
+    write_xml(res / "values/icon_variant_colors.xml", colors)
+    for style in ("classic", "glass"):
+        for tone in ("system", "light", "dark"):
+            if style == "classic" and tone == "system":
+                continue  # The original ic_launcher remains the default.
+            foreground_name = f"ic_{app}_{style}_{tone}_foreground"
+            modes = ("light", "dark") if tone == "system" else (tone,)
+            for mode in modes:
+                suffix = "" if mode == "light" else "_dark"
+                image = f"ic_{app}" + ("_glass" if style == "glass" else "") + suffix
+                inset = ET.Element("inset")
+                for edge in ("Left", "Top", "Right", "Bottom"):
+                    inset.set(f"{{{ANDROID}}}inset{edge}", "16.6667%")
+                inset.set(f"{{{ANDROID}}}drawable", f"@drawable/{image}")
+                directory = "drawable-night" if tone == "system" and mode == "dark" else "drawable"
+                write_xml(res / directory / f"{foreground_name}.xml", inset)
+            adaptive = ET.Element("adaptive-icon")
+            background = "logo_background" if tone == "system" else f"icon_background_{tone}"
+            element(adaptive, "background", drawable=f"@color/{background}")
+            element(adaptive, "foreground", drawable=f"@drawable/{foreground_name}")
+            element(adaptive, "monochrome", drawable=f"@drawable/ic_{app}_monochrome")
+            write_xml(res / f"mipmap-anydpi-v26/ic_launcher_{style}_{tone}.xml", adaptive)
+
 
 if __name__ == "__main__":
     generate("notepad", notepad)

@@ -184,6 +184,20 @@ each app's appearance against Android's appearance to verify they are independen
 Check adaptive circle, rounded-square, and squircle masks for clipping where the
 launcher supports them; backgrounds must stay flat and the KD print readable.
 
+Icon-choice verification on 7 November 2026: Paint and Notepad now offer
+Classic/Glass and System/Light/Dark in Settings, backed by six launcher aliases
+per app. All 74 JVM tests (3 shared UI, 20 Notepad, 51 Paint), both debug builds,
+lint (no errors; 13 Notepad and 3 Paint warnings), and test-APK builds passed.
+All 450 localization entries passed. Each app's `AppIconSettingsTest` passed on
+local Small Desktop (`emulator-5554`, user 10), exercising all six combinations,
+exactly one enabled launcher entry, saved selection after activity recreation,
+and preservation of a Notepad draft or Paint pending text. Light/dark settings
+screenshots were captured from the actual app pages. Generation was deterministic;
+all four native Glass rasters match the approved reference PNGs byte for byte.
+Launcher cache refresh timing, TalkBack, and actual pre-33 alias switching remain
+manual checks. Display size and Android appearance were unchanged; tests restored
+both app themes and original icon choices.
+
 Paint icon integration on 7 November 2026: the refined ceramic design now
 backs the light/dark square icons, adaptive foregrounds, and themed silhouette.
 All 51 Paint JVM tests, debug build, test-APK compilation, and lint passed (no

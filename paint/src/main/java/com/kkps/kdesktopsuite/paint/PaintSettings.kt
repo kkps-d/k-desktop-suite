@@ -19,6 +19,7 @@ import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.kkps.kdesktopsuite.ui.AppLanguageSettingsPage
+import com.kkps.kdesktopsuite.ui.AppIconSettingsSection
 import kotlin.math.roundToInt
 
 @Composable
@@ -64,6 +65,7 @@ internal fun PaintSettingsScreen(s: PaintUiState, model: PaintViewModel) {
                 }
             }
         }
+        AppIconSettingsSection(PaintLogoAssets, availableWidth)
         Column(Modifier.fillMaxWidth().selectableGroup()) {
             Text(stringResource(R.string.ui_on_startup),Modifier.padding(bottom = 8.dp).semantics { heading() },style = MaterialTheme.typography.titleMedium)
             listOf(

@@ -30,6 +30,7 @@ internal class PaintApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         PaintFonts.load(this)
+        com.kkps.kdesktopsuite.ui.restoreAppIcon(this)
     }
 
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

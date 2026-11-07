@@ -26,6 +26,10 @@ import java.io.File
 import kotlinx.coroutines.launch
 
 internal class NotepadApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        com.kkps.kdesktopsuite.ui.restoreAppIcon(this)
+    }
     val sessions by lazy { SessionStore(File(filesDir, "notepad-session.json")) }
     val workspace by lazy {
         NotepadWorkspace(sessions).apply { showWindow = { TabWindows.showWindow(this@NotepadApplication, it.id) } }

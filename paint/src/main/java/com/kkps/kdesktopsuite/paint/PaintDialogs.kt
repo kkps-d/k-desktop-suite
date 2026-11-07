@@ -62,7 +62,7 @@ internal fun PaintDialogs(s: PaintUiState, model: PaintViewModel, onOpenLicenses
             version = stringResource(R.string.ui_about_version,BuildConfig.VERSION_NAME),developer = stringResource(R.string.ui_about_developer),
             sourceLabel = stringResource(R.string.ui_source_code),dismissLabel = stringResource(R.string.ui_dismiss),
             icon = {
-                AppLogo(R.drawable.ic_paint,R.drawable.ic_paint_dark,stringResource(R.string.ui_open_debug),
+                AppLogo(PaintLogoAssets,stringResource(R.string.ui_open_debug),
                     Modifier.size(48.dp).testTag("about-paint-logo").clickable(
                         interactionSource = remember { MutableInteractionSource() },indication = null,onClick = onOpenDebug))
             },

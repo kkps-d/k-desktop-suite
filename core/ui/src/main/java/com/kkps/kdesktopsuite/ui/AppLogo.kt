@@ -1,6 +1,5 @@
 package com.kkps.kdesktopsuite.ui
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -11,11 +10,10 @@ import androidx.compose.ui.res.painterResource
 /** Uses the app's appearance, which can differ from the system/launcher theme. */
 @Composable
 fun AppLogo(
-    @DrawableRes lightIcon: Int,
-    @DrawableRes darkIcon: Int,
+    assets: AppIconAssets,
     contentDescription: String?,
     modifier: Modifier = Modifier,
 ) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    Image(painterResource(if (dark) darkIcon else lightIcon), contentDescription, modifier)
+    Image(painterResource(assets.resource(rememberAppIconChoice(), dark)), contentDescription, modifier)
 }

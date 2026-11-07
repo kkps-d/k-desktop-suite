@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Generated Burmese test translation; review wording with a fluent speaker. -->
 <resources>
+    <string name="app_icon_title">အက်ပ် အိုင်ကွန်</string>
+    <string name="app_icon_classic">မူလပုံစံ</string>
+    <string name="app_icon_glass">မှန်ပုံစံ</string>
+    <string name="app_icon_palette">အိုင်ကွန် အရောင်ပုံစံ</string>
+    <string name="app_icon_system">စနစ်အတိုင်း</string>
+    <string name="app_icon_light">အလင်း</string>
+    <string name="app_icon_dark">အမှောင်</string>
+    <string name="app_icon_summary">အက်ပ်ဖွင့်ရာနေရာနှင့် အက်ပ်အတွင်း အသုံးပြုသည်။ စနစ်အတိုင်းကို ရွေးထားလျှင် အက်ပ်ဖွင့်ရာနေရာတွင် စက်၏အရောင်ပုံစံကို၊ အက်ပ်အတွင်းတွင် အက်ပ်၏အရောင်ပုံစံကို လိုက်သည်။ အိုင်ကွန်ပြောင်းရန် အချိန်အနည်းငယ် ကြာနိုင်သည်။</string>
     <string name="core_ui_language_title">ဘာသာစကား</string>
     <string name="core_ui_language_follow_system">စနစ်၏ဘာသာစကားကို အသုံးပြုရန်</string>
     <string name="core_ui_language_open_system">ဘာသာစကားဆက်တင်များ ဖွင့်ရန်</string>

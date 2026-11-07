@@ -9,7 +9,11 @@ Name apps **KD [App]**, where **KD** means **K Desktop**: **KD Notepad** (K Desk
 Use the selected KD logos: beveled blue-accented Notepad with silver bindings,
 and Paint's refined white ceramic cup with a shallow rolled rim and visible handle. Keep icon backgrounds flat white or neutral dark
 gray; gradients belong only on foreground materials. In-app logos follow the
-app's appearance, while launcher resources follow Android appearance. See
+app's appearance, while launcher resources follow Android appearance by default.
+Paint and Notepad settings offer independent Classic/Glass styles and
+System/Light/Dark icon palettes. Explicit palettes override appearance for both
+launcher and in-app artwork; preserve the approved glass renders and etched KD.
+See
 [Logo design studies](references/logos/README.md) for native assets, the current
 user-preferred preview, and earlier explorations.
 

@@ -1,0 +1,159 @@
+<style>
+#kd-preview-glass { color-scheme:light dark; }
+#kd-preview-glass .glass-board { --stage:light-dark(#edf2f3,#232b2e); --ink:light-dark(#243d40,#e5f2ef); --muted:light-dark(#566d70,#b5c9c6); --rule:light-dark(#ccd9d9,#415653); background:var(--stage); color:var(--ink); padding:24px 28px; border-radius:22px; font:14px/1.5 system-ui,sans-serif; box-sizing:border-box; }
+#kd-preview-glass .glass-heading { min-height:60px; padding-right:90px; }
+#kd-preview-glass h2 { margin:0; font-size:19px; font-weight:500; letter-spacing:-.025em; }
+#kd-preview-glass .glass-subtitle { font-size:12px; color:var(--muted); margin-top:4px; }
+#kd-preview-glass .glass-pair { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin:24px 0; }
+#kd-preview-glass figure { margin:0; display:flex; flex-direction:column; align-items:center; gap:10px; min-width:0; }
+#kd-preview-glass figcaption,#kd-preview-glass .glass-crops>span { font-size:12px; color:var(--muted); }
+#kd-preview-glass .glass-icon { display:block; width:min(100%,240px); aspect-ratio:1; height:auto; }
+#kd-preview-glass .glass-crops { display:grid; grid-template-columns:100px 1fr 1fr; gap:12px; align-items:center; border-top:1px solid var(--rule); padding-top:20px; }
+#kd-preview-glass .glass-slot { display:flex; justify-content:center; }
+#kd-preview-glass .glass-slot .glass-icon { width:64px; }
+#kd-preview-glass .glass-squircle { clip-path:polygon(0% 30%,.4% 20%,1.5% 12%,4% 6%,8% 2.5%,15% .5%,30% 0%,70% 0%,85% .5%,92% 2.5%,96% 6%,98.5% 12%,99.6% 20%,100% 30%,100% 70%,99.6% 80%,98.5% 88%,96% 94%,92% 97.5%,85% 99.5%,70% 100%,30% 100%,15% 99.5%,8% 97.5%,4% 94%,1.5% 88%,.4% 80%,0% 70%); }
+#kd-preview-glass .glass-rounded { clip-path:inset(0 round 22%); }
+#kd-preview-glass .glass-circle { clip-path:circle(50%); }
+@media(max-width:480px) { #kd-preview-glass .glass-board { padding:22px 16px; } #kd-preview-glass .glass-heading { min-height:88px; } #kd-preview-glass .glass-pair { gap:14px; } #kd-preview-glass .glass-crops { grid-template-columns:90px 1fr 1fr; gap:12px 6px; } #kd-preview-glass .glass-slot .glass-icon { width:48px; } }
+</style>
+<div id="kd-preview-glass" aria-label="KD Preview crystal magnifier with etched KD">
+ <div class="glass-glyphs" hidden aria-hidden="true">
+  <span data-file-icon="Image"><i data-lucide="image"></i></span>
+  <span data-file-icon="AlignLeft"><i data-lucide="align-left"></i></span>
+  <span data-file-icon="Music2"><i data-lucide="music-2"></i></span>
+  <span data-file-icon="FileArchive"><i data-lucide="file-archive"></i></span>
+  <span data-file-icon="FileImage"><i data-lucide="file-image"></i></span>
+  <span data-file-icon="Table2"><i data-lucide="table-2"></i></span>
+  <span data-file-icon="Film"><i data-lucide="film"></i></span>
+ </div>
+ <div class="viz-dotted-background">
+  <section aria-label="Broad crystal frame and etched lettering">
+   <div class="glass-board" data-style="crystal" aria-label="Crystal frame">
+    <header class="glass-heading"><h2>Crystal frame</h2><div class="glass-subtitle">File mosaic · etched KD · aquamarine glass</div></header>
+    <div class="glass-pair"><figure><canvas class="glass-icon" width="1024" height="1024" data-mode="light" role="img" aria-label="Light KD Preview with a broad crystal frame, restored file symbols in the mosaic, glass grip and unfilled etched KD outlines">Crystal frame, light.</canvas><figcaption>Light</figcaption></figure><figure><canvas class="glass-icon" width="1024" height="1024" data-mode="dark" role="img" aria-label="Dark KD Preview with a broad crystal frame, restored file symbols, refracted mosaic and etched KD">Crystal frame, dark.</canvas><figcaption>Dark</figcaption></figure></div>
+    <div class="glass-crops" aria-label="Crystal frame launcher crops"></div>
+   </div>
+  </section>
+ </div>
+</div>
+<!-- Rasterize the host's actual Lucide elements rather than depending on an exported icon collection. -->
+<script>
+(() => {
+ const root=document.getElementById('kd-preview-glass');
+ const defaults={accent:'#29b99d',density:34,reflections:80,refraction:110};
+ const labels={crystal:'Crystal frame'};
+ const states=Object.fromEntries(Object.keys(labels).map(key=>[key,{...defaults}]));
+ const boards=Array.from(root.querySelectorAll('.glass-board'));
+ function restore(saved) {
+  for(const key of Object.keys(states)) {
+   const v=saved?.[key]; if(/^#[0-9a-f]{6}$/i.test(v?.accent||'')) states[key].accent=v.accent;
+   for(const [name,min,max] of [['density',15,60],['reflections',20,100],['refraction',0,160]]) if(Number.isFinite(v?.[name])) states[key][name]=Math.max(min,Math.min(max,v[name]));
+  }
+ }
+ restore(window.openai?.widgetState?.privateContent);
+ for(const board of boards) {
+  const crops=board.querySelector('.glass-crops');
+  for(const [name,mask] of [['Squircle','squircle'],['Rounded','rounded'],['Circle','circle']]) {
+   const label=document.createElement('span'); label.textContent=name; crops.appendChild(label);
+   for(const mode of ['light','dark']) {
+    const slot=document.createElement('div');slot.className='glass-slot';
+    const c=document.createElement('canvas');c.width=c.height=600;c.className='glass-icon glass-'+mask;c.dataset.mode=mode;
+    c.setAttribute('role','img');c.setAttribute('aria-label',labels[board.dataset.style]+', '+mode+', '+name+' crop');slot.appendChild(c);crops.appendChild(slot);
+   }
+  }
+ }
+ const wordmark=new Path2D('M0,0H3.6V6.2L8.8,0H13.3L6.9,7.4L13.8,16H9.2L3.6,9V16H0ZM14.5,0H20.6C26.1,0 29.6,3 29.6,8C29.6,13 26.1,16 20.6,16H14.5ZM18.1,3.3V12.7H20.4C23.9,12.7 25.8,11.1 25.8,8C25.8,4.9 23.9,3.3 20.4,3.3Z');
+ const files=[['Image','#bd8e57'],['AlignLeft','#7797b5'],['Music2','#ac86b9'],['FileArchive','#bba05d'],['FileImage','#bd817e'],['Table2','#6fa58f'],['Film','#6d9eaa']];
+ const rgb=hex=>hex.match(/[a-f0-9]{2}/ig).map(v=>parseInt(v,16));
+ const mix=(a,b,t)=>'rgb('+rgb(a).map((v,i)=>Math.round(v*t+rgb(b)[i]*(1-t))).join(',')+')';
+ const caches=new Map();
+ const glyphs=new Map();
+ const library=root.querySelector('.glass-glyphs');
+ function refreshGlyphs() {
+  let changed=false;
+  for(const slot of library.querySelectorAll('[data-file-icon]')) {
+   const svg=slot.querySelector('svg');
+   if(svg&&!glyphs.has(slot.dataset.fileIcon)) {
+    glyphs.set(slot.dataset.fileIcon,Array.from(svg.children,element=>[element.localName,Object.fromEntries(Array.from(element.attributes,a=>[a.name,a.value]))]));
+    changed=true;
+   }
+  }
+  if(changed)caches.clear();
+  return changed;
+ }
+ function mosaic(dark,refraction) {
+  const key=dark+':'+refraction;if(caches.has(key))return caches.get(key);
+  const size=800,src=new OffscreenCanvas(size,size),ctx=src.getContext('2d'),base=dark?'#1a1a1a':'#ffffff';
+  ctx.scale(size/100,size/100);ctx.fillStyle=base;ctx.fillRect(0,0,100,100);ctx.translate(50,50);ctx.rotate(-24*Math.PI/180);ctx.translate(-68,-68);
+  const widths=[1.34,.83,1.15,.96,1.48,.79,1.11],heights=[1.08,.91,1.16,.97,1.04],available=136-1.8*4;
+  let index=0,y=0;
+  for(let row=0;row<5;row++) {
+   const count=row<3?5:4,h=available*heights[row]/heights.reduce((a,b)=>a+b,0),weights=Array.from({length:count},(_,c)=>widths[(c+row*3)%7]),total=weights.reduce((a,b)=>a+b,0);let x=0;
+   for(let col=0;col<count;col++,index++) {
+    const w=(136-1.8*(count-1))*weights[col]/total,[name,color]=files[index%7];
+    ctx.fillStyle=mix(color,base,dark?.17:.23);ctx.beginPath();ctx.roundRect(x,y,w,h,2.5);ctx.fill();
+    const nodes=glyphs.get(name);
+    if(nodes) {
+     const s=Math.min(w*.72,h*.72,24);ctx.save();ctx.translate(x+(w-s)/2,y+(h-s)/2);ctx.scale(s/24,s/24);ctx.strokeStyle=mix(color,dark?'#e8eeee':base,dark?.66:.84);ctx.lineWidth=1.55;ctx.lineCap='round';ctx.lineJoin='round';
+     for(const [type,a] of nodes) {
+      if(type==='path')ctx.stroke(new Path2D(a.d));
+      else if(type==='rect'){ctx.beginPath();ctx.roundRect(+a.x,+a.y,+a.width,+a.height,+(a.rx||0));ctx.stroke();}
+      else if(type==='circle'){ctx.beginPath();ctx.arc(+a.cx,+a.cy,+a.r,0,Math.PI*2);ctx.stroke();}
+     }
+     ctx.restore();
+    }
+    x+=w+1.8;
+   }
+   y+=h+1.8;
+  }
+  const pixels=src.getContext('2d').getImageData(0,0,size,size),out=new OffscreenCanvas(size,size),oc=out.getContext('2d'),image=oc.createImageData(size,size);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++) {
+   const dx=(x+.5)/size-.5,dy=(y+.5)/size-.5,r=Math.hypot(dx,dy),edge=.407-r,rim=edge>=0?Math.max(0,1-edge/.13)**2:0,lens=edge>=0?.12*Math.min(r/.407,1):0,bend=Math.min(.98,.92*rim+lens),amount=size*.06*refraction/100*bend;
+   const sx=Math.max(0,Math.min(size-1,Math.round(x-(r?dx/r:0)*amount))),sy=Math.max(0,Math.min(size-1,Math.round(y-(r?dy/r:0)*amount))),i=(y*size+x)*4,j=(sy*size+sx)*4;
+   image.data[i]=pixels.data[j];image.data[i+1]=pixels.data[j+1];image.data[i+2]=pixels.data[j+2];image.data[i+3]=255;
+  }
+  oc.putImageData(image,0,0);caches.set(key,out);if(caches.size>12)caches.delete(caches.keys().next().value);return out;
+ }
+ function artwork(mode,state,style) {
+  const canvas=new OffscreenCanvas(1000,1000),c=canvas.getContext('2d'),dark=mode==='dark',shine=state.reflections/100,density=state.density/100,channels=rgb(state.accent),tint=a=>'rgba('+channels.join(',')+','+a+')';
+  const gradient=(x,y,x2,y2,stops)=>{const g=c.createLinearGradient(x,y,x2,y2);for(const [p,color]of stops)g.addColorStop(p,color);return g;};
+  const circle=(r)=>{const p=new Path2D();p.arc(50,50,r,0,Math.PI*2);return p;};
+  const rect=(x,y,w,h,r)=>{const p=new Path2D();p.roundRect(x,y,w,h,r);return p;};
+  const glass=()=>gradient(69,0,86,0,[[0,tint(dark?.68:.55)],[.12,'rgba(230,255,250,'+(.5*shine)+')'],[.25,tint(density*.7)],[.54,tint(density*.25)],[.82,tint(density*.7)],[1,tint(.65)]]);
+  c.scale(10,10);c.fillStyle=dark?'#1a1a1a':'#fff';c.fillRect(0,0,100,100);
+  // Handle sits behind the rim. Its angle and attachment match the approved magnifier.
+  c.save();c.translate(77.5,77.5);c.rotate(-Math.PI/4);c.translate(-77.5,-77.5);
+  const grip=rect(70.5,77.5,14,35,4);c.fillStyle=glass();c.fill(grip);c.strokeStyle=dark?'#b5f9e594':'#377d7180';c.lineWidth=.34;c.stroke(grip);
+  c.save();c.clip(grip);c.fillStyle=gradient(71,80,84,102,[[0,'#ffffff00'],[.45,'rgba(255,255,255,'+shine*.5+')'],[.58,'#ffffff00'],[1,tint(.1)]]);c.fillRect(70,77,16,36);c.restore();
+  c.strokeStyle='rgba(245,255,252,'+(.8*shine)+')';c.lineWidth=.6;c.beginPath();c.moveTo(72,82);c.lineTo(72,108);c.stroke();
+  c.fillStyle=glass();c.fill(rect(70.3,77.5,14.4,4.2,1));
+  c.restore();
+  c.save();c.clip(circle(40.7));c.drawImage(mosaic(dark,state.refraction),0,0,100,100);
+  c.fillStyle=dark?'rgba(14,87,83,.16)':'rgba(43,205,189,.10)';c.fillRect(0,0,100,100);
+  c.fillStyle=gradient(15,12,80,90,[[0,'rgba(255,255,255,'+shine*.3+')'],[.28,'rgba(255,255,255,.02)'],[.43,'#ffffff00'],[.72,'#ffffff00'],[1,'#c6fff51a']]);c.fillRect(0,0,100,100);c.restore();
+  // Unfilled etched grooves retain the mosaic underneath and share the rim lighting.
+  c.save();c.translate(35.2,42);c.lineJoin='round';
+  c.strokeStyle=gradient(0,0,29.6,16,[[0,'rgba(34,94,102,'+(.38+shine*.16)+')'],[.55,'#286c7366'],[1,'#28796770']]);c.lineWidth=.48;c.stroke(wordmark);
+  c.save();c.translate(.10,.12);c.strokeStyle=gradient(0,0,29.6,16,[[0,'rgba(250,255,255,'+Math.min(1,shine*1.2)+')'],[.45,'rgba(238,255,251,'+shine*.85+')'],[1,'rgba(220,255,242,'+shine+')']]);c.lineWidth=.38;c.stroke(wordmark);c.restore();c.restore();
+  const inner=35.7,ring=new Path2D();ring.arc(50,50,41.5,0,Math.PI*2);ring.arc(50,50,inner,0,Math.PI*2,true);ring.closePath();
+   c.save();c.clip(ring,'evenodd');c.fillStyle=glass();c.fillRect(0,0,100,100);
+   c.fillStyle=gradient(12,13,90,85,[[0,'rgba(241,255,251,'+(.75*shine)+')'],[.22,tint(density*.45)],[.47,tint(.08)],[.58,tint(.45)],[.74,'rgba(237,255,249,'+(.45*shine)+')'],[1,tint(.6)]]);c.fillRect(0,0,100,100);
+   c.strokeStyle=tint(dark?.45:.4);c.lineWidth=2;c.stroke(circle(inner+.8));c.restore();
+  c.lineWidth=.32;c.strokeStyle=dark?'#a2f8db99':'#3e857b94';c.stroke(circle(41.5));c.stroke(circle(inner));
+  const arc=(r,start,end,color,width)=>{c.strokeStyle=color;c.lineWidth=width;c.lineCap='round';c.beginPath();c.arc(50,50,r,start*Math.PI/180,end*Math.PI/180);c.stroke();};
+  arc(40.9,194,295,'rgba(255,255,255,'+(.88*shine)+')',.65);arc(inner+.65,13,96,'rgba(233,255,249,'+(.65*shine)+')',.45);
+  arc(39.1,202,275,'rgba(255,255,255,'+(.5*shine)+')',.7);
+  arc(inner-.8,207,274,'rgba(255,255,255,'+(.45*shine)+')',.42);
+  return canvas;
+ }
+ function render(board) {const state=states[board.dataset.style],art={light:artwork('light',state,board.dataset.style),dark:artwork('dark',state,board.dataset.style)};for(const c of board.querySelectorAll('canvas')){const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(art[c.dataset.mode],0,0,c.width,c.height);}}
+ function changed(board) {render(board);window.openai?.setWidgetState?.({privateContent:states,modelContent:{selectedMagnifier:'Crystal frame',lettering:'Unfilled etched outline',magnifierMaterials:states}}).catch(()=>{});}
+ // createIcons is the public host API; the icons collection is not available in every host.
+ globalThis.lucide?.createIcons({attrs:{'aria-hidden':'true'}});
+ refreshGlyphs();
+ boards.forEach(render);
+ new MutationObserver(()=>{if(refreshGlyphs())boards.forEach(render);}).observe(library,{childList:true,subtree:true});
+ window.addEventListener('openai:set_globals',event=>{restore(event.detail?.globals?.widgetState?.privateContent);boards.forEach(render);});
+ if(globalThis.Tweak) for(const board of boards) {const state=states[board.dataset.style],t=new Tweak({container:board,onChange:()=>changed(board)});t.addColorPicker(state,'accent',{label:'Glass tint'});t.addSlider(state,'density',{label:'Glass density',min:15,max:60,unit:'%'});t.addSlider(state,'reflections',{label:'Edge reflections',min:20,max:100,unit:'%'});t.addSlider(state,'refraction',{label:'Lens refraction',min:0,max:160,step:5,unit:'%'});}
+})();
+</script>

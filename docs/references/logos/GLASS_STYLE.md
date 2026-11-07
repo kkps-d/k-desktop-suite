@@ -2,9 +2,9 @@
 
 Approved references: **KD Explorer aquamarine glass** and **KD Notepad glass**
 (5 November 2026), and **KD Paint glass, Rolled rim** (7 November 2026).
-This is a second visual style for the suite. It does not replace Explorer's
-amber Soft geometry selection, beveled Notepad, or refined ceramic Paint
-Android artwork.
+This is a second visual style for the suite. Paint and Notepad now offer it in
+Settings > App icon alongside their Classic designs, with System, Light, and
+Dark palettes. Explorer's amber Soft geometry selection remains unchanged.
 
 Open the [Explorer preview](kd-explorer-aquamarine-glass.html), edit its
 [source](sources/kd-explorer-aquamarine-glass.html), or inspect the square
@@ -98,6 +98,20 @@ the graphite. The correction applies to both retained alternatives.
 The standalone export uses the same bundled runtime and regeneration process
 described above. The refined ceramic white cup is the native Paint artwork.
 
+## Preview checkpoint
+
+**Crystal frame** is the approved KD Preview magnifier. Open the
+[preview](kd-preview-crystal-glass.html), edit its
+[source](sources/kd-preview-crystal-glass.html), or inspect the 1024px
+[light](kd-preview-glass-light.png) and [dark](kd-preview-glass-dark.png) renders.
+The broad beveled aquamarine rim and glass grip retain the selected geometry.
+The lens-only masonry has 23 tiles with the original seven Lucide file symbols,
+110% refraction and 10% lens tint. KD retains its 29.6 × 16 dimensions at
+(35.2, 42), with no fill. Its brighter etched glints follow reflection strength.
+Glass defaults are `#29b99d`, 34% density, and 80% reflections. The source uses
+the public Lucide element API so the file symbols also render in the inline host.
+KD Preview remains a design reference without an Android app module.
+
 ## Verification and scope
 
 The light/dark artwork and small crop contact sheet were visually reviewed using
@@ -116,8 +130,9 @@ The exported document was checked for bundled scripts and local documentation
 links. Browser layout verification remains pending because local file previews
 were blocked by the browser URL policy.
 
-This checkpoint changes design references and documentation only. No native
-resources, generator, app appearance setting, or device deployment changed;
-Android builds and emulator tests were not rerun. These are approved alternate
-design references, with native integration and an in-app style selector outside
-this checkpoint.
+The original glass checkpoints changed design references only. Paint and Notepad
+now ship the approved 1024px glass PNGs as density-independent artwork, alongside
+the Classic vectors. The generator copies the approved renders and produces
+explicit adaptive launcher palettes with proportional safe margins. Shared icon
+preferences and launcher aliases do not replace either editor activity. See
+[Testing](../../TESTING.md) for native integration verification and limits.

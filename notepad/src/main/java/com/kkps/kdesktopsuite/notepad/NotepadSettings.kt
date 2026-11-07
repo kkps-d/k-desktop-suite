@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kkps.kdesktopsuite.ui.AppLanguageSettingsPage
+import com.kkps.kdesktopsuite.ui.AppIconSettingsSection
 
 internal enum class AppTheme(@StringRes val label: Int) {
     Light(R.string.theme_light), Dark(R.string.theme_dark), Auto(R.string.theme_auto),
@@ -79,6 +80,8 @@ internal fun NotepadSettingsScreen(
                 }
             }
         }
+
+        AppIconSettingsSection(NotepadLogoAssets, availableWidth)
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.font_style), Modifier.semantics { heading() }, style = MaterialTheme.typography.titleMedium)

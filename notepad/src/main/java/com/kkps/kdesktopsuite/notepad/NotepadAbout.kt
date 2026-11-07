@@ -18,7 +18,7 @@ internal fun NotepadAboutDialog(onDismiss: () -> Unit, onLicensesClick: () -> Un
         version = stringResource(R.string.about_version,BuildConfig.VERSION_NAME),
         developer = stringResource(R.string.about_developer),sourceLabel = stringResource(R.string.source_code),
         dismissLabel = stringResource(R.string.dismiss),
-        icon = { AppLogo(R.drawable.ic_notepad,R.drawable.ic_notepad_dark,null,Modifier.size(48.dp)) },
+        icon = { AppLogo(NotepadLogoAssets,null,Modifier.size(48.dp)) },
         onSourceClick = { uriHandler.openUri(sourceUrl) },onDismiss = onDismiss,
         onLicensesClick = onLicensesClick)
 }
