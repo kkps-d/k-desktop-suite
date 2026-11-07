@@ -4,6 +4,7 @@
 
 - [KD Notepad](NOTEPAD.md): documents, tabs, windows, shortcuts, and recovery.
 - [KD Paint](PAINT.md): drawing tools, image editing, settings, and recovery.
+- [Privacy policy draft](PRIVACY_POLICY.md): publication text covering KD Notepad and KD Paint.
 - [KD Explorer](EXPLORER.md): blank tabs, independent windows, and UI validation.
 
 ## Contributing
