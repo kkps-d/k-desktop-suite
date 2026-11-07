@@ -56,6 +56,17 @@ WORDMARK = (
     "C25.8,4.9 23.9,3.3 20.4,3.3Z"
 )
 
+# Approved refined ceramic Paint geometry, shared with its themed silhouette.
+PAINT_CUP_LIP = "M26,50C26,51 36.75,51.7 50,51.7S74,51 74,50"
+PAINT_CUP_FRONT = PAINT_CUP_LIP + "V77.5Q74,85 66.5,85H33.5Q26,85 26,77.5Z"
+PAINT_CUP_REAR = "M26,50C26,49 36.75,48.3 50,48.3S74,49 74,50"
+PAINT_CUP_MOUTH = PAINT_CUP_REAR + "C74,51 63.25,51.7 50,51.7S26,51 26,50Z"
+PAINT_CUP_HANDLE = (
+    "M72.8,54.5Q74,55 76.5,55Q85,55 85,63.5V69Q85,78 76.5,78"
+    "Q74,78 72.8,78.5V73Q74.4,73.9 76.5,73.9Q81,73.9 81,69V63.5"
+    "Q81,59.1 76.5,59.1Q74.4,59.1 72.8,60Z"
+)
+
 
 def number(value):
     return f"{value:.4f}".rstrip("0").rstrip(".") if value else "0"
@@ -158,11 +169,21 @@ def notepad(vector, palette):
 
 def paint(vector, palette):
     p, v = palette, vector
+    light = p["background"] == "#FFFFFF"
     with v.group(pivotX=50, pivotY=50, scaleX=.94, scaleY=.94, translateX=-2):
-        v.path("M69,55H76Q85,55 85,64V69Q85,78 76,78H69Z"
-               "M73.5,59.5V73.5H76Q80.5,73.5 80.5,69V64Q80.5,59.5 76,59.5Z",
-               "#FFFFFF", p["outline"])
-        v.path("M74,50A24,5 0,1 0,26 50A24,5 0,1 0,74 50Z", p["cup_inner"], p["outline"])
+        v.linear(PAINT_CUP_HANDLE, (72.8, 54.5, 85, 54.5),
+                 [(0, p["ceramic_shade"]), (.32, "#FFFFFF"), (.72, "#FFFFFF"),
+                  (1, "#BDC8D1" if light else p["ceramic_shade"])], p["outline"], .3)
+        with v.group():
+            element(v.parent, "clip-path", pathData=PAINT_CUP_HANDLE)
+            with v.group(translateX=.35, translateY=.25):
+                v.path(PAINT_CUP_HANDLE, stroke="#FFFFFF", width=.5)
+        if light:
+            v.path(PAINT_CUP_HANDLE, stroke="#8E9DA8", width=.5)
+        v.path(rectangle(26, 50, 48, 35, 0, 7.5), "#FFFFFF")
+        v.linear(PAINT_CUP_MOUTH, (26, 48.3, 26, 51.7),
+                 [(0, "#C5CDD3"), (1, p["cup_inner"])], p["outline"], .3)
+        v.path(PAINT_CUP_REAR, stroke="#FFFFFF", width=.7)
 
         with v.group(rotation=-10, pivotX=40, pivotY=61):
             v.linear(rectangle(35, 28, 10, 33), (35, 28, 45, 28),
@@ -170,7 +191,7 @@ def paint(vector, palette):
                       (.24, p["gold"]), (.75, p["gold"]), (1, p["gold_dark"])])
             v.path(rectangle(35, 28, 2.5, 33), p["gold_edge"])
             v.path("M40,18L45,28H35Z", p["pencil_wood"])
-            v.path("M39.95,18L41.4,23H38.5Z", "#3A4652")
+            v.path("M40,18L42.5,23H37.5Z", "#3A4652")
             v.path("M40,18L45,28V61H35V28Z", stroke=p["outline"])
 
         with v.group(rotation=3, pivotX=51.5, pivotY=61):
@@ -198,10 +219,17 @@ def paint(vector, palette):
                       (.75, p["purple_edge"]), (1, p["purple_dark"])])
             v.path(rectangle(64.5, 29.32, 1.8, 9, 1), p["purple"])
 
-        v.linear(rectangle(26, 50, 48, 35, 0, 7.5), (26, 50, 74, 50),
+        v.linear(PAINT_CUP_FRONT, (26, 50, 74, 50),
                  [(0, p["ceramic_shade"]), (.14, "#FFFFFF"),
-                  (.84, "#FFFFFF"), (1, p["ceramic_shade"])], p["outline"])
-        v.path("M27,79Q28,84 33.5,84H66.5Q72,84 73,79", stroke="#17808080", width=1)
+                  (.84, "#FFFFFF"), (1, p["ceramic_shade"])], p["outline"], .3)
+        v.linear(PAINT_CUP_FRONT, (26, 77, 26, 85),
+                 [(0, "#001A1A1A"), (1, "#171A1A1A")])
+        with v.group():
+            element(v.parent, "clip-path", pathData=PAINT_CUP_FRONT)
+            with v.group(translateY=.7):
+                v.path(PAINT_CUP_LIP, stroke="#3374818C", width=.35)
+            v.path(PAINT_CUP_LIP, stroke="#FFFFFF", width=.65)
+            v.path("M27,77.5Q27,84 33.5,84H66.5Q73,84 73,77.5", stroke="#A6FFFFFF", width=.45)
         v.wordmark(35.2, 59.15, 1, "#252525")
 
 
@@ -228,9 +256,8 @@ def monochrome(vector, app):
             v.path(rectangle(70, 40, 10, 44, 2.5, 0) + "M70,84H80L75,95Z", "#000000")
     else:
         with v.group(pivotX=50, pivotY=50, scaleX=.94, scaleY=.94, translateX=-2):
-            v.path("M69,55H76Q85,55 85,64V69Q85,78 76,78H69Z"
-                   "M73.5,59.5V73.5H76Q80.5,73.5 80.5,69V64Q80.5,59.5 76,59.5Z", "#000000")
-            v.path("M74,50A24,5 0,1 0,26 50A24,5 0,1 0,74 50Z", "#000000")
+            v.path(PAINT_CUP_HANDLE, "#000000")
+            v.path(PAINT_CUP_MOUTH, "#000000")
             with v.group(rotation=-10, pivotX=40, pivotY=61):
                 v.path("M40,18L45,28V55H35V28Z", "#000000")
             with v.group(rotation=3, pivotX=51.5, pivotY=61):
@@ -240,7 +267,7 @@ def monochrome(vector, app):
             with v.group(rotation=13, pivotX=63, pivotY=61):
                 v.path(rectangle(58, 28, 10, 27, 2.5), "#000000")
             with without_wordmark(v, 35.2, 59.15):
-                v.path(rectangle(26, 50, 48, 35, 0, 7.5), "#000000")
+                v.path(PAINT_CUP_FRONT, "#000000")
 
 
 def write_xml(path, root):

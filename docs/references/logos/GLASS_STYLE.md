@@ -3,7 +3,8 @@
 Approved references: **KD Explorer aquamarine glass** and **KD Notepad glass**
 (5 November 2026), and **KD Paint glass, Rolled rim** (7 November 2026).
 This is a second visual style for the suite. It does not replace Explorer's
-amber Soft geometry selection or the beveled Notepad/Paint Android artwork.
+amber Soft geometry selection, beveled Notepad, or refined ceramic Paint
+Android artwork.
 
 Open the [Explorer preview](kd-explorer-aquamarine-glass.html), edit its
 [source](sources/kd-explorer-aquamarine-glass.html), or inspect the square
@@ -95,7 +96,7 @@ refraction. The pencil's gray graphite fills the upper half of its sharpened
 tip, sharing the wood triangle's sloping edges so there is no pale gap beside
 the graphite. The correction applies to both retained alternatives.
 The standalone export uses the same bundled runtime and regeneration process
-described above. The beveled white cup remains the native Paint artwork.
+described above. The refined ceramic white cup is the native Paint artwork.
 
 ## Verification and scope
 

@@ -184,6 +184,17 @@ each app's appearance against Android's appearance to verify they are independen
 Check adaptive circle, rounded-square, and squircle masks for clipping where the
 launcher supports them; backgrounds must stay flat and the KD print readable.
 
+Paint icon integration on 7 November 2026: the refined ceramic design now
+backs the light/dark square icons, adaptive foregrounds, and themed silhouette.
+All 51 Paint JVM tests, debug build, test-APK compilation, and lint passed (no
+errors, three warnings). Both existing Paint About/logo checks passed on local
+Small Desktop under user 10. The 1200 × 800 dp fixtures used a temporary
+2000 × 1400 display, restored to its original 1366 × 768 size afterward.
+Generated vectors and adaptive crop previews were visually reviewed offline;
+real launcher palette switching and app-appearance overrides were not manually
+reviewed in this run. Notepad assets stayed unchanged, and regeneration was
+deterministic.
+
 Branding verification on 5 November 2026: both debug builds, test-APK compilation,
 all 71 JVM tests, and lint passed with no errors (19 Notepad warnings and three
 Paint warnings, including the redundant API-26 resource qualifier). Two focused

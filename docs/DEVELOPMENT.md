@@ -61,7 +61,10 @@ its output XML. Keep it aligned with the [preferred logo design](references/logo
 including the light/dark foreground palettes and flat backgrounds. Launcher
 foregrounds include proportional safe-area margins; in-app originals stay square.
 The shared `AppLogo` chooses the palette from the active Material theme so an
-app appearance override also changes Welcome/About artwork.
+app appearance override also changes Welcome/About artwork. Paint uses the
+refined ceramic cup geometry, including matching shallow rim curves, softened
+handle roots, clearer light-mode handle edges, and the corrected graphite tip.
+Keep its themed silhouette aligned with those same cup and handle paths.
 
 ## Toolchain
 
