@@ -198,6 +198,20 @@ Launcher cache refresh timing, TalkBack, and actual pre-33 alias switching remai
 manual checks. Display size and Android appearance were unchanged; tests restored
 both app themes and original icon choices.
 
+Launcher-start icon regression on 7 November 2026: the previous checks launched
+the editor directly and missed Android removing a task rooted at a disabled
+launcher alias. `LauncherIconTest` reproduced that window closure on Small Desktop
+before the fix. Both apps now route aliases through a no-display launcher into
+permanent editor tasks with a separate affinity. Both launcher-start regressions
+and both existing icon-choice checks passed on local Small Desktop (`emulator-5554`,
+user 10). They verify the original window and draft/pending text survive the
+asynchronous package notification, reopening through the changed icon resumes
+the same window, and all six icon choices still resolve to one launcher entry.
+Both debug/test-APK builds, all 74 JVM tests, and lint passed with no errors
+(13 Notepad and 3 Paint warnings). Actual pre-33 and manufacturer-specific launcher
+behavior remain unverified. These tests changed no display or device appearance
+settings and restored each original icon preference.
+
 Paint icon integration on 7 November 2026: the refined ceramic design now
 backs the light/dark square icons, adaptive foregrounds, and themed silhouette.
 All 51 Paint JVM tests, debug build, test-APK compilation, and lint passed (no

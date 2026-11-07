@@ -40,7 +40,8 @@ Dark, or System independently of the editor appearance. The choice is saved for
 all Notepad windows and applies to Welcome, About, and the launcher. System uses
 Android appearance in the launcher and the app appearance for in-app logos.
 Launcher caches can take a moment to refresh; Android themed icons retain the
-suite silhouette. Changing the icon preserves open drafts.
+suite silhouette. Changing the icon keeps the window and draft open, including
+when opened from the launcher.
 
 View contains zoom commands and checked toggles for word wrap and the status
 bar. Turning wrapping off preserves line breaks and enables independent horizontal

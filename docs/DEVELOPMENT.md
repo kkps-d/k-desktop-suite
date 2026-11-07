@@ -70,9 +70,14 @@ Icon preferences live in the shared `app-icon` preferences file inside each
 app sandbox, separately from documents and editor appearance. `AppIconSettingsSection`
 uses the same previews and controls in both apps; `AppLogo` observes the saved
 choice in every window. Six activity aliases per app select Classic/Glass ×
-System/Light/Dark while the real activity stays enabled. API 33+ changes aliases
-atomically with `DONT_KILL_APP`; older Android enables the destination before
-disabling the previous alias. Application startup reconciles the saved choice.
+System/Light/Dark. Aliases target a no-display launcher activity with a separate
+`.launcher` task affinity. It forwards the original intent and extras into a
+permanent editor task, using New task / Reset task if needed to reopen an existing
+window, then finishes. Preserve explicit multi-window flags. Never let an editor
+task be rooted at a switchable alias: Android can remove that task when the alias
+is disabled even with `DONT_KILL_APP`. API 33+ changes aliases atomically; older
+Android enables the destination before disabling the previous alias. Application
+startup reconciles the saved choice.
 The generator preserves the approved Glass PNGs verbatim, creates explicit
 adaptive palettes and safe-area insets, and retains the existing themed silhouette.
 System keeps Android-controlled launcher colors and app-controlled in-app logos.

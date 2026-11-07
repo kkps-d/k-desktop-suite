@@ -10,8 +10,11 @@
         <activity android:name=".PaintActivity" android:exported="true"
             android:resizeableActivity="true" android:windowSoftInputMode="adjustResize">
         </activity>
+        <activity android:name=".PaintLauncherActivity" android:exported="false"
+            android:noHistory="true" android:excludeFromRecents="true"
+            android:taskAffinity="${applicationId}.launcher" android:theme="@android:style/Theme.NoDisplay" />
         <activity-alias android:name=".LauncherClassicSystem"
-            android:targetActivity=".PaintActivity" android:enabled="true"
+            android:targetActivity=".PaintLauncherActivity" android:enabled="true"
             android:exported="true" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher"
             android:label="@string/app_name">
             <intent-filter>
@@ -20,7 +23,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias android:name=".LauncherClassicLight"
-            android:targetActivity=".PaintActivity" android:enabled="false"
+            android:targetActivity=".PaintLauncherActivity" android:enabled="false"
             android:exported="true" android:icon="@mipmap/ic_launcher_classic_light" android:roundIcon="@mipmap/ic_launcher_classic_light"
             android:label="@string/app_name">
             <intent-filter>
@@ -29,7 +32,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias android:name=".LauncherClassicDark"
-            android:targetActivity=".PaintActivity" android:enabled="false"
+            android:targetActivity=".PaintLauncherActivity" android:enabled="false"
             android:exported="true" android:icon="@mipmap/ic_launcher_classic_dark" android:roundIcon="@mipmap/ic_launcher_classic_dark"
             android:label="@string/app_name">
             <intent-filter>
@@ -38,7 +41,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias android:name=".LauncherGlassSystem"
-            android:targetActivity=".PaintActivity" android:enabled="false"
+            android:targetActivity=".PaintLauncherActivity" android:enabled="false"
             android:exported="true" android:icon="@mipmap/ic_launcher_glass_system" android:roundIcon="@mipmap/ic_launcher_glass_system"
             android:label="@string/app_name">
             <intent-filter>
@@ -47,7 +50,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias android:name=".LauncherGlassLight"
-            android:targetActivity=".PaintActivity" android:enabled="false"
+            android:targetActivity=".PaintLauncherActivity" android:enabled="false"
             android:exported="true" android:icon="@mipmap/ic_launcher_glass_light" android:roundIcon="@mipmap/ic_launcher_glass_light"
             android:label="@string/app_name">
             <intent-filter>
@@ -56,7 +59,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias android:name=".LauncherGlassDark"
-            android:targetActivity=".PaintActivity" android:enabled="false"
+            android:targetActivity=".PaintLauncherActivity" android:enabled="false"
             android:exported="true" android:icon="@mipmap/ic_launcher_glass_dark" android:roundIcon="@mipmap/ic_launcher_glass_dark"
             android:label="@string/app_name">
             <intent-filter>
