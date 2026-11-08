@@ -48,6 +48,7 @@ class PaintActivity : AppCompatActivity() {
     private var paintWindow: PaintWindow? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        penStatus.usedInSession = savedInstanceState?.getBoolean("stylusUsedInSession") ?: false
         enableEdgeToEdge()
         if (Build.VERSION.SDK_INT >= 35) {
             window.insetsController?.setSystemBarsAppearance(
@@ -174,15 +175,17 @@ class PaintActivity : AppCompatActivity() {
             }
             val displayTitle = paintDisplayTitle(state)
             SideEffect { title = "$displayTitle — ${getString(R.string.app_name)}" }
-            PaintTheme(state.preferences.appearance) {
-                val lightCaption = MaterialTheme.colorScheme.surface.luminance() > 0.5f
-                SideEffect {
-                    if (Build.VERSION.SDK_INT >= 35) this@PaintActivity.window.insetsController?.setSystemBarsAppearance(
-                        if (lightCaption) WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS else 0,
-                        WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS,
-                    )
+            CompositionLocalProvider(LocalPaintPenStatus provides penStatus) {
+                PaintTheme(state.preferences.appearance) {
+                    val lightCaption = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+                    SideEffect {
+                        if (Build.VERSION.SDK_INT >= 35) this@PaintActivity.window.insetsController?.setSystemBarsAppearance(
+                            if (lightCaption) WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS else 0,
+                            WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS,
+                        )
+                    }
+                    PaintScreen(state, model)
                 }
-                PaintScreen(state, model)
             }
         }
     }
@@ -227,6 +230,7 @@ class PaintActivity : AppCompatActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean("stylusUsedInSession",penStatus.usedInSession)
         paintWindow?.let { outState.putString(PaintWindows.windowExtra, it.id) }
         super.onSaveInstanceState(outState)
     }
@@ -235,6 +239,16 @@ class PaintActivity : AppCompatActivity() {
         super.onWindowFocusChanged(hasFocus)
         if (!hasFocus) penStatus.clearInput()
         if (hasFocus) recordWindowFocus()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        penStatus.start(this)
+    }
+
+    override fun onPause() {
+        penStatus.stop(this)
+        super.onPause()
     }
 
     private fun recordWindowFocus() {

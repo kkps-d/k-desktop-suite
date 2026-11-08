@@ -169,7 +169,8 @@ class PaintStatusTest {
 
     @Test fun narrowWindowKeepsCanvasSizeAndZoomReachableWithLargeText() {
         compose.runOnIdle { size = DpSize(360.dp,640.dp); fontScale = 2f }
-        compose.onNodeWithTag("paint-canvas-dimensions").performScrollTo().performClick()
+        compose.onNodeWithTag("paint-stylus-menu").assertIsDisplayed()
+        compose.onNodeWithTag("paint-canvas-dimensions").assertIsDisplayed().performClick()
         compose.onNodeWithText("Canvas size").assertIsDisplayed()
         compose.onNodeWithText("2048 × 2048").performScrollTo().assertIsDisplayed().performClick().assertIsSelected()
         compose.onNodeWithTag("canvas-width-input").performScrollTo().assertTextContains("2048")
@@ -421,7 +422,7 @@ class PaintStatusTest {
     @Test fun narrowSettingsPageScrollsAtLargeFontSizes() {
         compose.runOnIdle { size = DpSize(360.dp,640.dp); fontScale = 2f }
         compose.onNodeWithContentDescription("Settings").performClick()
-        compose.onNodeWithText("Auto").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("theme-System").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("canvas-width-input").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("reset-default-canvas-size").assertIsDisplayed()
         compose.onNodeWithContentDescription("JPEG quality").performScrollTo().assertIsDisplayed()

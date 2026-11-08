@@ -33,29 +33,12 @@ import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kkps.kdesktopsuite.ui.R as UiR
 import kotlin.math.roundToInt
 
 @Composable
 internal fun PaintDebugScreen(onBack: () -> Unit) {
-    val status = (LocalActivity.current as? PaintActivity)?.penStatus ?: remember { PaintPenStatus() }
-    val context = LocalContext.current
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    DisposableEffect(status, context, lifecycle) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) status.start(context)
-            else if (event == Lifecycle.Event.ON_PAUSE) status.stop(context)
-        }
-        lifecycle.addObserver(observer)
-        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) status.start(context)
-        onDispose {
-            lifecycle.removeObserver(observer)
-            status.stop(context)
-        }
-    }
+    val status = (LocalActivity.current as? PaintActivity)?.penStatus ?: rememberPaintPenStatus()
     val backFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { backFocus.requestFocus() }
 

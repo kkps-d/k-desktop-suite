@@ -147,7 +147,8 @@ controlled InputConnection.
 `PenDiagnosticsTest` exercises the debug status displays through PaintActivity's
 native touch and generic-motion dispatch. It covers hover versus contact,
 stationary stylus-button press/release, mouse exclusion, cancellation, focus loss,
-page disposal, and simulated Samsung attachment broadcasts. Run it alongside
+continued monitoring after page disposal, monitor stop/resume, and simulated
+Samsung attachment broadcasts. Run it alongside
 `PaintDebugScreenTest` and `PaintStatusTest#aboutLogoOpensDebugAndBackReturnsToPaint`
 on local Small Desktop. The emulator cannot establish whether a Galaxy model
 actually emits the optional attachment broadcast or how One UI routes the side
@@ -165,6 +166,37 @@ during setup. The debug page was visually checked, then the display size was
 restored. The user confirmed on a Galaxy S25 that attachment/detachment and hover
 are accurately detected, and side-button state updates during hover. Other
 Galaxy models and One UI versions remain unverified.
+
+`FingerInputTest` covers automatic attachment/fallback policy, explicit choices,
+unsupported devices, and preference defaults. `StylusIntegrationTest` covers the
+persistent enabled/disabled menu, settings round trips, observed-pen capability
+fallback and removal, navigation over text/selection/resize/rotation targets,
+policy cancellation, mixed pen/finger priority, next-stroke eraser latching,
+native hover icons (including resolution on the first event before recomposition
+and mouse cursor preservation), pen-hover tooltips, and compact large-text/RTL themes.
+Run these with `InputInteractionTest` and `PaintStatusTest` on local Small Desktop.
+Use the larger display required by the existing 1200 × 800 dp fixtures and restore
+it afterward. S25 manual checks should include attachment while the menu is open,
+finger navigation over a text caret, hover/button cursor changes, and Air command
+coexistence; never run automated instrumented tests on that connected device.
+
+Stylus integration verification on 8 November 2026: debug build, test-APK
+compilation, lint (no errors; three existing warnings), all 56 Paint and seven
+shared UI JVM tests, and 474 localization checks passed. Across the focused
+Small Desktop runs, 49 distinct stylus/debug, input, status, and canvas regression
+checks passed. The final 20-case run included the three corrected status tests,
+all stylus integration checks, and six additional canvas regressions. Visual
+captures confirmed the menu, disabled slashed icon, and compact large-text
+light/dark and RTL layouts. The emulator display size was restored. The updated
+debug APK was installed and launched on the S25. The user confirmed Automatic
+finger routing, working tool hover cursors, and hold-to-erase. A brief black
+crosshair on hover entry was reproduced by resolving the native icon before
+recomposition; an image-bounded cursor region fixes that transition. All 13
+stylus integration checks then passed together on local Small Desktop, including
+immediate image entry and mouse cursor checks. Debug build and lint passed again
+with the same three warnings. The user confirmed the cursor fix works on the
+S25 after installing the updated build. Air command coexistence remains
+unverified.
 
 `ViewportTest` and `PaintStartupTest` cover fresh-image zoom before and after
 workspace measurement, unusable initial dimensions, exact-fit and smaller

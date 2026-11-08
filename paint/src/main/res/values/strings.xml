@@ -27,6 +27,14 @@
     <string name="ui_debug">Debug</string>
     <string name="ui_components">Components</string>
     <string name="ui_pen_diagnostics">S Pen status</string>
+    <string name="ui_stylus_options">Stylus options</string>
+    <string name="ui_no_stylus">No stylus detected</string>
+    <string name="ui_finger_input">Finger input</string>
+    <string name="ui_finger_automatic">Automatic</string>
+    <string name="ui_finger_draw">Draw</string>
+    <string name="ui_finger_navigate">Pan and zoom</string>
+    <string name="ui_stylus_hover_cursor">Tool hover cursors</string>
+    <string name="ui_stylus_button_eraser">Hold side button to erase</string>
     <string name="ui_pen_diagnostics_hint">Hover the pen over this window and hold its side button to check input. Attachment detection depends on the Galaxy device.</string>
     <string name="ui_pen_attachment">Attachment: %1$s</string>
     <string name="ui_pen_attached">Attached</string>

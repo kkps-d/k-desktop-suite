@@ -191,7 +191,7 @@ private fun TransformMenu(open: Boolean, dismiss: () -> Unit, content: @Composab
 
 @Composable
 internal fun ToolbarTooltip(label: String, content: @Composable () -> Unit) {
-    TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+    PaintTooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
         tooltip = { PlainTooltip { Text(label) } },state = rememberTooltipState(),content = content)
 }
 
@@ -212,7 +212,7 @@ private fun ToolbarAction(icon: PaintIcon, label: String, showLabel: Boolean, en
 
 @Composable
 private fun ToolbarCheck(label: String, checked: Boolean, enabled: Boolean, tooltip: String = label, onChange: (Boolean) -> Unit) {
-    TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+    PaintTooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
         tooltip = { PlainTooltip { Text(tooltip) } },state = rememberTooltipState()) {
         Row(Modifier.heightIn(min = 48.dp).toggleable(checked,enabled = enabled,role = Role.Checkbox,onValueChange = onChange)
             .padding(end = 12.dp),verticalAlignment = Alignment.CenterVertically) {
@@ -240,7 +240,7 @@ private fun GeometryAction(s: PaintUiState, model: PaintViewModel, labels: Boole
 
 @Composable
 private fun ToolbarColor(color: Int, label: String, selected: Boolean, enabled: Boolean, modifier: Modifier = Modifier, action: () -> Unit) {
-    TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+    PaintTooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
         tooltip = { PlainTooltip { Text("$label #${"%06X".format(color and 0xFFFFFF)}") } },state = rememberTooltipState()) {
         Box(modifier.size(48.dp).clickable(enabled = enabled,role = Role.Button,onClick = action)
             .semantics { contentDescription = label; stateDescription = "#${"%06X".format(color and 0xFFFFFF)}"; this.selected = selected }
@@ -253,7 +253,7 @@ private fun ToolbarColor(color: Int, label: String, selected: Boolean, enabled: 
 @Composable
 internal fun ColorSwatch(color: Int, label: String, selected: Boolean = false, enabled: Boolean = true, saving: Boolean = false, action: () -> Unit) {
     val description = "$label #${"%06X".format(color and 0xFFFFFF)}"
-    TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+    PaintTooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
         tooltip = { PlainTooltip { Text(description) } },state = rememberTooltipState()) {
         Box(Modifier.size(48.dp).clickable(enabled = enabled,role = Role.Button,onClick = action)
             .semantics { contentDescription = description; this.selected = selected }
@@ -468,7 +468,7 @@ private fun ShapePicker(s: PaintUiState, model: PaintViewModel, shape: Tool) {
     var open by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     Box {
-        TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+        PaintTooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
             tooltip = { PlainTooltip { Text(strings.getString(R.string.ui_more_shapes)) } },state = rememberTooltipState()) {
             IconButton(onClick = { open = true },enabled = !s.busy && !s.loading,
                 colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onSurface,

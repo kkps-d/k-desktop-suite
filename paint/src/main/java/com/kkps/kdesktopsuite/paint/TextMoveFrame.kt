@@ -29,6 +29,7 @@ import kotlin.math.roundToInt
 /** A touch-sized grip supplements the precision edges around the native text editor. */
 @Composable
 internal fun TextMoveFrame(state: PaintUiState, preview: EditPreview, model: PaintViewModel, active: Boolean) {
+    val navigationOnly = rememberPaintPenStatus().navigationOnly(state.preferences)
     val strings = LocalResources.current
     if (!active || state.busy || state.loading || state.saving) return
     val density = LocalDensity.current
@@ -53,10 +54,12 @@ internal fun TextMoveFrame(state: PaintUiState, preview: EditPreview, model: Pai
     )
     targets.forEachIndexed { index,area ->
         if (area.width <= 0 || area.height <= 0) return@forEachIndexed
+        var touchDragging by remember { mutableStateOf(false) }
         var focused by remember { mutableStateOf(false) }
         Box(Modifier.absoluteOffset { IntOffset(area.left.roundToInt(),area.top.roundToInt()) }
             .size(with(density) { area.width.toDp() },with(density) { area.height.toDp() })
             .testTag("paint-text-move-$index").pointerHoverIcon(cursor)
+            .then(if (state.preferences.stylusHoverCursor) Modifier.stylusHoverIcon(cursor) else Modifier)
             .onFocusChanged { focused = it.isFocused }.focusable(index == 0)
             .onKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key in listOf(Key.Enter,Key.Spacebar)) {
@@ -66,7 +69,7 @@ internal fun TextMoveFrame(state: PaintUiState, preview: EditPreview, model: Pai
             .semantics {
                 contentDescription = strings.getString(R.string.ui_move_text_frame)
                 onClick(strings.getString(R.string.ui_enter_text_position)) { model.dialog(PaintDialog.Transform); true }
-            }.pointerInput(preview.id,index) {
+            }.pointerInput(preview.id,index,navigationOnly && touchDragging) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
                     if (currentEvent.buttons.isSecondaryPressed || currentEvent.buttons.isTertiaryPressed) return@awaitEachGesture
@@ -76,12 +79,13 @@ internal fun TextMoveFrame(state: PaintUiState, preview: EditPreview, model: Pai
                     var delta = Offset.Zero
                     var completed = false
                     var moved = false
+                    touchDragging = down.type == PointerType.Touch
                     down.consume()
                     try {
                         while (true) {
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                            if (event.changes.count { it.pressed } > 1 || change.isConsumed) break
+                            if (event.changes.count { it.pressed && (down.type == PointerType.Touch || it.type == down.type) } > 1 || change.isConsumed) break
                             delta += change.positionChange()
                             if (delta.getDistance() > viewConfiguration.touchSlop || moved) {
                                 moved = true
@@ -97,6 +101,7 @@ internal fun TextMoveFrame(state: PaintUiState, preview: EditPreview, model: Pai
                             }
                         }
                     } finally {
+                        touchDragging = false
                         if (!completed && moved && model.state.value.preview?.id == preview.id) model.movePreview(original)
                     }
                 }

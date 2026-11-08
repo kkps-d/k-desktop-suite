@@ -211,17 +211,47 @@ its original files remain intact. Corrupt window drafts remain preserved while
 healthy windows can reopen. A window that fails to launch retains its recovery
 entry for the next launch.
 
-## Pen diagnostics
+## Stylus input
+
+The status bar always includes a stylus icon beside the pointer coordinates.
+On devices without detected stylus input, it is grey, slashed, and disabled, with
+**No stylus detected** help. Built-in pens and connected drawing tablets enable
+the menu; the icon remains available when the pen is attached or out of range.
+Hiding the status bar or entering focus mode also hides the icon.
+
+The menu shows attachment status and saves these options across Paint windows:
+
+- **Finger input — Automatic** (default): fingers edit while the pen is attached
+  and navigate while detached. If attachment state is unavailable, fingers edit
+  until the first pen hover/contact in that editor session, then navigate.
+  **Draw** always permits touch editing; **Pan and zoom** restricts fingers to
+  navigation when a stylus is available. Without a stylus, ordinary touch editing
+  remains available regardless of the saved choice.
+- **Tool hover cursors** (on by default): use the tool's cursor and brush/eraser
+  size preview instead of the system pen pointer. Turning this off restores the
+  system pen pointer. Hovering over buttons shows their existing tooltips.
+- **Hold side button to erase** (on by default): a held button previews the eraser.
+  The button state at tip-down determines the entire stroke; pressing or releasing
+  during contact affects the next stroke. The selected tool stays unchanged.
+
+Navigation-only fingers can pan with one finger and pan/zoom with two, including
+over text and transform handles. They cannot edit, select, transform, or position
+the text caret. Pen contact takes priority; resting fingers must lift before
+starting another navigation gesture. Mouse, keyboard, and toolbar touch behavior
+remain available. Pressure, tilt, and Bluetooth remote actions are not used.
+
+### Pen diagnostics
 
 In Help → About KD Paint, select the Paint logo (Open Debug) to see live S Pen
 attachment, hover, and side-button-held status. Hover and button input are
-observed within the Paint window while the debug page is active; contact is not
-reported as hover. Moving the pen away, losing window focus, or leaving the page
-clears transient input.
+observed within the Paint window while the activity is resumed; contact is not
+reported as hover. Moving the pen away, losing window focus, or pausing the
+activity clears transient input. Leaving the debug page keeps monitoring active
+for the editor and status-bar menu.
 Attachment uses Samsung's optional `com.samsung.pen.INSERT` broadcast, including
 its initial sticky state when available. Devices that do not report this state
-show **Unknown / unavailable**. These diagnostics do not change canvas gestures
-or switch tools, and do not require the Samsung Remote SDK.
+show **Unknown / unavailable**. Viewing diagnostics does not change canvas
+gestures or switch tools. No Samsung Remote SDK is required.
 
 ## Further documentation
 

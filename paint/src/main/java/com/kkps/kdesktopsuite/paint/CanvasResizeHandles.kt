@@ -32,6 +32,7 @@ internal fun CanvasResizeHandles(
     state: PaintUiState, model: PaintViewModel, bounds: PixelRect?, active: Boolean,
     onBoundsChange: (PixelRect?) -> Unit,
 ) {
+    val navigationOnly = rememberPaintPenStatus().navigationOnly(state.preferences)
     val strings = LocalResources.current
     val current by rememberUpdatedState(state)
     val density = LocalDensity.current
@@ -46,6 +47,7 @@ internal fun CanvasResizeHandles(
         val handleLabel = handle.displayLabel()
         val focus = remember { FocusRequester() }
         var focused by remember { mutableStateOf(false) }
+        var touchDragging by remember { mutableStateOf(false) }
         var dragging by remember { mutableStateOf(false) }
         val cursorType = when {
             handle.vertical == 0 -> android.view.PointerIcon.TYPE_HORIZONTAL_DOUBLE_ARROW
@@ -60,6 +62,7 @@ internal fun CanvasResizeHandles(
             val radius = with(density) { 24.dp.toPx() }
             IntOffset((position.x - radius).roundToInt(),(position.y - radius).roundToInt())
         }.size(48.dp).testTag("canvas-resize-${handle.name}").pointerHoverIcon(cursor)
+            .then(if (state.preferences.stylusHoverCursor) Modifier.stylusHoverIcon(cursor) else Modifier)
             .focusRequester(focus).onFocusChanged { focused = it.isFocused }.focusable(enabled)
             .semantics {
                 contentDescription = strings.getString(R.string.ui_canvas_resize_handle, handleLabel)
@@ -78,7 +81,7 @@ internal fun CanvasResizeHandles(
                     if (dx * handle.horizontal == 0f && dy * handle.vertical == 0f) false
                     else { model.resizeCanvas(handle.bounds(state.raster.width,state.raster.height,Point(dx,dy))); true }
                 }
-            }.pointerInput(enabled,state.raster,cancelGeneration) {
+            }.pointerInput(enabled,state.raster,cancelGeneration,navigationOnly && touchDragging) {
                 if (!enabled) return@pointerInput
                 awaitEachGesture {
                     val down = awaitFirstDown()
@@ -88,13 +91,14 @@ internal fun CanvasResizeHandles(
                     var target = original
                     var delta = Offset.Zero
                     focus.requestFocus()
+                    touchDragging = down.type == PointerType.Touch
                     dragging = true
                     down.consume()
                     try {
                         while (true) {
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                            if (event.changes.count { it.pressed } > 1 || change.isConsumed) break
+                            if (event.changes.count { it.pressed && (down.type == PointerType.Touch || it.type == down.type) } > 1 || change.isConsumed) break
                             delta += change.positionChange()
                             target = handle.bounds(original.width,original.height,
                                 Point(delta.x / initial.viewport.scale,delta.y / initial.viewport.scale))
@@ -105,7 +109,7 @@ internal fun CanvasResizeHandles(
                                 break
                             }
                         }
-                    } finally { dragging = false; onBoundsChange(null) }
+                    } finally { touchDragging = false; dragging = false; onBoundsChange(null) }
                 }
             },contentAlignment = Alignment.Center) {
             Box(Modifier.size(12.dp).background(

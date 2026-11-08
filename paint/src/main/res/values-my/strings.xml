@@ -28,6 +28,14 @@
     <string name="ui_debug">စမ်းသပ်ရန်</string>
     <string name="ui_components">အစိတ်အပိုင်းများ</string>
     <string name="ui_pen_diagnostics">S Pen အခြေအနေ</string>
+    <string name="ui_stylus_options">ဘောပင် ရွေးချယ်စရာများ</string>
+    <string name="ui_no_stylus">ဘောပင် မတွေ့ရှိပါ</string>
+    <string name="ui_finger_input">လက်ချောင်း အသုံးပြုမှု</string>
+    <string name="ui_finger_automatic">အလိုအလျောက်</string>
+    <string name="ui_finger_draw">ပုံဆွဲရန်</string>
+    <string name="ui_finger_navigate">ရွှေ့ရန်နှင့် ချဲ့ချုံ့ရန်</string>
+    <string name="ui_stylus_hover_cursor">ကိရိယာအလိုက် ဘောပင်ညွှန်ပြချက်များ</string>
+    <string name="ui_stylus_button_eraser">ဖျက်ရန် ဘေးခလုတ်ကို ဖိထားပါ</string>
     <string name="ui_pen_diagnostics_hint">အချက်ပြမှုကို စစ်ဆေးရန် ဘောပင်ကို ဤဝင်းဒိုးအပေါ် ထိစရာမလိုဘဲ အနီးကပ်ထားပြီး ဘေးခလုတ်ကို ဖိထားပါ။ ဘောပင် တပ်ထားမှုကို သိရှိနိုင်ခြင်းသည် Galaxy စက်ပေါ် မူတည်သည်။</string>
     <string name="ui_pen_attachment">တပ်ထားမှု — %1$s</string>
     <string name="ui_pen_attached">တပ်ထားသည်</string>

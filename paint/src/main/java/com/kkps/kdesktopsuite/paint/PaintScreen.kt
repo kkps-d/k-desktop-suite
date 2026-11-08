@@ -62,7 +62,7 @@ internal fun PaintButton(icon: PaintIcon, label: String, enabled: Boolean = true
 internal fun PaintButton(icon: ImageVector, label: String, modifier: Modifier = Modifier,
     enabled: Boolean = true, selected: Boolean = false, busy: Boolean = false, action: () -> Unit) {
     val strings = LocalResources.current
-    TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+    PaintTooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
         tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState()) {
         IconButton(onClick = action, enabled = enabled && !busy, modifier = modifier.size(48.dp)
             .semantics { this.selected = selected; if (selected) stateDescription = strings.getString(R.string.ui_selected) }) {
@@ -205,7 +205,7 @@ private fun PaintHeader(
                     Text(paintDisplayTitle(s),modifier = Modifier.weight(1f).testTag("paint-document-title"),maxLines = 1,
                         overflow = TextOverflow.Ellipsis,style = MaterialTheme.typography.titleSmall)
                 }
-                TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+                PaintTooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
                     tooltip = { PlainTooltip { Text(stringResource(R.string.ui_settings)) } },state = rememberTooltipState()) {
                     IconButton(onClick = { model.showSettings(true) },
                         modifier = Modifier.width(48.dp).height(buttonHeight).captionControl(input,"settings")) {
@@ -317,27 +317,27 @@ private fun PaintStatus(s: PaintUiState, model: PaintViewModel, cursor: Point?, 
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
         BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).testTag("paint-status-bar")) {
-            val stacked = portrait || maxWidth < fieldWidth * 3 + 400.dp * fontScale
-            val informationWidth = if (stacked) maxWidth else fieldWidth * 3 + 18.dp
+            val stacked = portrait || maxWidth < fieldWidth * 3 + 428.dp * fontScale
+            val informationWidth = if (stacked) maxWidth else fieldWidth * 3 + 46.dp
             val zoomWidth = if (stacked) maxWidth else maxWidth - informationWidth
             FlowRow(Modifier.fillMaxWidth(),maxItemsInEachRow = if (stacked) 1 else 2) {
-                Row(Modifier.width(informationWidth).horizontalScroll(rememberScrollState())
-                    .widthIn(min = informationWidth.coerceAtLeast(360.dp * fontScale)).heightIn(min = 32.dp).padding(horizontal = 8.dp),
+                Row(Modifier.width(informationWidth).heightIn(min = 32.dp).padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically) {
-                    Text(dimensions,Modifier.weight(1f).padding(horizontal = 12.dp).testTag("paint-selection-dimensions")
+                    Text(dimensions,Modifier.weight(1f).padding(horizontal = 12.dp).horizontalScroll(rememberScrollState()).testTag("paint-selection-dimensions")
                         .semantics { contentDescription = strings.getString(R.string.ui_selection_dimensions_1_s, dimensions) },color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelMedium,maxLines = 1)
                     VerticalDivider(Modifier.height(20.dp))
-                    Text(position,Modifier.weight(1f).padding(horizontal = 12.dp).testTag("paint-cursor-position")
+                    Text(position,Modifier.weight(1f).padding(horizontal = 12.dp).horizontalScroll(rememberScrollState()).testTag("paint-cursor-position")
                         .semantics { contentDescription = strings.getString(R.string.ui_cursor_position_1_s, position) },color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelMedium,maxLines = 1)
+                    PaintStylusMenu(s,model)
                     VerticalDivider(Modifier.height(20.dp))
                     TextButton(onClick = { model.dialog(PaintDialog.CanvasSize) },enabled = !s.busy && !s.loading,
                         modifier = Modifier.weight(1f).heightIn(min = 28.dp).testTag("paint-canvas-dimensions")
                             .semantics { contentDescription = strings.getString(R.string.ui_resize_canvas) },contentPadding = PaddingValues(horizontal = 12.dp,vertical = 2.dp)) {
                         Row(Modifier.fillMaxWidth(),verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text("${canvasResize?.width ?: s.raster.width} x ${canvasResize?.height ?: s.raster.height} px",
-                                Modifier.weight(1f,fill = false),style = MaterialTheme.typography.labelMedium,maxLines = 1)
+                                Modifier.weight(1f,fill = false).horizontalScroll(rememberScrollState()),style = MaterialTheme.typography.labelMedium,maxLines = 1)
                             Icon(painterResource(R.drawable.ic_more_horiz),null,Modifier.size(16.dp))
                         }
                     }

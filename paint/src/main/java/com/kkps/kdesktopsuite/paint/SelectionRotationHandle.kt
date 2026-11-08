@@ -28,10 +28,12 @@ import kotlin.math.*
 
 @Composable
 internal fun SelectionRotationHandle(state: PaintUiState, model: PaintViewModel, active: Boolean, cancelSignal: Int, onDraggingChange: (Boolean) -> Unit) {
+    val navigationOnly = rememberPaintPenStatus().navigationOnly(state.preferences)
     val current by rememberUpdatedState(state)
     val density = LocalDensity.current
     val focus = remember { FocusRequester() }
     var focused by remember { mutableStateOf(false) }
+    var touchDragging by remember { mutableStateOf(false) }
     var dragging by remember { mutableStateOf(false) }
     var original by remember { mutableStateOf<EditPreview?>(null) }
     var cancelGeneration by remember { mutableIntStateOf(0) }
@@ -59,6 +61,7 @@ internal fun SelectionRotationHandle(state: PaintUiState, model: PaintViewModel,
     Box(Modifier.absoluteOffset {
         IntOffset((position.x-radius).roundToInt(),(position.y-radius).roundToInt())
     }.size(48.dp).onGloballyPositioned { coordinates = it }.testTag("selection-rotation-handle").pointerHoverIcon(PointerIcon.Crosshair)
+            .then(if (state.preferences.stylusHoverCursor) Modifier.stylusHoverIcon(PointerIcon.Crosshair) else Modifier)
         .focusRequester(focus).onFocusChanged { focused = it.isFocused }.focusable(enabled)
         .semantics {
             contentDescription = label; stateDescription = description; role = Role.Button
@@ -74,7 +77,7 @@ internal fun SelectionRotationHandle(state: PaintUiState, model: PaintViewModel,
                 }
                 else -> false
             }
-        }.pointerInput(enabled,cancelGeneration,cancelSignal) {
+        }.pointerInput(enabled,cancelGeneration,cancelSignal,navigationOnly && touchDragging) {
             if (!enabled) return@pointerInput
             awaitEachGesture {
                 val down = awaitFirstDown()
@@ -93,12 +96,13 @@ internal fun SelectionRotationHandle(state: PaintUiState, model: PaintViewModel,
                 var previous = angle(down.position)
                 var total = 0.0
                 var released = false
+                touchDragging = down.type == PointerType.Touch
                 focus.requestFocus(); dragging = true; onDraggingChange(true); down.consume()
                 try {
                     while (true) {
                         val event = awaitPointerEvent()
                         val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                        if (event.changes.count { it.pressed } > 1 || change.isConsumed) {
+                        if (event.changes.count { it.pressed && (down.type == PointerType.Touch || it.type == down.type) } > 1 || change.isConsumed) {
                             model.setPreview(original)
                             // Retain gesture ownership until all fingers lift, so the canvas cannot start an edit.
                             event.changes.forEach { it.consume() }
@@ -114,6 +118,7 @@ internal fun SelectionRotationHandle(state: PaintUiState, model: PaintViewModel,
                     }
                 } finally {
                     if (!released && dragging) model.setPreview(original)
+                    touchDragging = false
                     dragging = false; onDraggingChange(false)
                 }
             }

@@ -19,6 +19,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -50,6 +51,8 @@ internal fun PaintCanvas(
     onCursorChange: (Point?) -> Unit, onSelectionChange: (PixelRect?) -> Unit,
     onCanvasResizeChange: (PixelRect?) -> Unit,
 ) {
+    val pen = rememberPaintPenStatus()
+    val navigationOnly = pen.navigationOnly(state.preferences)
     val strings = LocalResources.current
     val current by rememberUpdatedState(state)
     val toolLabel = state.options.tool.displayLabel()
@@ -73,6 +76,41 @@ internal fun PaintCanvas(
     var dragConstrained by remember { mutableStateOf(false) }
     var constructionPoint by remember { mutableStateOf<Point?>(null) }
     var hovering by remember { mutableStateOf<Offset?>(null) }
+    var pointerPosition by remember { mutableStateOf<Offset?>(null) }
+    var hoveringType by remember { mutableStateOf(PointerType.Mouse) }
+    var activePenTool by remember { mutableStateOf<Tool?>(null) }
+    var eraserPointer by remember { mutableStateOf<PointerId?>(null) }
+    var editingTouch by remember { mutableStateOf(false) }
+    var touchCancelGeneration by remember { mutableIntStateOf(0) }
+    var previousNavigationOnly by remember { mutableStateOf(navigationOnly) }
+    LaunchedEffect(navigationOnly) {
+        if (previousNavigationOnly != navigationOnly && editingTouch) touchCancelGeneration++
+        previousNavigationOnly = navigationOnly
+    }
+    val isPenPointer = hoveringType == PointerType.Stylus || hoveringType == PointerType.Eraser
+    val eraserHover = hoveringType == PointerType.Eraser || state.preferences.stylusButtonEraser && pen.buttonHeld
+    val selectedPenTool = if (eraserHover) Tool.Eraser else state.options.tool
+    val cursorTool = if (isPenPointer) activePenTool ?: selectedPenTool else state.options.tool
+    val pointInImage = hovering?.let { state.viewport.imagePoint(Point(it.x,it.y)) }
+    val customPreview = pointInImage != null && pointInImage.x >= 0 && pointInImage.x < state.raster.width &&
+        pointInImage.y >= 0 && pointInImage.y < state.raster.height && cursorTool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)
+    val hiddenPenCursor = remember(context) { PointerIcon(android.view.PointerIcon.getSystemIcon(context,android.view.PointerIcon.TYPE_NULL)) }
+    val toolPenCursor = when {
+        cursorTool == Tool.Pan -> handCursor
+        cursorTool == Tool.Text -> PointerIcon.Text
+        else -> PointerIcon.Crosshair
+    }
+    val overridePenCursor = isPenPointer && (eraserHover || activePenTool == Tool.Eraser)
+    val penCursor = if (overridePenCursor && customPreview) hiddenPenCursor else toolPenCursor
+    val imagePenCursor = if ((activePenTool ?: selectedPenTool) in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser))
+        hiddenPenCursor else toolPenCursor
+    val imageLeft = max(0f,state.viewport.origin.x)
+    val imageTop = max(0f,state.viewport.origin.y)
+    val imageRight = min(state.viewport.width,state.viewport.origin.x + state.raster.width * state.viewport.scale)
+    val imageBottom = min(state.viewport.height,state.viewport.origin.y + state.raster.height * state.viewport.scale)
+    LaunchedEffect(active,pen.hovering,pen.touching) {
+        if (isPenPointer && (!active || !pen.hovering && !pen.touching)) hovering = null
+    }
     var eyedropperPosition by remember { mutableStateOf<Offset?>(null) }
     var eyedropperPreviewSize by remember { mutableStateOf(IntSize.Zero) }
     var keyboardInput by remember { mutableStateOf(false) }
@@ -133,8 +171,8 @@ internal fun PaintCanvas(
         else dragStart?.let { EditPreview.between(state.options.tool,it,dragEnd ?: it,state.options.constrain || dragConstrained) }
     }
 
-    LaunchedEffect(hovering,keyboardCursor,keyboardInput,state.viewport,active) {
-        val point = if (keyboardInput) keyboardCursor else hovering?.let { state.viewport.imagePoint(Point(it.x,it.y)) }
+    LaunchedEffect(pointerPosition,keyboardCursor,keyboardInput,state.viewport,active) {
+        val point = if (keyboardInput) keyboardCursor else pointerPosition?.let { state.viewport.imagePoint(Point(it.x,it.y)) }
         onCursorChange(point?.takeIf { active && it.x >= 0 && it.x < raster.width && it.y >= 0 && it.y < raster.height }
             ?.let { Point(floor(it.x),floor(it.y)) })
     }
@@ -223,12 +261,188 @@ internal fun PaintCanvas(
         return false
     }
 
+    val editorInput = Modifier.pointerInput(density.density,active,state.options.tool,touchCancelGeneration,pen.cancelGeneration) {
+        awaitPointerEventScope {
+            var pendingPenDown: PointerInputChange? = null
+            while (true) {
+                var down = pendingPenDown
+                pendingPenDown = null
+                while (down == null) {
+                    val event = awaitPointerEvent()
+                    down = event.changes.firstOrNull {
+                        it.changedToDownIgnoreConsumed() && (!it.isConsumed || it.id == eraserPointer)
+                    }
+                }
+                if (rotatingSelection || suppressRotationPointers || (down.isConsumed && down.id != eraserPointer)) { down.consume(); continue }
+                val initial = model.state.value
+                if (!active || initial.busy || initial.loading) continue
+                focus.requestFocus()
+                keyboardInput = false
+                val startEvent = currentEvent
+                if (down.type == PointerType.Mouse && startEvent.buttons.isSecondaryPressed) {
+                    contextMenu = down.position; down.consume(); continue
+                }
+                stroke.clear(); strokePending = false; keyboardDrawing = false; strokeSeed = kotlin.random.Random.nextInt()
+                val stylus = down.type == PointerType.Stylus || down.type == PointerType.Eraser
+                editingTouch = down.type == PointerType.Touch
+                val initialNavigationOnly = pen.navigationOnly(initial.preferences)
+                erasing = down.type == PointerType.Eraser ||
+                    (stylus && initial.preferences.stylusButtonEraser && pen.buttonHeld)
+                brushSession = BrushStrokeSession(initial.raster,initial.options,strokeSeed,initial.selection,erasing)
+                val imageStart = initial.viewport.imagePoint(Point(down.position.x,down.position.y))
+                val tool = if (erasing) Tool.Eraser else initial.options.tool
+                if (stylus) activePenTool = tool
+                val originalPreview = initial.preview
+                var completed = false
+                var interrupted = false
+                var ownedPreviewId = initial.preview?.id
+                val cancelGeneration = pen.cancelGeneration
+                val existing = initial.preview?.bounds ?: initial.selection
+                val constructing = !erasing && initial.preview?.constructing == true
+                val hitExisting = !constructing && (initial.preview?.takeIf { it.canTransform }?.containsSelection(imageStart)
+                    ?: (existing?.contains(imageStart.x.toInt(),imageStart.y.toInt()) == true)) &&
+                    (tool.isShape || tool in listOf(Tool.Select,Tool.Text))
+                val bottomRight = existing?.let { initial.viewport.screenPoint(Point(it.right.toFloat(),it.bottom.toFloat())) }
+                val resizeRadius = (if (down.type == PointerType.Touch) 24 else 14)*density.density
+                val resize = !erasing && !constructing && bottomRight != null &&
+                    abs(bottomRight.x-down.position.x) <= resizeRadius && abs(bottomRight.y-down.position.y) <= resizeRadius
+                var navigation = tool == Tool.Pan || spacePressed || startEvent.buttons.isTertiaryPressed
+                if (spacePressed) spaceUsedForPan = true
+                // Resize from the gesture's original pixels and transform, even after crossing an axis.
+                val resizingSelection = if (!navigation && resize && (initial.preview == null || initial.preview.canTransform))
+                    model.floatingSelection() else null
+                // An outside touch can still become two-finger navigation; it must not draw or select.
+                val canEdit = hitExisting || resize ||
+                    (imageStart.x in 0f..initial.raster.width.toFloat() && imageStart.y in 0f..initial.raster.height.toFloat())
+                var moved = false
+                if (!navigation && canEdit && tool == Tool.Eyedropper) eyedropperPosition = down.position
+                if (!navigation && canEdit && tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) stroke.add(imageStart)
+                else if (!navigation && canEdit && constructing) constructionPoint = imageStart
+                else if (!navigation && canEdit && !hitExisting && !resize && (tool.isShape || tool in listOf(Tool.Select,Tool.Text))) {
+                    dragStart = imageStart; dragEnd = imageStart; dragConstrained = startEvent.keyboardModifiers.isShiftPressed
+                }
+                down.consume()
+                try {
+                    movingSelection = !navigation && (hitExisting || resize) &&
+                        (initial.preview?.payload != null || initial.selection != null)
+                    var event: PointerEvent
+                    do {
+                        event = awaitPointerEvent()
+                        if (pen.cancelGeneration != cancelGeneration) break
+                        if (!stylus) {
+                            pendingPenDown = event.changes.firstOrNull { it.changedToDownIgnoreConsumed() &&
+                                (it.type == PointerType.Stylus || it.type == PointerType.Eraser) }
+                            if (pendingPenDown != null) { interrupted = true; break }
+                        }
+                        if (editingTouch && pen.navigationOnly(model.state.value.preferences) != initialNavigationOnly) break
+                        dragConstrained = event.keyboardModifiers.isShiftPressed
+                        val pointer = event.changes.firstOrNull { it.id == down.id } ?: event.changes.first()
+                        val pressed = event.changes.count { it.pressed && (!stylus || it.type == down.type) }
+                        if (pressed > 1) {
+                            if (!navigation && (hitExisting || resize)) model.setPreview(initial.preview)
+                            navigation = true; stroke.clear(); dragStart = null; dragEnd = null; constructionPoint = null
+                            eyedropperPosition = null
+                            movingSelection = false
+                            val pan = event.calculatePan(); val zoom = event.calculateZoom()
+                            val centroid = event.calculateCentroid(useCurrent = true)
+                            val view = model.state.value.viewport
+                            model.viewport(view.zoomed(view.scale*zoom,Point(centroid.x,centroid.y)).panned(Point(pan.x,pan.y)))
+                        } else if (!navigation && canEdit && tool == Tool.Eyedropper) {
+                            // Android sends a consumed release when a touch is cancelled.
+                            eyedropperPosition = pointer.position.takeUnless { !pointer.pressed && !pointer.changedToUp() }
+                        } else if (pointer.pressed || navigation) {
+                            val delta = pointer.position - pointer.previousPosition
+                            if ((pointer.position-down.position).getDistance() > viewConfiguration.touchSlop) moved = true
+                            val point = model.state.value.viewport.imagePoint(Point(pointer.position.x,pointer.position.y))
+                            if (navigation) model.viewport(model.state.value.viewport.panned(Point(delta.x,delta.y)))
+                            else if (!canEdit) Unit
+                            else if (constructing) constructionPoint = point
+                            else if (resize) {
+                                requireNotNull(existing)
+                                val dx = (existing.width+point.x-imageStart.x).roundToInt()
+                                val dy = (existing.height+point.y-imageStart.y).roundToInt()
+                                val w = max(1,if (resizingSelection != null) abs(dx) else dx)
+                                val h = max(1,if (resizingSelection != null) abs(dy) else dy)
+                                if (w <= 8192 && h <= 8192 && w.toLong()*h <= MAX_PIXELS) {
+                                    if (resizingSelection != null) {
+                                        val area = PixelRect(existing.x+min(0,dx),existing.y+min(0,dy),w,h)
+                                        model.setPreview(resizingSelection.resizedSelection(area,dx < 0,dy < 0))
+                                    } else model.movePreview(existing.copy(width = w,height = h))
+                                    ownedPreviewId = model.state.value.preview?.id
+                                }
+                            } else if (hitExisting && moved) {
+                                requireNotNull(existing)
+                                model.movePreview(existing.copy(x = existing.x+(point.x-imageStart.x).roundToInt(),y = existing.y+(point.y-imageStart.y).roundToInt()))
+                                ownedPreviewId = model.state.value.preview?.id
+                            } else if (tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) stroke.add(point)
+                            else if (dragStart != null) dragEnd = point
+                        }
+                        event.changes.forEach { it.consume() }
+                    } while (if (navigation) event.changes.any { it.pressed } else event.changes.any { it.id == down.id && it.pressed })
+                    completed = !interrupted && pen.cancelGeneration == cancelGeneration && (!editingTouch ||
+                        pen.navigationOnly(model.state.value.preferences) == initialNavigationOnly)
+                    if (completed && !navigation && canEdit) {
+                        when {
+                            tool == Tool.Eyedropper -> eyedropperPosition?.let { position ->
+                                model.tap(model.state.value.viewport.imagePoint(Point(position.x,position.y)))
+                            }
+                            constructing -> model.tap(constructionPoint ?: imageStart)
+                            stroke.isNotEmpty() -> {
+                                strokePending = true
+                                model.stroke(stroke.toList(),erasing,strokeSeed,brushSession)
+                            }
+                            !hitExisting && !resize && dragStart != null && moved -> model.createPreview(dragStart!!,dragEnd ?: dragStart!!,event.keyboardModifiers.isShiftPressed)
+                            !moved && !(tool == Tool.Select && resize && initial.preview == null) -> model.tap(imageStart)
+                        }
+                    }
+                } catch (cancelled: CancellationException) { throw cancelled }
+                finally {
+                    activePenTool = null
+                    editingTouch = false
+                    val latest = model.state.value
+                    if (!completed && (hitExisting || resize) && latest.raster === initial.raster &&
+                        latest.options.tool == initial.options.tool && latest.preview?.id == ownedPreviewId)
+                        model.setPreview(originalPreview)
+                    eyedropperPosition = null
+                    movingSelection = false
+                    if (!strokePending) { stroke.clear(); brushSession = null; erasing = false }
+                    dragStart = null; dragEnd = null; constructionPoint = null; dragConstrained = false
+                }
+            }
+        }
+    }
+
     Box(Modifier.fillMaxSize().clipToBounds().background(surface).testTag("paint-viewport")
+        .drawWithContent {
+            drawContent()
+            if (!keyboardInput && customPreview && (!isPenPointer || state.preferences.stylusHoverCursor)) {
+                hovering?.let { drawToolCursor(cursorTool,state.options,state.viewport.scale,it) }
+            }
+        }
+        .stylusTouchNavigation(navigationOnly,active,model,pen)
+        .pointerInput(Unit) {
+            awaitPointerEventScope {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    event.changes.firstOrNull { it.changedToDownIgnoreConsumed() &&
+                        (it.type == PointerType.Eraser || it.type == PointerType.Stylus &&
+                            current.preferences.stylusButtonEraser && pen.buttonHeld) }?.let {
+                        eraserPointer = it.id
+                    }
+                    event.changes.filter { it.id == eraserPointer }.forEach { it.consume() }
+                    if (event.changes.none { it.id == eraserPointer && it.pressed }) eraserPointer = null
+                }
+            }
+        }
+        .then(editorInput)
+        .pointerHoverIcon(if (state.options.tool == Tool.Pan) handCursor else PointerIcon.Crosshair)
+        .then(if (state.preferences.stylusHoverCursor) Modifier.stylusHoverIcon(penCursor,
+            overrideDescendants = overridePenCursor) else Modifier)
         .pointerInput(active) {
             awaitPointerEventScope {
                 while (true) {
                     val event = awaitPointerEvent(PointerEventPass.Initial)
-                    if (rotatingSelection && event.changes.count { it.pressed } > 1) {
+                    if (rotatingSelection && event.changes.count { it.pressed && (!navigationOnly || it.type != PointerType.Touch) } > 1) {
                         suppressRotationPointers = true
                         rotationCancelGeneration++
                     }
@@ -246,7 +460,16 @@ internal fun PaintCanvas(
                 while (true) {
                     val event = awaitPointerEvent()
                     keyboardInput = false
-                    hovering = if (event.type == PointerEventType.Exit) null else event.changes.firstOrNull()?.position
+                    val pointer = event.changes.firstOrNull { it.type == PointerType.Stylus || it.type == PointerType.Eraser }
+                        ?: event.changes.firstOrNull { it.type == PointerType.Mouse }
+                        ?: event.changes.firstOrNull()
+                    if (pointer != null) {
+                        pointerPosition = if (event.type == PointerEventType.Exit) null else pointer.position
+                        if (pointer.type != PointerType.Touch) {
+                            hoveringType = pointer.type
+                            hovering = pointerPosition
+                        }
+                    }
                     if (event.type != PointerEventType.Scroll) continue
                     val change = event.changes.firstOrNull()?.takeUnless { it.isConsumed } ?: continue
                     val s = current
@@ -284,122 +507,7 @@ internal fun PaintCanvas(
                     CustomAccessibilityAction(strings.getString(R.string.ui_announce_cursor_coordinates)) { model.message(R.string.ui_cursor_pixels, keyboardCursor.x.toInt(), keyboardCursor.y.toInt()); true },
                 )
             }
-            .pointerHoverIcon(if (state.options.tool == Tool.Pan) handCursor else PointerIcon.Crosshair)
-            .pointerInput(density.density,active,state.options.tool) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    if (rotatingSelection || suppressRotationPointers || down.isConsumed) { down.consume(); return@awaitEachGesture }
-                    val initial = model.state.value
-                    if (!active || initial.busy || initial.loading) return@awaitEachGesture
-                    focus.requestFocus()
-                    keyboardInput = false
-                    val startEvent = currentEvent
-                    if (startEvent.buttons.isSecondaryPressed) {
-                        contextMenu = down.position; down.consume(); return@awaitEachGesture
-                    }
-                    stroke.clear(); strokePending = false; keyboardDrawing = false; strokeSeed = kotlin.random.Random.nextInt()
-                    erasing = down.type == PointerType.Eraser
-                    brushSession = BrushStrokeSession(initial.raster,initial.options,strokeSeed,initial.selection,erasing)
-                    val imageStart = initial.viewport.imagePoint(Point(down.position.x,down.position.y))
-                    val tool = if (erasing) Tool.Eraser else initial.options.tool
-                    val stylus = down.type == PointerType.Stylus || erasing
-                    val existing = initial.preview?.bounds ?: initial.selection
-                    val constructing = initial.preview?.constructing == true
-                    val hitExisting = !constructing && (initial.preview?.takeIf { it.canTransform }?.containsSelection(imageStart)
-                        ?: (existing?.contains(imageStart.x.toInt(),imageStart.y.toInt()) == true)) &&
-                        (tool.isShape || tool in listOf(Tool.Select,Tool.Text))
-                    val bottomRight = existing?.let { initial.viewport.screenPoint(Point(it.right.toFloat(),it.bottom.toFloat())) }
-                    val resizeRadius = (if (down.type == PointerType.Touch) 24 else 14)*density.density
-                    val resize = !constructing && bottomRight != null &&
-                        abs(bottomRight.x-down.position.x) <= resizeRadius && abs(bottomRight.y-down.position.y) <= resizeRadius
-                    var navigation = tool == Tool.Pan || spacePressed || startEvent.buttons.isTertiaryPressed
-                    if (spacePressed) spaceUsedForPan = true
-                    // Resize from the gesture's original pixels and transform, even after crossing an axis.
-                    val resizingSelection = if (!navigation && resize && (initial.preview == null || initial.preview.canTransform))
-                        model.floatingSelection() else null
-                    // An outside touch can still become two-finger navigation; it must not draw or select.
-                    val canEdit = hitExisting || resize ||
-                        (imageStart.x in 0f..initial.raster.width.toFloat() && imageStart.y in 0f..initial.raster.height.toFloat())
-                    var moved = false
-                    if (!navigation && canEdit && tool == Tool.Eyedropper) eyedropperPosition = down.position
-                    if (!navigation && canEdit && tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) stroke.add(imageStart)
-                    else if (!navigation && canEdit && constructing) constructionPoint = imageStart
-                    else if (!navigation && canEdit && !hitExisting && !resize && (tool.isShape || tool in listOf(Tool.Select,Tool.Text))) {
-                        dragStart = imageStart; dragEnd = imageStart; dragConstrained = startEvent.keyboardModifiers.isShiftPressed
-                    }
-                    down.consume()
-                    try {
-                        movingSelection = !navigation && (hitExisting || resize) &&
-                            (initial.preview?.payload != null || initial.selection != null)
-                        var event: PointerEvent
-                        do {
-                            event = awaitPointerEvent()
-                            dragConstrained = event.keyboardModifiers.isShiftPressed
-                            val pointer = event.changes.firstOrNull { it.id == down.id } ?: event.changes.first()
-                            val pressed = event.changes.count { it.pressed && (!stylus || it.type == down.type) }
-                            val touchNavigation = stylus && event.changes.count { it.pressed && it.type == PointerType.Touch } >= 2
-                            if (pressed > 1 || touchNavigation) {
-                                if (!navigation && (hitExisting || resize)) model.setPreview(initial.preview)
-                                navigation = true; stroke.clear(); dragStart = null; dragEnd = null; constructionPoint = null
-                                eyedropperPosition = null
-                                movingSelection = false
-                                val pan = event.calculatePan(); val zoom = event.calculateZoom()
-                                val centroid = event.calculateCentroid(useCurrent = true)
-                                val view = model.state.value.viewport
-                                model.viewport(view.zoomed(view.scale*zoom,Point(centroid.x,centroid.y)).panned(Point(pan.x,pan.y)))
-                            } else if (!navigation && canEdit && tool == Tool.Eyedropper) {
-                                // Android sends a consumed release when a touch is cancelled.
-                                eyedropperPosition = pointer.position.takeUnless { !pointer.pressed && !pointer.changedToUp() }
-                            } else if (pointer.pressed || navigation) {
-                                val delta = pointer.position - pointer.previousPosition
-                                if ((pointer.position-down.position).getDistance() > viewConfiguration.touchSlop) moved = true
-                                val point = model.state.value.viewport.imagePoint(Point(pointer.position.x,pointer.position.y))
-                                if (navigation) model.viewport(model.state.value.viewport.panned(Point(delta.x,delta.y)))
-                                else if (!canEdit) Unit
-                                else if (constructing) constructionPoint = point
-                                else if (resize) {
-                                    requireNotNull(existing)
-                                    val dx = (existing.width+point.x-imageStart.x).roundToInt()
-                                    val dy = (existing.height+point.y-imageStart.y).roundToInt()
-                                    val w = max(1,if (resizingSelection != null) abs(dx) else dx)
-                                    val h = max(1,if (resizingSelection != null) abs(dy) else dy)
-                                    if (w <= 8192 && h <= 8192 && w.toLong()*h <= MAX_PIXELS) {
-                                        if (resizingSelection != null) {
-                                            val area = PixelRect(existing.x+min(0,dx),existing.y+min(0,dy),w,h)
-                                            model.setPreview(resizingSelection.resizedSelection(area,dx < 0,dy < 0))
-                                        } else model.movePreview(existing.copy(width = w,height = h))
-                                    }
-                                } else if (hitExisting && moved) {
-                                    requireNotNull(existing)
-                                    model.movePreview(existing.copy(x = existing.x+(point.x-imageStart.x).roundToInt(),y = existing.y+(point.y-imageStart.y).roundToInt()))
-                                } else if (tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) stroke.add(point)
-                                else if (dragStart != null) dragEnd = point
-                            }
-                            event.changes.forEach { it.consume() }
-                        } while (if (navigation) event.changes.any { it.pressed } else event.changes.any { it.id == down.id && it.pressed })
-                        if (!navigation && canEdit) {
-                            when {
-                                tool == Tool.Eyedropper -> eyedropperPosition?.let { position ->
-                                    model.tap(model.state.value.viewport.imagePoint(Point(position.x,position.y)))
-                                }
-                                constructing -> model.tap(constructionPoint ?: imageStart)
-                                stroke.isNotEmpty() -> {
-                                    strokePending = true
-                                    model.stroke(stroke.toList(),erasing,strokeSeed,brushSession)
-                                }
-                                !hitExisting && !resize && dragStart != null && moved -> model.createPreview(dragStart!!,dragEnd ?: dragStart!!,event.keyboardModifiers.isShiftPressed)
-                                !moved && !(tool == Tool.Select && resize && initial.preview == null) -> model.tap(imageStart)
-                            }
-                        }
-                    } catch (cancelled: CancellationException) { throw cancelled }
-                    finally {
-                        eyedropperPosition = null
-                        movingSelection = false
-                        if (!strokePending) { stroke.clear(); brushSession = null; erasing = false }
-                        dragStart = null; dragEnd = null; constructionPoint = null; dragConstrained = false
-                    }
-                }
-            }) {
+) {
             val view = state.viewport
             val origin = view.origin
             val shownRaster = displayedState.raster
@@ -466,32 +574,6 @@ internal fun PaintCanvas(
                 drawCircle(Color.White,8.dp.toPx(),handle)
                 drawCircle(outline,8.dp.toPx(),handle,style = Stroke(2.dp.toPx()))
             }
-            hovering?.takeUnless { keyboardInput }?.let { point ->
-                val imagePoint = view.imagePoint(Point(point.x,point.y))
-                if (imagePoint.x in 0f..raster.width.toFloat() && imagePoint.y in 0f..raster.height.toFloat() && state.options.tool in listOf(Tool.Pencil,Tool.Brush,Tool.Eraser)) {
-                    if (erasing || state.options.tool == Tool.Eraser) {
-                        val side = max(4f,state.options.eraserWidth*view.scale)
-                        val topLeft = Offset(point.x-side/2,point.y-side/2)
-                        drawRect(Color.White,topLeft,Size(side,side),style = Stroke(3f))
-                        drawRect(Color.Black,topLeft,Size(side,side),style = Stroke(1f))
-                    } else if (state.options.tool == Tool.Pencil) {
-                        val crosshair = Path().apply {
-                            moveTo(point.x-12f,point.y); lineTo(point.x-5f,point.y)
-                            moveTo(point.x+5f,point.y); lineTo(point.x+12f,point.y)
-                            moveTo(point.x,point.y-12f); lineTo(point.x,point.y-5f)
-                            moveTo(point.x,point.y+5f); lineTo(point.x,point.y+12f)
-                        }
-                        drawPath(crosshair,Color.White,style = Stroke(3f))
-                        drawPath(crosshair,Color.Black,style = Stroke(1f))
-                        drawCircle(Color.White,3f,point)
-                        drawCircle(Color.Black,1.5f,point)
-                    } else {
-                        val radius = max(2f,state.options.strokeWidth*view.scale/2)
-                        drawCircle(Color.White,radius,point,style = Stroke(3f))
-                        drawCircle(Color.Black,radius,point,style = Stroke(1f))
-                    }
-                }
-            }
             if (canvasFocused && keyboardInput && state.options.tool != Tool.Pan) {
                 val p = view.screenPoint(keyboardCursor)
                 val arm = 10.dp.toPx()
@@ -503,6 +585,12 @@ internal fun PaintCanvas(
                 drawPath(cursor,outline,style = Stroke(2.dp.toPx()))
                 drawRect(outline,style = Stroke(2.dp.toPx()))
             }
+        }
+        // Resolve the first hover synchronously; cursor visibility must not wait for hover-state recomposition.
+        if (state.preferences.stylusHoverCursor && imageRight > imageLeft && imageBottom > imageTop) {
+            Box(Modifier.absoluteOffset { IntOffset(imageLeft.roundToInt(),imageTop.roundToInt()) }
+                .size(with(density) { (imageRight-imageLeft).toDp() },with(density) { (imageBottom-imageTop).toDp() })
+                .stylusHoverIcon(imagePenCursor))
         }
         eyedropperPosition?.takeIf { active && state.options.tool == Tool.Eyedropper }?.let { position ->
             val point = state.viewport.imagePoint(Point(position.x,position.y))
@@ -589,6 +677,7 @@ private fun TextOverlay(state: PaintUiState, preview: EditPreview, model: PaintV
             }
             .background(if (o.opaqueText) Color(o.background) else Color.Transparent).focusRequester(focus)
             .onFocusChanged { focused = it.hasFocus }.testTag("paint-text-overlay")
+            .then(if (state.preferences.stylusHoverCursor) Modifier.stylusHoverIcon(PointerIcon.Text,overrideDescendants = true) else Modifier)
             .onKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown || !event.isCtrlPressed) false
                 else when (event.key) {
@@ -633,5 +722,35 @@ private fun TextOverlay(state: PaintUiState, preview: EditPreview, model: PaintV
                 fontStyle = if (o.italic) FontStyle.Italic else FontStyle.Normal,
                 textDecoration = TextDecoration.combine(buildList { if (o.underline) add(TextDecoration.Underline); if (o.strike) add(TextDecoration.LineThrough) }),
                 platformStyle = PlatformTextStyle(includeFontPadding = false)), cursorBrush = SolidColor(Color(o.foreground)))
+    }
+}
+
+/** Draw above text overlays as well as the raster; hover never changes image pixels. */
+private fun DrawScope.drawToolCursor(tool: Tool, options: ToolOptions, scale: Float, point: Offset) {
+    when (tool) {
+        Tool.Eraser -> {
+            val side = max(4f,options.eraserWidth*scale)
+            val topLeft = Offset(point.x-side/2,point.y-side/2)
+            drawRect(Color.White,topLeft,Size(side,side),style = Stroke(3f))
+            drawRect(Color.Black,topLeft,Size(side,side),style = Stroke(1f))
+        }
+        Tool.Pencil -> {
+            val crosshair = Path().apply {
+                moveTo(point.x-12f,point.y); lineTo(point.x-5f,point.y)
+                moveTo(point.x+5f,point.y); lineTo(point.x+12f,point.y)
+                moveTo(point.x,point.y-12f); lineTo(point.x,point.y-5f)
+                moveTo(point.x,point.y+5f); lineTo(point.x,point.y+12f)
+            }
+            drawPath(crosshair,Color.White,style = Stroke(3f))
+            drawPath(crosshair,Color.Black,style = Stroke(1f))
+            drawCircle(Color.White,3f,point)
+            drawCircle(Color.Black,1.5f,point)
+        }
+        Tool.Brush -> {
+            val radius = max(2f,options.strokeWidth*scale/2)
+            drawCircle(Color.White,radius,point,style = Stroke(3f))
+            drawCircle(Color.Black,radius,point,style = Stroke(1f))
+        }
+        else -> Unit
     }
 }

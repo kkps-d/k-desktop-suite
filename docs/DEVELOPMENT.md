@@ -180,6 +180,16 @@ Apps that support document tabs should follow the shared
 
 - `PaintScreen` owns Classic chrome; `PaintCanvas` owns viewport input/rendering
   and native text overlay integration. Neither introduces a mobile presentation.
+- Each `PaintActivity` owns a resumed-lifecycle `PaintPenStatus` monitor for input
+  capability, optional Samsung attachment state, and raw hover/button events.
+  The editor and debug page share it. `CanvasStylusInput` captures navigation-only
+  fingers in the viewport's Initial pass before text or handles can edit. Pen
+  erasing is latched at tip-down through the existing stroke override, preserving
+  the selected tool and one raster transaction per stroke. Stylus preferences
+  use the existing app settings store rather than document recovery.
+  An image-bounded `stylusHoverIcon` region resolves the custom pen cursor on
+  initial hover without waiting for position-state recomposition. Keep this
+  region below text and transform controls so their own cursors retain priority.
 - `PaintViewModel` coordinates actions, lifecycle state, revisions, and pending
   commands; reusable document/viewport logic is independent of Classic chrome.
 - `Raster`/`RasterHistory` prepare pixel changes on a worker, then commit through

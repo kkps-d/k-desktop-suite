@@ -74,9 +74,17 @@ class PenDiagnosticsTest {
         compose.waitForIdle()
         event(MotionEvent.ACTION_HOVER_ENTER, MotionEvent.BUTTON_STYLUS_PRIMARY)
         compose.runOnIdle {
+            assertTrue(context.penStatus.hovering)
+            assertTrue(context.penStatus.buttonHeld)
+        }
+        compose.runOnUiThread {
+            context.penStatus.stop(context)
             assertFalse(context.penStatus.hovering)
             assertFalse(context.penStatus.buttonHeld)
         }
+        event(MotionEvent.ACTION_HOVER_ENTER, MotionEvent.BUTTON_STYLUS_PRIMARY)
+        compose.runOnIdle { assertFalse(context.penStatus.hovering); assertFalse(context.penStatus.buttonHeld) }
+        compose.runOnUiThread { context.penStatus.start(context) }
     }
 
     private fun hover(value: String) {

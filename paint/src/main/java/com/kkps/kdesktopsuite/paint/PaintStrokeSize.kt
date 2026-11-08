@@ -45,7 +45,7 @@ internal fun WidthPicker(s: PaintUiState, model: PaintViewModel) {
     }
     val label = pluralStringResource(R.plurals.ui_choose_stroke_size,s.options.strokeWidth,s.options.strokeWidth)
     Box {
-        TooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+        PaintTooltipBox(positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
             tooltip = { PlainTooltip { Text(label) } },state = rememberTooltipState()) {
             IconButton(onClick = { open = true },enabled = available && !s.busy,
                 colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onSurface,

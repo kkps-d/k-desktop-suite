@@ -132,7 +132,10 @@ internal data class PaintPreferences(val appearance: String = "System", val jpeg
     val customColors: List<Int> = List(10) { WHITE }, val recent: List<String> = emptyList(),
     val defaultCanvasWidth: Int = 800, val defaultCanvasHeight: Int = 600,
     val startupBehavior: PaintStartupBehavior = PaintStartupBehavior.ReopenLastEdit,
-    val recentNames: Map<String,String> = emptyMap())
+    val recentNames: Map<String,String> = emptyMap(),
+    val fingerInput: FingerInput = FingerInput.Automatic,
+    val stylusHoverCursor: Boolean = true,
+    val stylusButtonEraser: Boolean = true)
 
 internal class PaintSettings(context: Context) {
     private val store = context.paintPreferences
@@ -153,7 +156,9 @@ internal class PaintSettings(context: Context) {
                 names.keys().asSequence().mapNotNull { uri ->
                     names.optString(uri).takeIf { it.isNotBlank() }?.let { uri to it }
                 }.toMap()
-            } ?: emptyMap())
+            } ?: emptyMap(),
+            FingerInput.entries.firstOrNull { it.name == json.optString("fingerInput") } ?: FingerInput.Automatic,
+            json.optBoolean("stylusHoverCursor",true),json.optBoolean("stylusButtonEraser",true))
     }
     suspend fun save(value: PaintPreferences) = update { value }
     suspend fun update(change: (PaintPreferences) -> PaintPreferences) {
@@ -162,6 +167,8 @@ internal class PaintSettings(context: Context) {
             it[key] = JSONObject().put("appearance", value.appearance).put("quality", value.jpegQuality)
                 .put("canvasWidth",value.defaultCanvasWidth).put("canvasHeight",value.defaultCanvasHeight)
                 .put("startupBehavior",value.startupBehavior.name)
+                .put("fingerInput",value.fingerInput.name)
+                .put("stylusHoverCursor",value.stylusHoverCursor).put("stylusButtonEraser",value.stylusButtonEraser)
                 .put("colors", JSONArray(value.customColors)).put("recent", JSONArray(value.recent))
                 .put("recentNames",JSONObject(value.recentNames.filterKeys { uri -> uri in value.recent })).toString()
         }
