@@ -5,6 +5,9 @@
 *.iml
 local.properties
 **/build/
+# Android Studio release exports
+/notepad/release/
+/paint/release/
 .DS_Store
 captures/
 .cxx/
