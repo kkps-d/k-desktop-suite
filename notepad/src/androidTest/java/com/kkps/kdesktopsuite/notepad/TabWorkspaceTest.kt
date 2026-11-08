@@ -89,6 +89,7 @@ class TabWorkspaceTest {
             workspace.addBlank(window)
             val before = window.documents.toList()
             val active = window.activeId
+            val focusRequest = window.focusRequest
             val transfer = workspace.beginTransfer(window, before.first().id)!!
             assertEquals(listOf(before[1], before[2], before[0]), previewTabOrder(before, before[0], 2) { it.id })
             workspace.endDrag()
@@ -100,8 +101,12 @@ class TabWorkspaceTest {
             assertFalse(workspace.move(transfer.token, window, 2))
             assertTrue(workspace.reorder(window, before.first().id, 2))
             assertEquals(listOf(before[1], before[2], before[0]), window.documents)
+            assertEquals(active, window.activeId)
+            assertEquals(focusRequest, window.focusRequest)
             assertTrue(workspace.reorder(window, before.first().id, 0))
             assertEquals(before, window.documents)
+            assertEquals(active, window.activeId)
+            assertEquals(focusRequest, window.focusRequest)
         }
     }
 

@@ -171,6 +171,34 @@ class ExplorerShellTest {
         tabNumber(20).assertIsSelected()
     }
 
+    @Test fun dropdownDragReordersAnInactiveTabWithoutSelectingIt() {
+        compose.runOnIdle {
+            repeat(2) { model.newTab() }
+            compose.activity.setContent {
+                ExplorerTheme {
+                    Box(Modifier.width(400.dp)) {
+                        ExplorerScreen(model, {}, model::close, {}, DesktopCaption(), WindowInsets(0))
+                    }
+                }
+            }
+        }
+        val original = model.tabs.toList()
+        val active = model.activeId
+        compose.onNodeWithTag("document-switcher").performClick()
+        val list = compose.onNodeWithTag("document-switcher-list")
+        val viewport = list.fetchSemanticsNode().boundsInRoot
+        val handle = compose.onNodeWithTag("document-handle-${original[0].id}").fetchSemanticsNode().boundsInRoot.center - viewport.topLeft
+        val last = compose.onNodeWithTag("document-entry-${original[2].id}").fetchSemanticsNode().boundsInRoot
+        list.performTouchInput { swipe(handle, Offset(handle.x, last.bottom - viewport.top - 4), 600) }
+        compose.runOnIdle {
+            assertEquals(listOf(original[1], original[2], original[0]), model.tabs)
+            assertEquals(active, model.activeId)
+        }
+        tab(active).assertIsSelected()
+        tab(original[0].id).assertIsNotSelected()
+        compose.onNodeWithTag("document-switcher-panel").assertIsDisplayed()
+    }
+
     @Test fun recreationKeepsIdentitiesOrderAndNotepadKeyboardShortcuts() {
         compose.runOnIdle {
             shortcut(compose.activity, KeyEvent.KEYCODE_N)
@@ -218,7 +246,10 @@ class ExplorerShellTest {
             assertNotNull(model.workspace.dragging)
         }
         compose.waitUntil(5_000) { model.workspace.dragging == null }
-        compose.runOnIdle { assertEquals(listOf(original[1], original[2], original[0]), model.tabs) }
+        compose.runOnIdle {
+            assertEquals(listOf(original[1], original[2], original[0]), model.tabs)
+            assertEquals(original[2].id, model.activeId)
+        }
         val title = compose.onNodeWithTag("tab-title-${original[0].id}", useUnmergedTree = true).fetchSemanticsNode().boundsInWindow
         val toolbar = compose.onNodeWithTag("command-bar").fetchSemanticsNode().boundsInWindow
         val before = model.tabs.toList()

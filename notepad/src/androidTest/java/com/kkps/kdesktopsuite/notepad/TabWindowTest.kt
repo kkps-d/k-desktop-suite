@@ -86,7 +86,7 @@ class TabWindowTest {
             notepad.newDocument()
         }
         val original = notepad.documents.takeLast(3)
-        compose.runOnIdle { notepad.select(original[0].id) }
+        compose.runOnIdle { notepad.select(original[2].id) }
         val from = tabPosition(original[0].id)
         val to = tabPosition(original[2].id) + Offset(80f, 0f)
         val header = compose.onNodeWithTag("document-header").fetchSemanticsNode().boundsInWindow
@@ -96,6 +96,7 @@ class TabWindowTest {
         }
         compose.waitUntil(5_000) { notepad.workspace.dragging == null }
         assertEquals("Drag $from to $to; header=$header", listOf(original[1], original[2], original[0]), notepad.documents.takeLast(3))
+        assertEquals(original[2].id, notepad.activeId)
         val before = notepad.documents.toList()
         val active = notepad.activeId
         val text = notepad.active!!.editor.text.toString()

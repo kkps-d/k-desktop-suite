@@ -72,6 +72,9 @@ to the far edge of a mostly empty header.
 
 ## Reordering and window transfers
 
+- Reordering within a window changes only the order. Preserve the active tab
+  and editor focus, including when an inactive tab is dragged or moved through
+  a menu/accessibility command. Selecting a tab remains a separate action.
 - On the horizontal strip, mouse/trackpad dragging and touch long-press can
   reorder tabs. Preview the destination before committing order, support edge
   scrolling, and preserve

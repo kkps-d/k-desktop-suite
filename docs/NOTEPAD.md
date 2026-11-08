@@ -20,7 +20,8 @@ of the usable window height, including a pinned **New tab** (+) footer, and
 provides individual Close actions.
 Drag a leading handle to reorder locally; the lifted row follows the finger,
 neighboring rows animate, and holding near an edge scrolls the list. Releasing
-outside cancels and never opens a window. Move up/down and Move to window remain available as commands.
+outside cancels and never opens a window. Reordering keeps the active draft and
+editor focus unchanged. Move up/down and Move to window remain available as commands.
 Overflowing tab strips scroll, and the selected tab stays visible after selection
 or resizing.
 

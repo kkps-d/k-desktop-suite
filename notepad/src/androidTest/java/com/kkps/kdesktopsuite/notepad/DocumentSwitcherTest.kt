@@ -64,7 +64,6 @@ class DocumentSwitcherTest {
                                     { id, index ->
                                         val tab = documents.first { it.id == id }
                                         documents = documents.filterNot { it.id == id }.toMutableList().apply { add(index, tab) }
-                                        activeId = id
                                         reorders++
                                         true
                                     }, { true }), moveToWindow = { movedId = it })
@@ -201,11 +200,14 @@ class DocumentSwitcherTest {
     }
 
     @Test fun handleReordersLocallyAndOutsideReleaseCancels() {
+        activeId = "5"
         show()
         open()
         val third = compose.onNodeWithTag("document-entry-3").fetchSemanticsNode().boundsInRoot
         dragHandle("1", Offset(third.center.x, third.bottom - 4))
         compose.runOnIdle { assertEquals(listOf("2", "3", "1", "4", "5"), documents.map { it.id }); assertEquals(1, reorders) }
+        tab("5").assertIsSelected()
+        tab("1").assertIsNotSelected()
         compose.onNodeWithTag("document-switcher-panel").assertIsDisplayed()
         val before = documents
         val viewport = compose.onNodeWithTag("document-switcher-list").fetchSemanticsNode().boundsInRoot
@@ -215,6 +217,7 @@ class DocumentSwitcherTest {
     }
 
     @Test fun mouseHandleReordersButTriggerDragNeverStartsTransfer() {
+        activeId = "5"
         show()
         compose.onNodeWithTag("document-switcher").performMouseInput {
             moveTo(center)
@@ -238,6 +241,7 @@ class DocumentSwitcherTest {
             assertEquals(listOf("2", "3", "1", "4", "5"), documents.map { it.id })
             assertEquals(1, reorders)
             assertEquals(0, nativeDrags)
+            assertEquals("5", activeId)
         }
     }
 

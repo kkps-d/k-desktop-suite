@@ -63,6 +63,21 @@ class ExplorerViewModelTest {
         assertEquals(before, model.tabs)
     }
 
+    @Test fun reorderingPreservesSelectionAndSavesItWithTheNewOrder() {
+        val state = SavedStateHandle()
+        val model = ExplorerViewModel(state)
+        repeat(2) { model.newTab() }
+        val original = model.tabs.toList()
+        assertTrue(model.reorder(original.first().id, 2))
+        assertEquals(listOf(original[1], original[2], original[0]), model.tabs)
+        assertEquals(original[2].id, model.activeId)
+        assertTrue(model.reorder(model.activeId, 0))
+        assertEquals(original[2].id, model.activeId)
+        val restored = ExplorerViewModel(SavedStateHandle(state.keys().associateWith { state.get<Any>(it) }))
+        assertEquals(model.tabs, restored.tabs)
+        assertEquals(original[2].id, restored.activeId)
+    }
+
     @Test fun transferMovesTheSameTabOnceAndClosesOnlyAnEmptySource() {
         val workspace = ExplorerWorkspace()
         val source = ExplorerViewModel(SavedStateHandle(), workspace)

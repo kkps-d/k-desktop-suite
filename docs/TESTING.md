@@ -370,6 +370,16 @@ large fonts/RTL, drag edge scrolling, both toast languages, and both app adapter
 Updated real UI screenshots were captured; emulator private storage and display
 settings were restored. The connected physical device was not used.
 
+Reorder-selection regression on 8 November 2026: local reordering now preserves
+the active tab in both apps, including inactive-tab drops and move commands.
+Dropdown UI checks assert the selected highlight remains on the active tab;
+Notepad also retains draft text, text selection, and its editor focus request.
+Explorer's JVM regression verifies selection and order after saved-state restore.
+All 34 shared/Notepad/Explorer JVM tests, both debug/test-APK builds, lint, and
+36 focused UI/workspace/native-window checks passed on local Small Desktop under
+user 10. Emulator private storage and display settings were restored afterward.
+The connected physical device was not used.
+
 Apply these checks to each tabbed app using the [document tab guidance](TABS.md).
 
 - Exercise 1, 2, 5, and 20 tabs, with long/duplicate/Unicode titles and unsaved,

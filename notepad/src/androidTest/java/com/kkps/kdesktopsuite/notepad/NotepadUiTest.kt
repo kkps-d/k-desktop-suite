@@ -182,6 +182,34 @@ class NotepadUiTest {
         compose.runOnIdle { org.junit.Assert.assertEquals(1, notepad.newTabRequest) }
     }
 
+    @Test
+    fun dropdownReorderingAnInactiveTabPreservesTheActiveDraftAndFocusRequest() {
+        windowSize = DpSize(400.dp, 800.dp)
+        showEditor()
+        val first = notepad.active!!
+        compose.runOnIdle { notepad.newDocument(); notepad.newDocument() }
+        val active = notepad.active!!
+        compose.onNodeWithTag("document-editor").performTextReplacement("Keep editing this draft")
+        compose.onNodeWithTag("document-editor").performTextInputSelection(androidx.compose.ui.text.TextRange(5, 12))
+        val focusRequest = notepad.focusRequest
+        compose.onNodeWithTag("document-switcher").performClick()
+        val list = compose.onNodeWithTag("document-switcher-list")
+        val viewport = list.fetchSemanticsNode().boundsInRoot
+        val handle = compose.onNodeWithTag("document-handle-${first.id}").fetchSemanticsNode().boundsInRoot.center - viewport.topLeft
+        val last = compose.onNodeWithTag("document-entry-${active.id}").fetchSemanticsNode().boundsInRoot
+        list.performTouchInput { swipe(handle, androidx.compose.ui.geometry.Offset(handle.x, last.bottom - viewport.top - 4), 600) }
+        compose.runOnIdle {
+            org.junit.Assert.assertSame(first, notepad.documents.last())
+            org.junit.Assert.assertSame(active, notepad.active)
+            org.junit.Assert.assertEquals(focusRequest, notepad.focusRequest)
+            org.junit.Assert.assertEquals("Keep editing this draft", active.editor.text.toString())
+            org.junit.Assert.assertEquals(androidx.compose.ui.text.TextRange(5, 12), active.editor.selection)
+        }
+        compose.onNodeWithTag("document-tab-${active.id}").assertIsSelected()
+        compose.onNodeWithTag("document-tab-${first.id}").assertIsNotSelected()
+        compose.onNodeWithTag("document-switcher-panel").assertIsDisplayed()
+    }
+
     private fun awaitSearch(count: Int) {
         compose.waitUntil(5_000) { notepad.search.results?.matches?.size == count }
         compose.waitForIdle()
@@ -725,6 +753,7 @@ class NotepadUiTest {
         val first = notepad.active!!
         compose.runOnIdle { notepad.newDocument(); notepad.newDocument() }
         val neighbor = notepad.documents[1]
+        val active = notepad.active!!
         val title = compose.onNodeWithTag("tab-title-${neighbor.id}", useUnmergedTree = true)
         val before = title.fetchSemanticsNode().boundsInRoot.left
         val tab = compose.onNodeWithTag("document-tab-${first.id}")
@@ -739,8 +768,10 @@ class NotepadUiTest {
         org.junit.Assert.assertTrue("The neighboring tab should slide through an intermediate position", during < before && during > after)
         org.junit.Assert.assertTrue(after < before)
         compose.mainClock.autoAdvance = true
-        compose.onNodeWithTag("document-editor").assertTextContains("animated draft")
-        compose.runOnIdle { org.junit.Assert.assertSame(first, notepad.active) }
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals("animated draft", first.editor.text.toString())
+            org.junit.Assert.assertSame(active, notepad.active)
+        }
     }
 
     @Test

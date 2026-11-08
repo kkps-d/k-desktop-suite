@@ -51,7 +51,8 @@ have Notepad's independent hit targets; hovering and focusing do not select tabs
   height, with a scrolling list and pinned **New tab** (+) footer. Rows retain independent Close actions.
   Leading handles reorder locally; release outside cancels without opening a
   window. The dragged row follows the finger, neighbors animate, and holding
-  near either list edge auto-scrolls. Move up/down and Move to window remain
+  near either list edge auto-scrolls. Reordering preserves the active tab.
+  Move up/down and Move to window remain
   menu/accessibility commands.
   In very narrow popups, tap the handle to open these commands. The rounded
   trigger and its panel have separate spacing; action menus open beside their

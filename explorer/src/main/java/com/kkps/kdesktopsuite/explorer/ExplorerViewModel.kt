@@ -63,7 +63,7 @@ internal class ExplorerViewModel(
     fun reorder(id: String, index: Int): Boolean {
         val tab = tabs.find { it.id == id } ?: return false
         tabs = tabs.filterNot { it.id == id }.toMutableList().apply { add(index.coerceIn(0, size), tab) }
-        select(id)
+        save()
         return true
     }
 

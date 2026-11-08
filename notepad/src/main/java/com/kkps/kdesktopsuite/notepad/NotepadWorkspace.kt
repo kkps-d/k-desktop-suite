@@ -152,7 +152,6 @@ internal class NotepadWorkspace(private val store: SessionStore) {
         Snapshot.withMutableSnapshot {
             val doc = window.documents.removeAt(from)
             window.documents.add(index.coerceIn(0, window.documents.size), doc)
-            window.select(id)
         }
         checkpoint()
         return true
