@@ -9,8 +9,26 @@ apply to every tabbed app. Each app owns its document content and storage.
 
 - Compress tabs equally before scrolling. Keep New and individual Close actions
   reachable, and bring the active tab into view after selection or resizing.
-- When a tab and New cannot fit, use a document selector with full titles,
-  selection/status information, and individual close actions.
+- Below 600dp of usable content width, use the shared document dropdown instead
+  of the horizontal strip. Also use it when a tab and New cannot fit. The trigger
+  shows the active title/status with New (+) immediately alongside it.
+- The dropdown spans the content region with 8dp side margins and occupies 60%
+  of its usable height, including system/fold/IME constraints. The tab list scrolls
+  independently above a pinned **New tab** (+) footer. Selecting, closing, or
+  creating a tab dismisses it. Long titles/status wrap up to two lines; accessibility
+  exposes the full title and status. Individual Close remains independent.
+- Dropdown rows have leading drag handles for local reordering. Dragging starts
+  after movement crosses touch slop; other row gestures scroll or select. Release
+  inside the list commits; release outside, Escape/Back, or interruption cancels.
+  The list scrolls near its top/bottom edges. Neither the trigger nor its rows
+  starts a native transfer drag or creates a window by dragging out. **Move
+  up/down** and **Move to window…** remain explicit menu/accessibility commands.
+  In very narrow popups, tapping the handle opens these commands.
+- Opening the dropdown reveals and focuses the active row. Up/Down moves focus
+  without selecting; Enter/Space activates it. Escape/Back and outside taps dismiss
+  it, returning focus to the trigger. Escape first cancels a local drag if active.
+  Compact caption integration requires 48dp touch targets; otherwise fall back
+  below the caption.
 - Join the selected tab to the adjoining command surface where present. Place
   separators between inactive tabs; hover, focus, and document status must not
   shift control positions. Keep keyboard focus distinct from selection.
@@ -45,8 +63,9 @@ to the far edge of a mostly empty header.
 
 ## Reordering and window transfers
 
-- Mouse/trackpad dragging and touch long-press can reorder tabs. Preview the
-  destination before committing order, support edge scrolling, and preserve
+- On the horizontal strip, mouse/trackpad dragging and touch long-press can
+  reorder tabs. Preview the destination before committing order, support edge
+  scrolling, and preserve
   documents when dragging is cancelled.
 - Where supported, window transfers retain the live document and undo history.
   Confirm destination ownership before removing the source; invalid, stale,
@@ -63,7 +82,8 @@ through the same shared component. Document ownership and recovery remain in
 each application. Explorer's blank tabs support reordering, drag cancellation,
 window transfer acknowledgement, and a Welcome tab after closing the final tab.
 
-- [Shared tabs](../core/ui/src/main/java/com/kkps/kdesktopsuite/ui/DocumentTabs.kt): complete header, tab/switcher layout, sizes, typography, controls, tooltips, and focus.
+- [Shared tabs](../core/ui/src/main/java/com/kkps/kdesktopsuite/ui/DocumentTabs.kt): adaptive header, horizontal strip, sizes, typography, controls, tooltips, and focus.
+- [Shared dropdown](../core/ui/src/main/java/com/kkps/kdesktopsuite/ui/DocumentTabSwitcher.kt): compact trigger, scrolling list, pinned New tab footer, and local handle gestures.
 - [Shared shapes](../core/ui/src/main/java/com/kkps/kdesktopsuite/ui/DocumentTabShapes.kt): selected feet and hover shape.
 - [Shared caption layout](../core/ui/src/main/java/com/kkps/kdesktopsuite/ui/DocumentTabCaption.kt): eligibility, clearances, and fallback.
 - [Shared interactions](../core/ui/src/main/java/com/kkps/kdesktopsuite/ui/DocumentTabInteractions.kt): drag shadow, drop handling, accessible commands, and context menu actions.

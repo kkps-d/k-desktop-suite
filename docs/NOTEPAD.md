@@ -10,10 +10,14 @@ Run the `notepad` configuration in Android Studio; see
 
 In supported Android 15 / API 35 and newer desktop windows, tabs share the
 system title bar while leaving window controls and dragging space available.
-When there is insufficient room, tabs move below the title bar. Very narrow
-windows use a document selector with full titles and individual close actions,
-with New alongside it. Overflowing tab strips scroll, and the selected tab stays
-visible after selection or resizing.
+When there is insufficient room, tabs move below the title bar. Windows below
+600dp use the shared tab dropdown, with the active title and New
+(+) alongside it. Its scrolling list occupies 60% of the usable window height,
+including a pinned **New tab** (+) footer, and provides individual Close actions.
+Drag a leading handle to reorder locally; releasing outside cancels and never
+opens a window. Move up/down and Move to window remain available as commands.
+Overflowing tab strips scroll, and the selected tab stays visible after selection
+or resizing.
 
 Narrow or short windows consolidate commands into an overflow menu. Arrow keys
 move focus between tabs; Enter or Space selects the focused tab.
@@ -58,13 +62,14 @@ scrolling in each document. These preferences persist across relaunch.
   by side in wide windows and stack below 600dp. New or Open replaces Welcome;
   closing the last document brings it back. Recent files persist across launches,
   ordered by the latest successful open or save, and exclude unsaved drafts.
-- Drag a tab with a mouse or trackpad to reorder it; touch uses a long press.
+- In the horizontal strip, drag a tab with a mouse or trackpad to reorder it;
+  touch uses a long press.
   Neighboring tabs slide aside to preview the position. Releasing commits the
   order; Escape or dropping over the toolbar cancels it. Overflowing strips
   scroll when the pointer approaches an edge. Motion follows system animation settings.
 - Move a tab between Notepad windows by dropping it onto the destination tab bar.
   The strip expands during dragging to make room, including in a single-tab window.
-  Drop it onto the compact document selector to append it. The live document,
+  Drop it onto the closed compact dropdown trigger to append it. The live document,
   including undo/redo history, moves with it. A window emptied by a transfer closes;
   ordinary Close on the final tab returns to Welcome.
 - On Android 15 / API 35 and newer, dropping a tab onto empty desktop space can
@@ -73,7 +78,8 @@ scrolling in each document. These preferences persist across relaunch.
   dropping on another window's editor cancels. A window's only tab stays
   in its current window when dropped outside. Right-click a tab for Move left,
   Move right, or Move to window; these commands also appear as accessibility
-  actions and in the compact document list. New window is available in desktop
+  actions. The compact dropdown uses Move up/down instead of left/right, and
+  retains the explicit Move to window command. New window is available in desktop
   or split-screen mode, including on older supported Android versions.
 - Closing unsaved tabs offers Save / Discard / Cancel. Opening an already-open
   file selects its existing tab. A cancelled or failed save keeps the draft open.

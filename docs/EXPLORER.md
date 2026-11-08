@@ -16,13 +16,17 @@ have Notepad's independent hit targets; hovering and focusing do not select tabs
   to add one. The shared command uses Notepad's label; Explorer creates a blank
   browsing tab with a stable numbered title.
 - Tabs compress equally before scrolling. The active tab stays visible;
-  very narrow windows use Notepad's document selector with independent Close,
-  move, and selection actions.
+  windows below 600dp use the shared dropdown showing the active tab, with New
+  (+) alongside it. The dropdown is 60% of usable window height with a scrolling
+  list and pinned **New tab** (+) footer. Rows retain independent Close actions.
+  Leading handles reorder locally; release outside cancels without opening a
+  window. Move up/down and Move to window remain menu/accessibility commands.
+  In very narrow popups, tap the handle to open these commands.
 - Closing an inactive tab keeps the active tab. Closing the active tab selects
   its right neighbor, falling back to the left. Closing the final tab shows the
   shared Welcome tab and keeps the window open.
-- Drag with a mouse/trackpad, or long-press with touch, to preview and commit a
-  reorder. Edge scrolling is supported. Escape and rejected drops preserve the
+- In the horizontal strip, drag with a mouse/trackpad, or long-press with touch,
+  to preview and commit a reorder. Edge scrolling is supported. Escape and rejected drops preserve the
   tab and order. Context menus and accessibility actions offer Move left/right.
 - **Move to window…** offers other open Explorer windows and a new window.
   Dragging between tab strips transfers the same tab. Dropping a tab into the

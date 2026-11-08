@@ -94,7 +94,10 @@ fun SuiteTabHeader(
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
     val lineHeight = with(density) { TabTypography.title.lineHeight.toDp() }
-    val contentHeight = lineHeight.coerceAtLeast(DesktopCaptionDimensions.minContentHeight)
+    val compactWindow = with(density) { region.width.toDp() } < 600.dp
+    val contentHeight = lineHeight.coerceAtLeast(
+        if (compactWindow) TabBarDimensions.buttonSize else DesktopCaptionDimensions.minContentHeight,
+    )
     val layout = captionLayout(caption, region, density.density, with(density) { contentHeight.toPx() })
     val controls = if (layout.integrated) layout.controls(density.density, direction == LayoutDirection.Rtl) else null
     val input = rememberCaptionInput(controls)
@@ -118,7 +121,7 @@ fun SuiteTabHeader(
         ) {
             if (controls != null) Spacer(Modifier.width(with(density) { (controls.left - region.left).toDp() }))
             BoxWithConstraints(if (controls == null) Modifier.weight(1f) else Modifier.width(with(density) { controls.width.toDp() })) {
-                val compact = maxWidth < TabBarDimensions.minTabWidth + TabBarDimensions.buttonSize
+                val compact = compactWindow || maxWidth < TabBarDimensions.minTabWidth + TabBarDimensions.buttonSize
                 CompositionLocalProvider(LocalLayoutDirection provides direction) {
                     key(layout.mode, compact) {
                         if (documents.isEmpty()) {
@@ -138,8 +141,9 @@ fun SuiteTabHeader(
                                     targetHeight = tabHeight.coerceAtMost(TabBarDimensions.buttonSize), onClick = new)
                             }
                         } else if (compact) {
-                            DocumentSwitcher(documents, activeId, pickerPending, select, close, new, tabHeight,
-                                interactions, moveToWindow)
+                            DocumentSwitcher(documents, activeId, pickerPending, select, close, new, tabHeight, topPadding,
+                                region.copy(top = region.top.coerceAtLeast(caption.height)),
+                                if (layout.integrated) input else null, interactions, moveToWindow)
                         } else {
                             DocumentTabs(documents, activeId, pickerPending, select, close, new, list,
                                 if (layout.integrated) input else null, tabHeight, topPadding,
@@ -153,7 +157,7 @@ fun SuiteTabHeader(
 }
 
 @Composable
-private fun DocumentTabStatus(doc: DocumentTab) {
+internal fun DocumentTabStatus(doc: DocumentTab) {
     if (!doc.error && !doc.saving && !doc.dirty) return
     Box(Modifier.width(12.dp), contentAlignment = Alignment.Center) {
         when {
@@ -163,93 +167,6 @@ private fun DocumentTabStatus(doc: DocumentTab) {
         }
     }
     Spacer(Modifier.width(4.dp))
-}
-
-@Composable
-private fun DocumentSwitcher(
-    documents: List<DocumentTab>, activeId: String, pickerPending: Boolean,
-    select: (String, Boolean) -> Unit, close: (String) -> Unit, new: () -> Unit,
-    minTabHeight: Dp,
-    interactions: DocumentTabInteractions?, moveToWindow: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val moveLeftLabel = stringResource(R.string.ui_tabs_move_tab_left)
-    val moveRightLabel = stringResource(R.string.ui_tabs_move_tab_right)
-    val moveWindowLabel = stringResource(R.string.ui_tabs_move_to_window)
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    var actionId by remember { mutableStateOf<String?>(null) }
-    val active = documents.find { it.id == activeId }
-    val title = active?.let { it.title }.orEmpty()
-    val accessibleTitle = if (active?.dirty == true) stringResource(R.string.ui_tabs_unsaved_tab, title) else title
-    val switcherLabel = stringResource(R.string.ui_tabs_switch_document, accessibleTitle)
-    val state = active?.state.orEmpty()
-    Row(Modifier.fillMaxWidth().padding(top = TabBarDimensions.topPadding), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.weight(1f)) {
-            TextButton(
-                onClick = { expanded = true },
-                modifier = Modifier.fillMaxWidth().heightIn(min = minTabHeight)
-                    .testTag("document-switcher")
-                    .suiteTabDragSource(interactions, activeId, title)
-                    .suiteTabDropTarget(interactions, dropped = { token ->
-                        interactions?.move?.invoke(token, documents.size) == true
-                    })
-                    .semantics { contentDescription = switcherLabel; stateDescription = state },
-                shape = DocumentTabShape,
-                colors = ButtonDefaults.textButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-                contentPadding = PaddingValues(start = TabBarDimensions.contentStartPadding, end = TabBarDimensions.contentEndPadding),
-            ) {
-                active?.let { DocumentTabStatus(it) }
-                Text(title, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = TabTypography.title)
-                Icon(painterResource(R.drawable.ui_ic_tab_expand), null, Modifier.size(16.dp))
-            }
-            AppDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                documents.forEach { doc ->
-                    val docTitle = doc.title
-                    val label = if (doc.dirty) stringResource(R.string.ui_tabs_unsaved_tab, docTitle) else docTitle
-                    val docState = doc.state
-                    Row(Modifier.widthIn(min = 240.dp).testTag("document-entry-${doc.id}"), verticalAlignment = Alignment.CenterVertically) {
-                        AppMenuItem(
-                            text = {
-                                Column {
-                                    Text(docTitle, style = TabTypography.title)
-                                    Text(docState, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            },
-                            modifier = Modifier.weight(1f).testTag("document-tab-${doc.id}").semantics {
-                                selected = doc.id == activeId
-                                contentDescription = label
-                                stateDescription = docState
-                                if (interactions != null) customActions = tabMoveActions(interactions, documents, doc.id,
-                                    moveLeftLabel, moveRightLabel, moveWindowLabel,
-                                    { expanded = false; moveToWindow(it) }, rtl)
-                            },
-                            trailingIcon = if (doc.id == activeId) ({ Text("✓") }) else null,
-                            onClick = { expanded = false; select(doc.id, true) },
-                        )
-                        if (interactions != null) Box {
-                            TextButton(onClick = { actionId = doc.id }) {
-                                Text("⋮", Modifier.semantics { contentDescription = moveWindowLabel })
-                            }
-                            AppDropdownMenu(expanded = actionId == doc.id, onDismissRequest = { actionId = null }) {
-                                TabMoveMenu(interactions, documents, doc.id, moveToWindow = {
-                                    actionId = null; expanded = false; moveToWindow(it)
-                                }, dismiss = { actionId = null })
-                            }
-                        }
-                        TabIconButton(stringResource(R.string.ui_tabs_close_tab, docTitle), R.drawable.ui_ic_tab_close,
-                            enabled = !doc.saving && !pickerPending, targetHeight = AppMenuDimensions.itemHeight) {
-                            expanded = false
-                            close(doc.id)
-                        }
-                    }
-                }
-            }
-        }
-        TabIconButton(stringResource(R.string.ui_tabs_new_tab), R.drawable.ui_ic_tab_new, iconSize = 20.dp, onClick = new)
-    }
 }
 
 @Composable

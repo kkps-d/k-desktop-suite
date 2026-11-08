@@ -607,7 +607,7 @@ class NotepadUiTest {
         val actions = compose.onNodeWithTag("document-tab-${first.id}")
             .fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsActions.CustomActions]
         compose.runOnIdle {
-            org.junit.Assert.assertTrue(actions.first { it.label == "Move right" }.action())
+            org.junit.Assert.assertTrue(actions.first { it.label == "Move down" }.action())
             org.junit.Assert.assertSame(first, notepad.documents.last())
             org.junit.Assert.assertTrue(actions.first { it.label == "Move to window…" }.action())
         }

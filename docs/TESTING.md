@@ -284,6 +284,29 @@ could not be verified; do not substitute automated tests on remote ADB devices.
 
 ### Tab and caption regressions
 
+`DocumentSwitcherTest` covers the shared compact dropdown: the 599/600dp switch,
+60% usable-region height, active-row reveal, pinned footer and both New actions,
+local handle reordering/outside cancellation, edge scrolling/pointer cancellation,
+vertical keyboard/accessibility commands, caption fallback, and narrow large-font
+RTL status/close targets. The compact cases in `NotepadUiTest` and
+`ExplorerShellTest` additionally exercise the real app adapters. Scroll the lazy
+list to an index before querying an offscreen row.
+
+Compact-dropdown verification on 7 November 2026: all 29 shared/Notepad/Explorer
+JVM tests, three app debug builds, Notepad/Explorer lint and test-APK compilation,
+and all 455 localization checks passed. Lint reported no errors (19 existing
+Notepad/toolchain warnings and one Explorer warning). Across the focused runs,
+58 unique instrumented checks passed on local Small Desktop under user 10,
+including seven new dropdown checks, 24 existing Notepad tab/layout checks,
+15 Notepad native tab/caption/workspace checks, eight Explorer tab/window checks,
+and four Explorer layout checks. One run was interrupted when the emulator exited;
+it was restarted and the checks rerun. Fixture corrections accounted for lazy
+rows, keyboard input mode, and retained offscreen focused items. Compact light and
+200% font RTL/dark panels were visually reviewed. TalkBack, physical folds/external
+displays, and real software-keyboard Back behavior remain manual checks. The
+original Notepad/Explorer data was restored with matching hashes, and the original
+1366 × 768 display and 160dpi density were retained after temporary enlargement.
+
 Apply these checks to each tabbed app using the [document tab guidance](TABS.md).
 
 - Exercise 1, 2, 5, and 20 tabs, with long/duplicate/Unicode titles and unsaved,

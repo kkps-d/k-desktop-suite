@@ -34,4 +34,9 @@
     <string name="ui_tabs_move_to_window">Move to window…</string>
     <string name="ui_tabs_close_document">Close</string>
     <string name="ui_tabs_welcome">Welcome</string>
+    <string name="ui_tabs_new_tab_button">New tab</string>
+    <string name="ui_tabs_move_tab_up">Move up</string>
+    <string name="ui_tabs_move_tab_down">Move down</string>
+    <string name="ui_tabs_reorder_tab">Reorder %1$s</string>
+    <string name="ui_tabs_tab_actions">Tab actions for %1$s</string>
 </resources>

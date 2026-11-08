@@ -143,10 +143,12 @@ class ExplorerShellTest {
             }
         }
         compose.onNodeWithTag("document-switcher").assertIsDisplayed().performClick()
-        compose.onNodeWithContentDescription("Close New tab 1").performScrollTo().performClick()
+        compose.onNodeWithTag("document-switcher-list").performScrollToIndex(0)
+        compose.onNodeWithContentDescription("Close New tab 1").performClick()
         compose.runOnIdle { assertEquals(19, model.tabs.size); assertEquals(20, model.tabs.last().number) }
         compose.onNodeWithTag("document-switcher").performClick()
-        compose.onNodeWithText("New tab 2").performScrollTo().performClick()
+        compose.onNodeWithTag("document-switcher-list").performScrollToIndex(0)
+        compose.onNodeWithText("New tab 2").performClick()
         compose.runOnIdle { assertEquals(model.tabs.first().id, model.activeId) }
     }
 
