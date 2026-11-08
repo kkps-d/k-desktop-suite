@@ -5,6 +5,15 @@ delivered functionality or a committed schedule. Scope a feature and check the
 current code before implementing it. The [Notepad guide](NOTEPAD.md) and
 [Paint guide](PAINT.md) describe current behavior.
 
+## Release preparation
+
+- [ ] Publish a showcase webpage for KD Notepad and KD Paint with polished app
+  screenshots and the [privacy policy](PRIVACY_POLICY.md). Keep the policy at a
+  permanent public URL. Once published, add a Privacy policy link inside both
+  apps, enter its URL in their Play Console entries, and complete their Data
+  safety declarations. The showcase and policy publication are deferred until
+  the screenshots are ready.
+
 ## KD Notepad
 
 - Rich text and legacy encodings.
