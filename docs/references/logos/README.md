@@ -41,6 +41,10 @@ and black Notepad bindings; the studies below preserve those explorations.
 The crop previews mask the square artwork without repositioning or rescaling
 its foreground items.
 
+KD Paint square 1024 × 1024 PNG renders: [light](kd-paint-light.png) and
+[dark](kd-paint-dark.png). These capture the preferred beveled white cup directly
+from the browser preview, with flat white and `#1a1a1a` backgrounds.
+
 ### Refined ceramic KD Paint
 
 **Refined ceramic** is the latest approved original-style Paint design reference
