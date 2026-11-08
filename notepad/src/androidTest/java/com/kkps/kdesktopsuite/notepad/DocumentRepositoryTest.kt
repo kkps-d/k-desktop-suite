@@ -10,7 +10,10 @@ import java.util.UUID
 class DocumentRepositoryTest {
     private val resolver = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver
     private val repository = AndroidDocumentRepository(resolver)
-    private fun uri() = Uri.parse("content://com.kkps.kdesktopsuite.notepad.test.documents/${UUID.randomUUID()}.txt")
+    private fun uri(): Uri {
+        val testPackage = InstrumentationRegistry.getInstrumentation().context.packageName
+        return Uri.parse("content://$testPackage.documents/${UUID.randomUUID()}.txt")
+    }
 
     @Test
     fun providerRoundTripTruncatesOldContentsAndRetainsBomAndNewlines() = runBlocking {

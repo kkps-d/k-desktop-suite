@@ -17,6 +17,27 @@ JVM tests where available:
 
 ## Instrumented tests
 
+For debug/release coexistence, check all three APKs' application IDs, version
+names, and labels in both variants. Install debug alongside a differently signed
+release on Small Desktop and launch each separately. Run Notepad and Paint's
+`AppIconSettingsTest` and `LauncherIconTest` against the debug packages to cover
+all six launcher aliases, relaunch, recreation, and retained edits. Confirm the
+release's enabled alias and private data remain unchanged, and Paint's debug
+image provider uses its `.debug.images` authority. Existing debug installations
+with unsuffixed IDs are separate apps; preserve their drafts when testing.
+
+Coexistence verification on 8 November 2026: all three debug/release builds,
+debug lint, test-APK compilation, 83 JVM tests, and 455 localization checks
+passed. Lint retained 19 Notepad, three Paint, and one Explorer warnings, with
+no errors. Eleven focused Notepad/Paint icon, launcher, and provider tests passed
+on local Small Desktop under user 10, including installation beside the older
+test provider. A temporary fresh-data Small Desktop instance installed and
+launched all six apps with debug and release signed by different keys (a temporary
+test key signed the releases). Four icon/launcher checks also passed there;
+release private file hashes and enabled launcher components were unchanged.
+APK inspection confirmed IDs, versions, labels, six aliases per editor, and
+Paint's separate provider authorities in both variants.
+
 For localization, also run `python scripts/check_localization.py` and
 `./gradlew :core:ui:testDebugUnitTest`. The shared JVM tests exercise API 32 locale
 application across activities and unavailable/restricted Android settings intents.

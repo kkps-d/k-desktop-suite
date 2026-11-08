@@ -39,11 +39,22 @@ Run commands from the repository root. On Windows PowerShell, replace
 ./gradlew :explorer:assembleDebug :explorer:lintDebug :explorer:assembleDebugAndroidTest
 ```
 
-| App | Module | Application ID | Debug APK |
+| App | Module | Release application ID | Debug APK |
 | --- | --- | --- | --- |
 | KD Notepad | `:notepad` | `com.kkps.kdesktopsuite.notepad` | `notepad/build/outputs/apk/debug/notepad-debug.apk` |
 | KD Paint | `:paint` | `com.kkps.kdesktopsuite.paint` | `paint/build/outputs/apk/debug/paint-debug.apk` |
 | KD Explorer | `:explorer` | `com.kkps.kdesktopsuite.explorer` | `explorer/build/outputs/apk/debug/explorer-debug.apk` |
+
+Debug builds append `.debug` to these application IDs, `-debug` to the version
+name, and `(Debug)` to the app label. They can be installed alongside signed
+release builds, with separate settings, private drafts, and document grants.
+Namespaces and Kotlin packages stay the same. Launcher alias names use
+`${applicationId}` so icon switching works for either build type; Paint's image
+provider authority and launcher task affinities also follow the application ID.
+
+An older debug installation uses the release application ID. The new debug build
+installs separately and does not migrate its data. Export needed drafts before
+uninstalling the older build to make room for a differently signed release.
 
 The apps install independently. They include shared Android Studio launch
 configurations for [Notepad](../.run/notepad.run.xml),

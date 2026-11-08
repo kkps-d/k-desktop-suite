@@ -5,6 +5,8 @@ a quiet status bar, and support for touch, keyboard, mouse, and trackpad.
 It uses a Windows-inspired layout with native Material 3 Expressive controls.
 Run the `notepad` configuration in Android Studio; see
 [Development](DEVELOPMENT.md) for setup and builds.
+Debug builds appear as **KD Notepad (Debug)** and can be installed alongside the
+signed release, with separate settings, private drafts, and document grants.
 
 ## Layout and appearance
 

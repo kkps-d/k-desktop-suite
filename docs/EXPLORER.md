@@ -95,7 +95,10 @@ New/Close tooltips appear after Notepad's half-second delay.
 ## Development
 
 Run the shared `explorer` Android Studio configuration after Gradle sync, or
-build `:explorer:assembleDebug`. The app ID is `com.kkps.kdesktopsuite.explorer`;
-minimum Android is API 26. See [Testing](TESTING.md#explorer-shell) and
+build `:explorer:assembleDebug`. The release app ID is
+`com.kkps.kdesktopsuite.explorer`; debug uses
+`com.kkps.kdesktopsuite.explorer.debug` and the label **KD Explorer (Debug)**,
+allowing both installations together. Minimum Android is API 26.
+See [Development](DEVELOPMENT.md), [Testing](TESTING.md#explorer-shell), and
 [Document tabs](TABS.md). The [browsing specification](KD_EXPLORER_SPEC.md)
 describes future functionality; this guide describes the current shell.

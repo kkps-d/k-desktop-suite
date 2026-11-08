@@ -1,5 +1,9 @@
 # KD Paint
 
+Debug builds appear as **KD Paint (Debug)** and can be installed alongside the
+signed release, with separate settings, private drafts, and document grants.
+See [Development](DEVELOPMENT.md) for build IDs and older-installation migration.
+
 An independently launchable Android app (`com.kkps.kdesktopsuite.paint`) with one
 image per window and support for multiple independent windows. There are no document or ribbon tabs. File/View are menus;
 two single-row drawing toolbars scroll horizontally in narrow windows. The canvas centers

@@ -2,7 +2,7 @@
     <application>
         <provider
             android:name="com.kkps.kdesktopsuite.notepad.TestDocumentProvider"
-            android:authorities="com.kkps.kdesktopsuite.notepad.test.documents"
+            android:authorities="${applicationId}.documents"
             android:exported="true" />
     </application>
 </manifest>
