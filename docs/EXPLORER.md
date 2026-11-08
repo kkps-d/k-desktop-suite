@@ -47,11 +47,16 @@ have Notepad's independent hit targets; hovering and focusing do not select tabs
   preview tab with a stable numbered title.
 - Tabs compress equally before scrolling. The active tab stays visible;
   windows below 600dp use the shared dropdown showing the active tab, with New
-  (+) alongside it. The dropdown is 60% of usable window height with a scrolling
-  list and pinned **New tab** (+) footer. Rows retain independent Close actions.
+  (+) alongside it. The dropdown fits its content up to 60% of usable window
+  height, with a scrolling list and pinned **New tab** (+) footer. Rows retain independent Close actions.
   Leading handles reorder locally; release outside cancels without opening a
-  window. Move up/down and Move to window remain menu/accessibility commands.
-  In very narrow popups, tap the handle to open these commands.
+  window. The dragged row follows the finger, neighbors animate, and holding
+  near either list edge auto-scrolls. Move up/down and Move to window remain
+  menu/accessibility commands.
+  In very narrow popups, tap the handle to open these commands. The rounded
+  trigger and its panel have separate spacing; action menus open beside their
+  buttons. Welcome uses this same compact header. Explicit New commands show a
+  localized “New tab opened” toast.
 - Closing an inactive tab keeps the active tab. Closing the active tab selects
   its right neighbor, falling back to the left. Closing the final tab shows the
   shared Welcome tab and keeps the window open.

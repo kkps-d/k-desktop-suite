@@ -95,9 +95,10 @@ fun SuiteTabHeader(
     val direction = LocalLayoutDirection.current
     val lineHeight = with(density) { TabTypography.title.lineHeight.toDp() }
     val compactWindow = with(density) { region.width.toDp() } < 600.dp
+    val bottomPadding = if (compactWindow) 8.dp else 0.dp
     val contentHeight = lineHeight.coerceAtLeast(
         if (compactWindow) TabBarDimensions.buttonSize else DesktopCaptionDimensions.minContentHeight,
-    )
+    ) + bottomPadding
     val layout = captionLayout(caption, region, density.density, with(density) { contentHeight.toPx() })
     val controls = if (layout.integrated) layout.controls(density.density, direction == LayoutDirection.Rtl) else null
     val input = rememberCaptionInput(controls)
@@ -106,7 +107,7 @@ fun SuiteTabHeader(
     val topPadding = if (layout.integrated) (captionHeight - contentHeight).coerceIn(0.dp, TabBarDimensions.topPadding)
         else TabBarDimensions.topPadding
     // Subtract rounded pixels so the tab and top inset exactly fill the caption.
-    val tabHeight = if (layout.integrated) with(density) { (captionHeight.roundToPx() - topPadding.roundToPx()).toDp() }
+    val tabHeight = if (layout.integrated) with(density) { (captionHeight.roundToPx() - topPadding.roundToPx() - bottomPadding.roundToPx()).toDp() }
         else lineHeight.coerceAtLeast(TabBarDimensions.buttonSize)
     if (layout.mode == CaptionMode.BelowCaption) {
         Spacer(Modifier.fillMaxWidth().height(with(density) { (caption.height - region.top).coerceAtLeast(0f).toDp() })
@@ -124,7 +125,11 @@ fun SuiteTabHeader(
                 val compact = compactWindow || maxWidth < TabBarDimensions.minTabWidth + TabBarDimensions.buttonSize
                 CompositionLocalProvider(LocalLayoutDirection provides direction) {
                     key(layout.mode, compact) {
-                        if (documents.isEmpty()) {
+                        if (compact) {
+                            DocumentSwitcher(documents, activeId, pickerPending, select, close, new, tabHeight, topPadding,
+                                region.copy(top = region.top.coerceAtLeast(caption.height)),
+                                if (layout.integrated) input else null, interactions, moveToWindow, onWelcome)
+                        } else if (documents.isEmpty()) {
                             Row(Modifier.fillMaxWidth().padding(top = topPadding)
                                 .captionControl(if (layout.integrated && interactions?.dragged != null) input else null, "welcome-drop-area")
                                 .testTag("tab-drop-area")
@@ -140,10 +145,6 @@ fun SuiteTabHeader(
                                     modifier = Modifier.captionControl(if (layout.integrated) input else null, "new"),
                                     targetHeight = tabHeight.coerceAtMost(TabBarDimensions.buttonSize), onClick = new)
                             }
-                        } else if (compact) {
-                            DocumentSwitcher(documents, activeId, pickerPending, select, close, new, tabHeight, topPadding,
-                                region.copy(top = region.top.coerceAtLeast(caption.height)),
-                                if (layout.integrated) input else null, interactions, moveToWindow)
                         } else {
                             DocumentTabs(documents, activeId, pickerPending, select, close, new, list,
                                 if (layout.integrated) input else null, tabHeight, topPadding,

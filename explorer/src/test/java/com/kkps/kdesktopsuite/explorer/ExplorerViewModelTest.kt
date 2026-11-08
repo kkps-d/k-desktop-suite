@@ -35,14 +35,17 @@ class ExplorerViewModelTest {
         val state = SavedStateHandle()
         val model = ExplorerViewModel(state)
         repeat(4) { model.newTab() }
+        assertEquals(4, model.newTabRequest)
         model.close(model.tabs[3].id)
         model.reorder(model.tabs.last().id, 0)
         model.select(model.tabs[1].id)
         val restored = ExplorerViewModel(SavedStateHandle(state.keys().associateWith { state.get<Any>(it) }))
+        assertEquals(0, restored.newTabRequest)
         assertEquals(model.tabs, restored.tabs)
         assertEquals(model.activeId, restored.activeId)
         assertEquals(model.windowId, restored.windowId)
         restored.newTab()
+        assertEquals(1, restored.newTabRequest)
         assertEquals(6, restored.tabs.last().number)
     }
 

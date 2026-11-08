@@ -11,17 +11,24 @@ apply to every tabbed app. Each app owns its document content and storage.
   reachable, and bring the active tab into view after selection or resizing.
 - Below 600dp of usable content width, use the shared document dropdown instead
   of the horizontal strip. Also use it when a tab and New cannot fit. The trigger
-  shows the active title/status with New (+) immediately alongside it.
-- The dropdown spans the content region with 8dp side margins and occupies 60%
-  of its usable height, including system/fold/IME constraints. The tab list scrolls
+  shows the active title/status with New (+) immediately alongside it. Welcome
+  uses this same compact header, with a selected Welcome row and the New footer.
+  The trigger is a rounded outlined control, with 8dp below it before the toolbar
+  and an 8dp gap above its panel. The horizontal strip retains its tab styling.
+- The dropdown spans the content region with 8dp side margins. It fits its tab
+  list and footer, up to 60% of the usable height after system/fold/IME constraints. The tab list scrolls
   independently above a pinned **New tab** (+) footer. Selecting, closing, or
   creating a tab dismisses it. Long titles/status wrap up to two lines; accessibility
-  exposes the full title and status. Individual Close remains independent.
+  exposes the full title and status. Selection uses a highlight without a checkmark.
+  Individual Close remains independent; row action menus open beside their button.
 - Dropdown rows have leading drag handles for local reordering. Dragging starts
   after movement crosses touch slop; other row gestures scroll or select. Release
   inside the list commits; release outside, Escape/Back, or interruption cancels.
-  The list scrolls near its top/bottom edges. Neither the trigger nor its rows
-  starts a native transfer drag or creates a window by dragging out. **Move
+  The lifted row follows the finger while neighbors animate into the preview
+  order. Holding near either 64dp edge zone scrolls proportionally toward that
+  edge, including just beyond the viewport. Speed is independent of frame rate.
+  Neither the trigger nor its rows starts a native transfer drag or creates a
+  window by dragging out. **Move
   up/down** and **Move to window…** remain explicit menu/accessibility commands.
   In very narrow popups, tapping the handle opens these commands.
 - Opening the dropdown reveals and focuses the active row. Up/Down moves focus
@@ -53,6 +60,8 @@ to the far edge of a mostly empty header.
 - Support logical Tab/Shift+Tab traversal, arrow-key focus movement, Enter/Space
   activation, and Escape dismissal or cancellation. Close and New remain
   independent actions. Moving focus alone must not select another document.
+- Explicit New commands (buttons, menu, or keyboard) show a localized “New tab
+  opened” toast after creation. Restoration and transfers do not replay it.
 - Each tab retains its document, file association, selection, scroll position,
   and undo/redo history across switches, resizing, and activity recreation.
 - Closing an inactive tab preserves the active document. Closing the active tab

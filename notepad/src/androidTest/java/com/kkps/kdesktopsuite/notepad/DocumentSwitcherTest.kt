@@ -90,12 +90,12 @@ class DocumentSwitcherTest {
         }
     }
 
-    @Test fun fixedPanelHeightStickyFooterAndBothNewActions() {
+    @Test fun panelFitsContentUpToSixtyPercentWithStickyFooterAndBothNewActions() {
         show()
         compose.onNodeWithContentDescription("New document").performClick()
         compose.runOnIdle { assertEquals("6", activeId) }
         open()
-        compose.onNodeWithTag("document-switcher-panel").assertHeightIsEqualTo(480.dp)
+        compose.onNodeWithTag("document-switcher-panel").assertHeightIsEqualTo(337.dp)
         compose.onNodeWithTag("document-switcher-new").assertIsDisplayed()
         tab("6").assertIsDisplayed().assertIsSelected()
         capturePanel("tabs-dropdown-light.png")
@@ -103,9 +103,10 @@ class DocumentSwitcherTest {
         compose.onNodeWithTag("document-switcher-panel").assertDoesNotExist()
         compose.runOnIdle { assertEquals("7", activeId); documents = listOf(documents.last()) }
         open()
-        compose.onNodeWithTag("document-switcher-panel").assertHeightIsEqualTo(480.dp)
+        compose.onNodeWithTag("document-switcher-panel").assertHeightIsEqualTo(97.dp)
         compose.onNodeWithTag("document-switcher-new").assertIsDisplayed()
         compose.runOnIdle { documents = (1..30).map { DocumentTab("$it", "Document $it") }; activeId = "1" }
+        compose.onNodeWithTag("document-switcher-panel").assertHeightIsEqualTo(480.dp)
         val footer = compose.onNodeWithTag("document-switcher-new").fetchSemanticsNode().boundsInRoot
         compose.onNodeWithTag("document-switcher-list").performScrollToIndex(29)
         tab("30").assertIsDisplayed()
@@ -126,6 +127,77 @@ class DocumentSwitcherTest {
         open()
         compose.onNodeWithTag("document-switcher-panel").assertHeightIsEqualTo(240.dp)
         tab("3").assertIsSelected().assertIsDisplayed()
+    }
+
+    @Test fun welcomeUsesTheSameDropdownAndHeaderLeavesSpaceBelowTheTrigger() {
+        documents = emptyList()
+        activeId = ""
+        show()
+        val trigger = compose.onNodeWithTag("document-switcher")
+            .assertContentDescriptionEquals("Switch document: Welcome").getUnclippedBoundsInRoot()
+        val header = compose.onNodeWithTag("document-header").getUnclippedBoundsInRoot()
+        assertEquals(8f, (header.bottom - trigger.bottom).value, 1f)
+        open()
+        compose.onNodeWithTag("welcome-tab").assertIsSelected().assertIsDisplayed()
+        compose.onNodeWithTag("document-switcher-panel").assertHeightIsEqualTo(97.dp)
+        compose.onNodeWithTag("document-switcher-new").performClick()
+        compose.runOnIdle { assertEquals("6", activeId); assertEquals(1, documents.size) }
+    }
+
+    @Test fun activeHighlightHasNoCheckmarkAndRowActionsStillReorder() {
+        show()
+        open()
+        tab("1").assertIsSelected()
+        compose.onAllNodesWithText("✓").assertCountEquals(0)
+        compose.onNodeWithTag("document-actions-2").performClick()
+        compose.onNodeWithTag("document-tab-actions-menu").assertIsDisplayed()
+        compose.onNodeWithText("Move up").performClick()
+        compose.runOnIdle { assertEquals("2", documents.first().id) }
+        compose.onNodeWithTag("document-switcher-panel").assertIsDisplayed()
+    }
+
+    @Test fun draggingLiftsTheRowWhileNeighborsAnimateWithoutABlueBorder() {
+        show()
+        open()
+        val listNode = compose.onNodeWithTag("document-switcher-list")
+        val viewport = listNode.fetchSemanticsNode().boundsInRoot
+        val handle = compose.onNodeWithTag("document-handle-1").fetchSemanticsNode().boundsInRoot.center - viewport.topLeft
+        val target = compose.onNodeWithTag("document-entry-3").fetchSemanticsNode().boundsInRoot
+        val before = tab("2").fetchSemanticsNode().boundsInRoot.top
+        compose.mainClock.autoAdvance = false
+        listNode.performTouchInput { down(handle); moveTo(Offset(handle.x, target.bottom - viewport.top - 4), delayMillis = 100) }
+        compose.mainClock.advanceTimeBy(64)
+        compose.onNodeWithTag("document-drag-preview", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("tab-drag-placeholder").assertDoesNotExist()
+        val during = tab("2").fetchSemanticsNode().boundsInRoot.top
+        compose.mainClock.advanceTimeBy(1_000)
+        val after = tab("2").fetchSemanticsNode().boundsInRoot.top
+        assertTrue("Neighbor must animate toward its new position", after < during && during < before)
+        listNode.performTouchInput { cancel() }
+        compose.mainClock.autoAdvance = true
+        compose.runOnIdle { assertEquals(listOf("1", "2", "3", "4", "5"), documents.map { it.id }) }
+    }
+
+    @Test fun holdingADragAtEitherEdgeScrollsAndCommitsBeyondTheOriginalViewport() {
+        documents = (1..30).map { DocumentTab("$it", "Document $it") }
+        show()
+        open()
+        val listNode = compose.onNodeWithTag("document-switcher-list")
+        fun edgeDrag(bottom: Boolean) {
+            val viewport = listNode.fetchSemanticsNode().boundsInRoot
+            val handle = compose.onNodeWithTag("document-handle-1").fetchSemanticsNode().boundsInRoot.center - viewport.topLeft
+            compose.mainClock.autoAdvance = false
+            listNode.performTouchInput { down(handle); moveTo(Offset(handle.x, if (bottom) viewport.height - 4 else 4f), delayMillis = 100) }
+            compose.mainClock.advanceTimeBy(1_000)
+            listNode.performTouchInput { up() }
+            compose.mainClock.autoAdvance = true
+        }
+        edgeDrag(true)
+        var lowerIndex = 0
+        compose.runOnIdle { lowerIndex = documents.indexOfFirst { it.id == "1" }; assertTrue(lowerIndex > 5) }
+        listNode.performScrollToIndex(lowerIndex)
+        edgeDrag(false)
+        compose.runOnIdle { assertTrue(documents.indexOfFirst { it.id == "1" } < lowerIndex - 3); assertEquals(0, nativeDrags) }
     }
 
     @Test fun handleReordersLocallyAndOutsideReleaseCancels() {

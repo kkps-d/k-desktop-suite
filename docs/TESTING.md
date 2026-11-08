@@ -322,7 +322,8 @@ could not be verified; do not substitute automated tests on remote ADB devices.
 ### Tab and caption regressions
 
 `DocumentSwitcherTest` covers the shared compact dropdown: the 599/600dp switch,
-60% usable-region height, active-row reveal, pinned footer and both New actions,
+content-fitting height capped at 60% of the usable region, active-row reveal,
+pinned footer and both New actions,
 local handle reordering/outside cancellation, edge scrolling/pointer cancellation,
 vertical keyboard/accessibility commands, caption fallback, and narrow large-font
 RTL status/close targets. The compact cases in `NotepadUiTest` and
@@ -343,6 +344,31 @@ rows, keyboard input mode, and retained offscreen focused items. Compact light a
 displays, and real software-keyboard Back behavior remain manual checks. The
 original Notepad/Explorer data was restored with matching hashes, and the original
 1366 × 768 display and 160dpi density were retained after temporary enlargement.
+
+Dropdown refinement verification on 8 November 2026: 33 shared/Notepad/Explorer
+JVM checks, all three app debug builds, Notepad/Explorer lint and test-APK builds,
+and all 456 localization checks passed. Forty unique UI checks passed across the
+focused runs on local Small Desktop under user 10. The expanded dropdown suite
+checks Welcome, trigger spacing, selection without a checkmark, anchored row menus,
+animated neighbors/lifted drag preview, cancellation, and held-edge scrolling in
+both directions with committed moves beyond the original viewport. Native toast
+accessibility events verified the English and Burmese messages. The screenshot
+fixture captures real Notepad Welcome, closed/open dropdown, action menu, dark
+appearance, and dragging. The native toast assertion explicitly waits for the
+Compose frame before waiting for Android's event. Existing caption, keyboard,
+selection, window-transfer, Explorer layout, large-font, and RTL checks passed.
+The connected physical device was not used. The temporary emulator display-size
+override was restored afterward; TalkBack and actual software-keyboard behavior
+remain manual checks for this refinement.
+
+Content-height follow-up on 8 November 2026: the panel now fits short lists and
+Welcome, capped at 60% of the usable region; overflowing lists retain the pinned
+New footer. All 33 JVM tests, three app debug builds, Notepad/Explorer lint and
+test-APK compilation, and 456 localization checks passed. All 31 focused UI checks
+passed on local Small Desktop under user 10, including short/long lists, resizing,
+large fonts/RTL, drag edge scrolling, both toast languages, and both app adapters.
+Updated real UI screenshots were captured; emulator private storage and display
+settings were restored. The connected physical device was not used.
 
 Apply these checks to each tabbed app using the [document tab guidance](TABS.md).
 

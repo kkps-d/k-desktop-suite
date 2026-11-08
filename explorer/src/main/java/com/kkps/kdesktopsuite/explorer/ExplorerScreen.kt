@@ -42,6 +42,7 @@ internal fun ExplorerScreen(
     activity: ExplorerActivity? = null,
     adaptive: WindowAdaptiveInfo = currentWindowAdaptiveInfoV2(),
 ) {
+    NewTabOpenedToast(explorer.newTabRequest)
     val view = LocalView.current
     val focusManager = LocalFocusManager.current
     var movingId by rememberSaveable { mutableStateOf<String?>(null) }

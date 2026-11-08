@@ -35,6 +35,7 @@
     <string name="ui_tabs_close_document">Close</string>
     <string name="ui_tabs_welcome">Welcome</string>
     <string name="ui_tabs_new_tab_button">New tab</string>
+    <string name="ui_tabs_new_tab_opened">New tab opened</string>
     <string name="ui_tabs_move_tab_up">Move up</string>
     <string name="ui_tabs_move_tab_down">Move down</string>
     <string name="ui_tabs_reorder_tab">Reorder %1$s</string>

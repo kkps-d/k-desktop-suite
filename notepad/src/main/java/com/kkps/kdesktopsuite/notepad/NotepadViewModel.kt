@@ -80,10 +80,14 @@ internal class NotepadViewModel(
 
     fun checkpoint() = workspace.checkpoint()
 
+    var newTabRequest by mutableIntStateOf(0)
+        private set
+
     fun newDocument() {
         if (loading) return
         addBlank()
         checkpoint()
+        newTabRequest++
     }
 
     private fun addBlank() = workspace.addBlank(window)

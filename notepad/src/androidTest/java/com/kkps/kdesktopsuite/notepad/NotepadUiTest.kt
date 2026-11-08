@@ -93,6 +93,95 @@ class NotepadUiTest {
         if (startWithDocument) compose.runOnIdle { notepad.newDocument() }
     }
 
+    @Test
+    fun compactDropdownRefinementScreenshots() {
+        windowSize = DpSize(400.dp, 800.dp)
+        showEditor(startWithDocument = false)
+        compose.runOnIdle {
+            notepad.changeAppTheme(AppTheme.Light)
+            inputModeManager.requestInputMode(InputMode.Touch)
+            if (android.os.Build.VERSION.SDK_INT >= 35) compose.activity.window.insetsController?.setSystemBarsAppearance(
+                0, android.view.WindowInsetsController.APPEARANCE_TRANSPARENT_CAPTION_BAR_BACKGROUND)
+        }
+        val mainBounds = compose.onRoot().fetchSemanticsNode().boundsInWindow
+        fun capture(name: String) {
+            if (compose.mainClock.autoAdvance) {
+                compose.mainClock.advanceTimeBy(400)
+                android.os.SystemClock.sleep(350)
+            }
+            compose.waitForIdle()
+            val screen = IntArray(2); val window = IntArray(2)
+            compose.runOnIdle {
+                compose.activity.window.decorView.getLocationOnScreen(screen)
+                compose.activity.window.decorView.getLocationInWindow(window)
+            }
+            val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+            val left = (mainBounds.left + screen[0] - window[0]).toInt()
+            val top = (mainBounds.top + screen[1] - window[1]).toInt()
+            val bitmap = android.graphics.Bitmap.createBitmap(screenshot, left, top,
+                mainBounds.width.toInt(), mainBounds.height.toInt())
+            File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, name).outputStream().use {
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+            }
+            bitmap.recycle(); screenshot.recycle()
+        }
+        capture("mobile-tabs-welcome.png")
+        val toastEvent = InstrumentationRegistry.getInstrumentation().uiAutomation.executeAndWaitForEvent({ compose.runOnIdle {
+            notepad.newDocument()
+            notepad.active!!.name = "Trip notes.txt"
+            notepad.active!!.editor.edit { append("Weekend plans\n\nTrain tickets booked.\nCheck the weather before leaving.\nPack a notebook and camera.") }
+            notepad.newDocument()
+            notepad.active!!.name = "Project checklist.md"
+            notepad.active!!.editor.edit { append("Project checklist\n\n☑ Sketch the layout\n☑ Review the navigation\n☐ Polish the small details\n☐ Share an update with the team") }
+            notepad.newDocument()
+            notepad.active!!.name = "Ideas.txt"
+            notepad.select(notepad.documents[1].id, false)
+            org.junit.Assert.assertEquals(3, notepad.newTabRequest)
+        }; compose.waitForIdle() }, { event -> event.eventType == android.view.accessibility.AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED &&
+            event.text.any { it.toString() == "New tab opened" } }, 5_000)
+        org.junit.Assert.assertTrue(toastEvent.text.any { it.toString() == "New tab opened" })
+        toastEvent.recycle()
+        // Let the real platform toast finish before the static UI captures.
+        android.os.SystemClock.sleep(2_200)
+        capture("mobile-tabs-closed.png")
+        compose.onNodeWithTag("document-switcher").performTouchInput { click() }
+        compose.onAllNodesWithText("✓").assertCountEquals(0)
+        capture("mobile-tabs-open.png")
+        val id = notepad.documents[1].id
+        compose.onNodeWithTag("document-actions-$id").performTouchInput { click() }
+        compose.onNodeWithTag("document-tab-actions-menu").assertIsDisplayed()
+        capture("mobile-tabs-actions.png")
+        compose.onNodeWithText("Move up").performKeyInput { pressKey(Key.Escape) }
+        compose.onNodeWithTag("document-switcher-panel").performKeyInput { pressKey(Key.Escape) }
+        compose.runOnIdle { notepad.changeAppTheme(AppTheme.Dark); inputModeManager.requestInputMode(InputMode.Touch) }
+        compose.onNodeWithTag("document-switcher").performTouchInput { click() }
+        capture("mobile-tabs-dark.png")
+        val list = compose.onNodeWithTag("document-switcher-list")
+        val viewport = list.fetchSemanticsNode().boundsInRoot
+        val handle = compose.onNodeWithTag("document-handle-$id").fetchSemanticsNode().boundsInRoot.center - viewport.topLeft
+        compose.mainClock.autoAdvance = false
+        list.performTouchInput { down(handle); moveTo(handle + androidx.compose.ui.geometry.Offset(0f, 62f), delayMillis = 100) }
+        compose.mainClock.advanceTimeBy(96)
+        capture("mobile-tabs-drag.png")
+        list.performTouchInput { cancel() }
+        compose.mainClock.autoAdvance = true
+    }
+
+    @Test
+    fun newTabToastUsesTheBurmeseTranslation() {
+        windowSize = DpSize(400.dp, 800.dp)
+        showEditor(startWithDocument = false, language = "my")
+        val message = "တက်ဘ်အသစ် ဖွင့်လိုက်ပါပြီ"
+        val event = InstrumentationRegistry.getInstrumentation().uiAutomation.executeAndWaitForEvent({
+            compose.runOnIdle { notepad.newDocument() }
+            compose.waitForIdle()
+        }, { it.eventType == android.view.accessibility.AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED &&
+            it.text.any { text -> text.toString() == message } }, 5_000)
+        org.junit.Assert.assertTrue(event.text.any { it.toString() == message })
+        event.recycle()
+        compose.runOnIdle { org.junit.Assert.assertEquals(1, notepad.newTabRequest) }
+    }
+
     private fun awaitSearch(count: Int) {
         compose.waitUntil(5_000) { notepad.search.results?.matches?.size == count }
         compose.waitForIdle()
@@ -513,7 +602,7 @@ class NotepadUiTest {
         compose.onNodeWithContentDescription("Settings").performClick()
         compose.onNodeWithTag("welcome-screen").assertDoesNotExist()
         compose.onNodeWithContentDescription("Back").performClick()
-        compose.onNodeWithTag("welcome-tab").assertIsDisplayed()
+        compose.onNodeWithTag("document-switcher").assertIsDisplayed()
         compose.onNodeWithTag("welcome-screen").assertIsDisplayed()
     }
 
@@ -542,11 +631,11 @@ class NotepadUiTest {
     fun welcomeSupportsShortWindowsLargeFontsRtlAndNarrowHeaders() {
         windowSize = DpSize(320.dp, 400.dp)
         showEditor(largeFontRtl = true, startWithDocument = false)
-        compose.onNodeWithTag("welcome-tab").assertIsDisplayed().assertIsSelected()
+        compose.onNodeWithTag("document-switcher").assertIsDisplayed()
         compose.onNodeWithTag("welcome-open").performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(48.dp)
         compose.onNodeWithText("No recent files").performScrollTo().assertIsDisplayed()
         compose.runOnIdle { windowSize = DpSize(144.dp, 800.dp) }
-        compose.onNodeWithTag("document-switcher").assertDoesNotExist()
+        compose.onNodeWithTag("document-switcher").assertIsDisplayed()
         compose.onNodeWithContentDescription("New document").assertIsDisplayed()
         compose.onNodeWithContentDescription("New document").performClick()
         compose.onNodeWithTag("document-editor").assertIsDisplayed()
@@ -1253,7 +1342,7 @@ class NotepadUiTest {
         showEditor()
         compose.onNodeWithTag("document-tabs").assertDoesNotExist()
         val switcher = compose.onNodeWithTag("document-switcher").getUnclippedBoundsInRoot()
-        org.junit.Assert.assertEquals(112f, (switcher.right - switcher.left).value, 1f)
+        org.junit.Assert.assertEquals(88f, (switcher.right - switcher.left).value, 1f)
         val new = compose.onNodeWithContentDescription("New document").assertIsDisplayed().getUnclippedBoundsInRoot()
         org.junit.Assert.assertEquals(48f, (new.right - new.left).value, 1f)
         compose.onNodeWithTag("document-editor").performTextReplacement("First draft")

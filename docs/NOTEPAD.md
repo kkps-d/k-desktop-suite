@@ -14,10 +14,13 @@ In supported Android 15 / API 35 and newer desktop windows, tabs share the
 system title bar while leaving window controls and dragging space available.
 When there is insufficient room, tabs move below the title bar. Windows below
 600dp use the shared tab dropdown, with the active title and New
-(+) alongside it. Its scrolling list occupies 60% of the usable window height,
-including a pinned **New tab** (+) footer, and provides individual Close actions.
-Drag a leading handle to reorder locally; releasing outside cancels and never
-opens a window. Move up/down and Move to window remain available as commands.
+(+) alongside it. Welcome uses the same dropdown styling. The outlined trigger
+has space above the toolbar and its panel. The panel fits its content up to 60%
+of the usable window height, including a pinned **New tab** (+) footer, and
+provides individual Close actions.
+Drag a leading handle to reorder locally; the lifted row follows the finger,
+neighboring rows animate, and holding near an edge scrolls the list. Releasing
+outside cancels and never opens a window. Move up/down and Move to window remain available as commands.
 Overflowing tab strips scroll, and the selected tab stays visible after selection
 or resizing.
 
@@ -56,7 +59,8 @@ scrolling in each document. These preferences persist across relaunch.
 ## Documents and recovery
 
 - New, Open, Save, Save As, Close, independent undo/redo, and standard clipboard
-  operations are available through menus and keyboard shortcuts.
+  operations are available through menus and keyboard shortcuts. Creating a new
+  tab shows the localized “New tab opened” toast.
 - Each tab retains its text, selection, scroll position, file association, and
   undo history across switches, resizing, and activity recreation.
 - With no documents open, a Welcome tab shows the app logo, New and Open file

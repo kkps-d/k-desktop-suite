@@ -79,6 +79,7 @@ import com.kkps.kdesktopsuite.ui.AppMenuItem
 import com.kkps.kdesktopsuite.ui.DesktopCaption
 import com.kkps.kdesktopsuite.ui.DocumentTab
 import com.kkps.kdesktopsuite.ui.DocumentTabInteractions
+import com.kkps.kdesktopsuite.ui.NewTabOpenedToast
 import com.kkps.kdesktopsuite.ui.SuiteTabHeader
 import com.kkps.kdesktopsuite.ui.TabIconButton
 import com.kkps.kdesktopsuite.ui.rememberDesktopCaption
@@ -110,6 +111,7 @@ internal fun NotepadScreen(
     adaptive: WindowAdaptiveInfo = currentWindowAdaptiveInfoV2(),
     caption: DesktopCaption = rememberDesktopCaption(activity != null),
 ) {
+    NewTabOpenedToast(notepad.newTabRequest)
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }

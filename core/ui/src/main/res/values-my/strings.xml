@@ -38,6 +38,7 @@
     <string name="ui_tabs_close_document">ပိတ်ရန်</string>
     <string name="ui_tabs_welcome">ကြိုဆိုပါသည်</string>
     <string name="ui_tabs_new_tab_button">တက်ဘ်အသစ်</string>
+    <string name="ui_tabs_new_tab_opened">တက်ဘ်အသစ် ဖွင့်လိုက်ပါပြီ</string>
     <string name="ui_tabs_move_tab_up">အပေါ်သို့ ရွှေ့ရန်</string>
     <string name="ui_tabs_move_tab_down">အောက်သို့ ရွှေ့ရန်</string>
     <string name="ui_tabs_reorder_tab">%1$s ကို အစီအစဉ်ပြောင်းရန်</string>

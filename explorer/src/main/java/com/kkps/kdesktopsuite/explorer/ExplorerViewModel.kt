@@ -1,6 +1,7 @@
 package com.kkps.kdesktopsuite.explorer
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
@@ -31,10 +32,14 @@ internal class ExplorerViewModel(
 
     init { workspace.windows.add(this); save() }
 
+    var newTabRequest by mutableIntStateOf(0)
+        private set
+
     fun newTab() {
         val tab = ExplorerTab(number = nextNumber++)
         tabs = tabs + tab
         select(tab.id)
+        newTabRequest++
     }
 
     fun select(id: String) {
