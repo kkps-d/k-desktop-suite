@@ -234,6 +234,19 @@ displays, and pre-35 native window behavior still need manual verification.
 
 ## Manual verification
 
+Icon appearance/status bar verification on 8 November 2026: both debug builds,
+lint (no errors; 19 Notepad and three Paint warnings), test-APK compilation,
+all 81 shared/Notepad/Paint JVM tests, and all 456 localization checks passed.
+Five focused instrumented checks passed on local Small Desktop under user 10:
+both apps' icon-choice checks and three Notepad status checks, including resizing
+to 240dp, one-line text at 200% font size in RTL, and reachable read-only/zoom
+actions after horizontal scrolling. Both settings pages were visually reviewed
+for Light / Dark / Auto ordering. The existing toolbar/status styling check still
+fails its editor-to-status gap assertion (expected 16dp, actual 0dp); the same
+failure reproduced with the unchanged Notepad screen from revision `158f6c0`.
+The temporary emulator display-size override was restored. TalkBack remains a
+manual check.
+
 For branding changes, regenerate the vectors and check that a second generation
 does not change them. On Small Desktop, inspect both launcher icons at small sizes,
 then Notepad Welcome and both About dialogs in light/dark appearance. Override

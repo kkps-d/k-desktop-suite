@@ -46,8 +46,8 @@ Dismiss, system Back, and Escape return to the active draft.
 Settings > App icon offers Classic (beveled blue notebook) and Glass (transparent
 backing and pen with a silver writing tip), with live previews rounded using the
 Material 3 medium shape token. Choose Light,
-Dark, or System independently of the editor appearance. The choice is saved for
-all Notepad windows and applies to Welcome, About, and the launcher. System uses
+Dark, or Auto independently of the editor appearance. The choice is saved for
+all Notepad windows and applies to Welcome, About, and the launcher. Auto uses
 Android appearance in the launcher and the app appearance for in-app logos.
 Launcher caches can take a moment to refresh; Android themed icons retain the
 suite silhouette. Changing the icon keeps the window and draft open, including
@@ -55,7 +55,9 @@ when opened from the launcher.
 
 View contains zoom commands and checked toggles for word wrap and the status
 bar. Turning wrapping off preserves line breaks and enables independent horizontal
-scrolling in each document. These preferences persist across relaunch.
+scrolling in each document. The status bar stays on one line at every window
+width; scroll it horizontally when its contents do not fit. These preferences
+persist across relaunch.
 
 ## Documents and recovery
 

@@ -139,7 +139,7 @@ fun AppIconSettingsSection(assets: AppIconAssets, availableWidth: Dp) {
         Text(stringResource(R.string.app_icon_palette), style = MaterialTheme.typography.labelLarge)
         FlowRow(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             verticalArrangement = Arrangement.spacedBy(8.dp), maxItemsInEachRow = if (stackTones) 1 else 3) {
-            AppIconTone.entries.forEachIndexed { index, tone ->
+            listOf(AppIconTone.Light, AppIconTone.Dark, AppIconTone.System).forEachIndexed { index, tone ->
                 ToggleButton(checked = choice.tone == tone, onCheckedChange = { changeAppIcon(context, choice.copy(tone = tone)) },
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("icon-tone-$tone").semantics { role = Role.RadioButton },
                     shapes = if (stackTones) ToggleButtonDefaults.shapesFor(ToggleButtonDefaults.size) else when (index) {

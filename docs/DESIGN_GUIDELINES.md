@@ -11,7 +11,7 @@ and Paint's refined white ceramic cup with a shallow rolled rim and visible hand
 gray; gradients belong only on foreground materials. In-app logos follow the
 app's appearance, while launcher resources follow Android appearance by default.
 Paint and Notepad settings offer independent Classic/Glass styles and
-System/Light/Dark icon palettes. Explicit palettes override appearance for both
+Light/Dark/Auto icon palettes. Explicit palettes override appearance for both
 launcher and in-app artwork; preserve the approved glass renders and etched KD.
 See
 [Logo design studies](references/logos/README.md) for native assets, the current

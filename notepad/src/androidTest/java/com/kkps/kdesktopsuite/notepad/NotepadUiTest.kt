@@ -1660,16 +1660,46 @@ class NotepadUiTest {
         showEditor()
         compose.onNodeWithText("View").performClick()
         compose.onNodeWithText("Read-only").performClick()
-        listOf(DpSize(1200.dp, 900.dp), DpSize(400.dp, 800.dp)).forEach { size ->
+        val statusHeight = compose.onNodeWithTag("status-bar").getUnclippedBoundsInRoot().height
+        listOf(DpSize(1200.dp, 900.dp), DpSize(400.dp, 800.dp), DpSize(240.dp, 800.dp)).forEach { size ->
             compose.runOnIdle { windowSize = size }
             val cursor = compose.onNodeWithText("Ln 1, Col 1").getUnclippedBoundsInRoot()
             val label = compose.onNodeWithText("Read-only enabled").getUnclippedBoundsInRoot()
-            val zoom = compose.onNodeWithText(if (size.width < 600.dp) " · 100%" else "100%").getUnclippedBoundsInRoot()
+            val zoom = compose.onNodeWithText("100%").getUnclippedBoundsInRoot()
+            val status = compose.onNodeWithText("Not saved to a file").getUnclippedBoundsInRoot()
             val cursorCenter = ((cursor.top + cursor.bottom) / 2).value
             org.junit.Assert.assertEquals(cursorCenter, ((label.top + label.bottom) / 2).value, 1f)
             org.junit.Assert.assertEquals(cursorCenter, ((zoom.top + zoom.bottom) / 2).value, 1f)
+            org.junit.Assert.assertEquals(cursorCenter, ((status.top + status.bottom) / 2).value, 1f)
+            org.junit.Assert.assertEquals(statusHeight.value,
+                compose.onNodeWithTag("status-bar").getUnclippedBoundsInRoot().height.value, 1f)
             compose.onNodeWithText("Read-only enabled").assertHasClickAction()
         }
+        compose.runOnIdle { notepad.changeZoom(200) }
+        compose.onNodeWithContentDescription("Editor zoom: 200%").performScrollTo().assertIsDisplayed().performClick()
+        compose.runOnIdle { org.junit.Assert.assertEquals(100, notepad.zoom) }
+        compose.onNodeWithText("Read-only enabled").performScrollTo().assertIsDisplayed().performClick()
+        compose.runOnIdle { org.junit.Assert.assertFalse(notepad.active!!.readOnly) }
+    }
+
+    @Test
+    fun compactStatusRemainsOneLineWithLargeFontsAndRtl() {
+        windowSize = DpSize(320.dp, 800.dp)
+        showEditor(largeFontRtl = true)
+        compose.runOnIdle { notepad.active!!.readOnly = true }
+        val labels = listOf("Ln 1, Col 1", "Read-only enabled", "Not saved to a file", "100%")
+        val centers = labels.map { label ->
+            val node = compose.onNodeWithText(label)
+            node.performScrollTo().assertIsDisplayed()
+            val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            node.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            org.junit.Assert.assertEquals(1, layouts.single().lineCount)
+            val bounds = node.getUnclippedBoundsInRoot()
+            ((bounds.top + bounds.bottom) / 2).value
+        }
+        centers.forEach { org.junit.Assert.assertEquals(centers.first(), it, 1f) }
+        compose.onNodeWithText("Read-only enabled").performScrollTo().performClick()
+        compose.runOnIdle { org.junit.Assert.assertFalse(notepad.active!!.readOnly) }
     }
 
     @Test

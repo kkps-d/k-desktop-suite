@@ -437,7 +437,7 @@ internal fun NotepadScreen(
                                 )
                             }
                         }
-                        if (notepad.showStatusBar) StatusBar(active, notepad.zoom, compact, ::run)
+                        if (notepad.showStatusBar) StatusBar(active, notepad.zoom, ::run)
                     } else {
                         NotepadWelcome(
                             recentFiles = notepad.recentFiles,
@@ -734,7 +734,7 @@ private fun DocumentEditor(
 }
 
 @Composable
-private fun StatusBar(doc: DocumentSession, zoom: Int, compact: Boolean, run: (NotepadCommand) -> Unit) {
+private fun StatusBar(doc: DocumentSession, zoom: Int, run: (NotepadCommand) -> Unit) {
     val text = doc.editor.text
     val position = doc.editor.selection.end.coerceIn(0, text.length)
     val before = text.subSequence(0, position).toString()
@@ -748,33 +748,26 @@ private fun StatusBar(doc: DocumentSession, zoom: Int, compact: Boolean, run: (N
     }
     val cursor = stringResource(R.string.cursor_position, line, column)
     Surface(color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth().testTag("status-bar")) {
-        if (compact) {
-            Column(Modifier.heightIn(min = 40.dp).padding(horizontal = NotepadSpacing.medium, vertical = 4.dp)) {
-                FlowRow(verticalArrangement = Arrangement.Center) {
-                    CursorStatus(cursor, doc.readOnly, Modifier.align(Alignment.CenterVertically), disableReadOnly = { run(NotepadCommand.ReadOnly) })
-                    Text(" · ${stringResource(R.string.zoom_value, zoom)}", Modifier.align(Alignment.CenterVertically), style = MaterialTheme.typography.labelMedium)
-                }
-                Text(stringResource(status), style = MaterialTheme.typography.labelMedium)
-            }
-        } else {
-            val zoomLabel = stringResource(R.string.zoom_description, zoom)
-            Row(Modifier.fillMaxWidth().heightIn(min = 28.dp).padding(horizontal = NotepadSpacing.medium, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                CursorStatus(cursor, doc.readOnly, Modifier.weight(1f), disableReadOnly = { run(NotepadCommand.ReadOnly) })
-                Text(stringResource(status), Modifier.padding(horizontal = NotepadSpacing.small), style = MaterialTheme.typography.labelMedium)
-                Text(stringResource(R.string.zoom_value, zoom),
-                    Modifier.semantics { contentDescription = zoomLabel }
-                        .clip(MaterialTheme.shapes.small).clickable(role = Role.Button) { run(NotepadCommand.ZoomReset) }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
-            }
+        val zoomLabel = stringResource(R.string.zoom_description, zoom)
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).heightIn(min = 28.dp)
+            .padding(horizontal = NotepadSpacing.medium, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+            CursorStatus(cursor, doc.readOnly, disableReadOnly = { run(NotepadCommand.ReadOnly) })
+            Spacer(Modifier.weight(1f))
+            Text(stringResource(status), Modifier.padding(horizontal = NotepadSpacing.small), style = MaterialTheme.typography.labelMedium,
+                maxLines = 1, softWrap = false)
+            Text(stringResource(R.string.zoom_value, zoom),
+                Modifier.semantics { contentDescription = zoomLabel }
+                    .clip(MaterialTheme.shapes.small).clickable(role = Role.Button) { run(NotepadCommand.ZoomReset) }
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium, maxLines = 1, softWrap = false)
         }
     }
 }
 
 @Composable
 private fun CursorStatus(cursor: String, readOnly: Boolean, modifier: Modifier = Modifier, disableReadOnly: () -> Unit) {
-    FlowRow(modifier, verticalArrangement = Arrangement.Center) {
-        Text(cursor, Modifier.align(Alignment.CenterVertically), style = MaterialTheme.typography.labelMedium)
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Text(cursor, style = MaterialTheme.typography.labelMedium, maxLines = 1, softWrap = false)
         if (readOnly) {
             Row(Modifier.align(Alignment.CenterVertically), verticalAlignment = Alignment.CenterVertically) {
                 VerticalDivider(Modifier.padding(horizontal = NotepadSpacing.small).height(14.dp))
@@ -785,6 +778,7 @@ private fun CursorStatus(cursor: String, readOnly: Boolean, modifier: Modifier =
                         .padding(horizontal = 4.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.labelMedium,
+                    maxLines = 1, softWrap = false,
                 )
             }
         }
@@ -807,7 +801,7 @@ private fun NotepadPreview() {
                 DocumentHeader(listOf(doc), doc.id, false, { _, _ -> }, {}, {}, DesktopCaption(), region)
                 CommandBar(compact, { true }, {})
                 DocumentEditor(doc, 100, {}, remember { FocusRequester() }, Modifier.weight(1f))
-                StatusBar(doc, 100, compact, {})
+                StatusBar(doc, 100, {})
             }
         }
     }

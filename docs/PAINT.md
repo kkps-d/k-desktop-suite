@@ -19,10 +19,10 @@ and purple marker. Its light palette keeps the white handle outlined against the
 background. Settings > App icon offers Classic and Glass with live previews,
 rounded using the Material 3 medium shape token.
 Glass uses the approved rolled glass cup and handle, original colored tools,
-and etched KD outlines. Choose Light, Dark, or System independently of the editor
+and etched KD outlines. Choose Light, Dark, or Auto independently of the editor
 appearance. The saved choice applies to About and the launcher across all Paint
 windows without closing them or changing pending edits, including after a
-launcher start. System follows Android appearance in the
+launcher start. Auto follows Android appearance in the
 launcher and the app appearance inside Paint. Launcher caches may refresh after
 a short delay; Android themed icons retain the suite silhouette.
 
