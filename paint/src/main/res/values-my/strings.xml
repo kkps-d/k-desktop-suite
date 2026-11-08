@@ -27,6 +27,16 @@
     <string name="ui_open_debug">စမ်းသပ်စာမျက်နှာ ဖွင့်ရန်</string>
     <string name="ui_debug">စမ်းသပ်ရန်</string>
     <string name="ui_components">အစိတ်အပိုင်းများ</string>
+    <string name="ui_pen_diagnostics">S Pen အခြေအနေ</string>
+    <string name="ui_pen_diagnostics_hint">အချက်ပြမှုကို စစ်ဆေးရန် ဘောပင်ကို ဤဝင်းဒိုးအပေါ် ထိစရာမလိုဘဲ အနီးကပ်ထားပြီး ဘေးခလုတ်ကို ဖိထားပါ။ ဘောပင် တပ်ထားမှုကို သိရှိနိုင်ခြင်းသည် Galaxy စက်ပေါ် မူတည်သည်။</string>
+    <string name="ui_pen_attachment">တပ်ထားမှု — %1$s</string>
+    <string name="ui_pen_attached">တပ်ထားသည်</string>
+    <string name="ui_pen_detached">ဖြုတ်ထားသည်</string>
+    <string name="ui_pen_unknown">မသိရှိ / မရရှိနိုင်ပါ</string>
+    <string name="ui_pen_hover">အနီးကပ် ဝဲထားမှု — %1$s</string>
+    <string name="ui_pen_button">ဘေးခလုတ် ဖိထားမှု — %1$s</string>
+    <string name="ui_yes">ရှိသည်</string>
+    <string name="ui_no">မရှိပါ</string>
     <string name="ui_drag_adjustable_field">ဆွဲ၍ တန်ဖိုးပြောင်းနိုင်သော အကွက်</string>
     <string name="ui_drag_adjustable_field_hint">မြားအိုင်ကွန်ကို ဘေးတိုက်ဆွဲပါ၊ သို့မဟုတ် တန်ဖိုးကို ရိုက်ထည့်ပါ။</string>
     <string name="ui_brush_size">စုတ်တံအရွယ်အစား</string>

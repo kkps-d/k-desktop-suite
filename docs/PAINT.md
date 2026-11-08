@@ -211,6 +211,18 @@ its original files remain intact. Corrupt window drafts remain preserved while
 healthy windows can reopen. A window that fails to launch retains its recovery
 entry for the next launch.
 
+## Pen diagnostics
+
+In Help → About KD Paint, select the Paint logo (Open Debug) to see live S Pen
+attachment, hover, and side-button-held status. Hover and button input are
+observed within the Paint window while the debug page is active; contact is not
+reported as hover. Moving the pen away, losing window focus, or leaving the page
+clears transient input.
+Attachment uses Samsung's optional `com.samsung.pen.INSERT` broadcast, including
+its initial sticky state when available. Devices that do not report this state
+show **Unknown / unavailable**. These diagnostics do not change canvas gestures
+or switch tools, and do not require the Samsung Remote SDK.
+
 ## Further documentation
 
 - [Development](DEVELOPMENT.md): setup, builds, and implementation ownership.

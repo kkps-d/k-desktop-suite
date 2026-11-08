@@ -144,6 +144,28 @@ controlled InputConnection.
 
 ### Paint
 
+`PenDiagnosticsTest` exercises the debug status displays through PaintActivity's
+native touch and generic-motion dispatch. It covers hover versus contact,
+stationary stylus-button press/release, mouse exclusion, cancellation, focus loss,
+page disposal, and simulated Samsung attachment broadcasts. Run it alongside
+`PaintDebugScreenTest` and `PaintStatusTest#aboutLogoOpensDebugAndBackReturnsToPaint`
+on local Small Desktop. The emulator cannot establish whether a Galaxy model
+actually emits the optional attachment broadcast or how One UI routes the side
+button. Manually check those statuses on Galaxy hardware, including opening the
+page with the pen already detached; never run instrumented tests on connected
+ADB remote devices.
+
+Pen diagnostics verification on 8 November 2026: Paint's debug build, lint
+(no errors; three existing warnings), test-APK compilation, 54 Paint and seven
+shared UI JVM tests, and all 466 localization checks passed. Both new diagnostics
+tests and the existing debug-field test passed on local Small Desktop. The
+About/debug navigation test passed after enlarging the emulator display to fit
+its 1200 × 800 dp fixture; the initial default-size run clipped the status bar
+during setup. The debug page was visually checked, then the display size was
+restored. The user confirmed on a Galaxy S25 that attachment/detachment and hover
+are accurately detected, and side-button state updates during hover. Other
+Galaxy models and One UI versions remain unverified.
+
 `ViewportTest` and `PaintStartupTest` cover fresh-image zoom before and after
 workspace measurement, unusable initial dimensions, exact-fit and smaller
 workspaces, configured canvas sizes, Ask → Start new image, and restored zoom,

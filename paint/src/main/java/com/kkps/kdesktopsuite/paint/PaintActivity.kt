@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowInsetsController
+import android.view.MotionEvent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -41,6 +42,7 @@ internal class PaintApplication : Application() {
 }
 
 class PaintActivity : AppCompatActivity() {
+    internal val penStatus = PaintPenStatus()
     internal lateinit var paintModel: PaintViewModel
         private set
     private var paintWindow: PaintWindow? = null
@@ -194,6 +196,16 @@ class PaintActivity : AppCompatActivity() {
         task?.moveToFront()
     }
 
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        penStatus.onMotionEvent(event)
+        return super.dispatchTouchEvent(event)
+    }
+
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        penStatus.onMotionEvent(event)
+        return super.dispatchGenericMotionEvent(event)
+    }
+
     override fun onKeyShortcut(keyCode: Int, event: android.view.KeyEvent): Boolean {
         if (::paintModel.isInitialized && event.action == android.view.KeyEvent.ACTION_DOWN &&
             event.isCtrlPressed && !event.isAltPressed) {
@@ -221,6 +233,7 @@ class PaintActivity : AppCompatActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus) penStatus.clearInput()
         if (hasFocus) recordWindowFocus()
     }
 
