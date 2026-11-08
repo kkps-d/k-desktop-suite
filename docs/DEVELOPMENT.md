@@ -98,7 +98,7 @@ compatibility, instead of relying on Compose's older transitive test dependency.
 ```text
 notepad/                     Notepad editor, documents, tabs, and recovery
 paint/                       Paint editor, raster operations, and recovery
-explorer/                    Blank tabbed UI validation app and independent windows
+explorer/                    Browser UI preview, shared tabs, and independent windows
 core/ui/                     Shared theme, fonts, menus, settings, and caption support
 docs/                        Usage guides, contributor instructions, and specs
 gradle/libs.versions.toml    Dependency and plugin versions
@@ -116,6 +116,10 @@ both windows' saved state; moving the final tab to an existing window closes
 its source. Closed-window observers run independently of recomposition so stopped
 source tasks finish after a transfer too. A single tab cannot detach into a new
 window. There is no browsing repository or on-disk session recovery yet.
+`ExplorerBrowserPreview` owns illustrative fixture rows and window-local
+presentation state only (selection, view, search text, and pane visibility).
+Keep storage grants, file I/O, navigation, sorting, and search execution out of
+this UI validation stage. The shared tab header remains the sole tab renderer.
 
 All tabbed apps use the Notepad-derived `SuiteTabHeader` in `core/ui`, including
 its dimensions, shapes, typography, New/Close buttons, tooltip timing, overflow,

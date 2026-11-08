@@ -165,6 +165,22 @@ single-tab detach rejection, cancellation, stale tokens, and blocked destination
 16dp overlap, caption/RTL fallback, compact selector at 200% fonts, wrapping
 keyboard focus, recreation, independent tasks, native mouse reorder/cancel, and
 new/existing window transfers.
+`ExplorerLayoutTest` checks the mockup-derived desktop columns, fixed fixture
+content despite search/navigation input, view/selection presentation and sample
+information, compact RTL at 200% fonts with Escape/native Back drawer dismissal, and a short
+scrolling window. Inspect the
+layout in light/dark appearance and at real freeform/maximized widths as well.
+These checks do not imply implemented file browsing.
+
+Explorer layout verification on 6 November 2026: debug build, lint, test-APK
+compilation, and all six Explorer JVM tests passed. Lint retains the existing
+backup-configuration warning, with no errors. All four layout checks and eight
+existing tab/window checks passed on local Small Desktop under user 10. Real
+400dp and 1040dp freeform windows and the full 1366px desktop were visually
+reviewed in light/dark appearance. Display size and system appearance were
+restored after review. The listing uses fixed sample data; no file/provider
+functionality was added. TalkBack and physical folding/external displays remain
+manual checks.
 
 Notepad's existing `NotepadUiTest` tab cases verify the exact visual/input baseline
 used by both apps: outward feet, hover insets, separators, typography/dimensions,

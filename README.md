@@ -11,8 +11,8 @@ windows, including Googlebook. Built with Kotlin, Jetpack Compose, and Material 
   recovery.
 - **[KD Paint](docs/PAINT.md)** — A drawing and image editor with brushes, shapes,
   selections, text, image transforms, PNG/JPEG files, multiple windows, and draft recovery.
-- **[KD Explorer](docs/EXPLORER.md)** — A blank tabbed app with independent windows
-  for UI validation. File browsing is not implemented yet.
+- **[KD Explorer](docs/EXPLORER.md)** — A browser UI preview with shared tabs and
+  independent windows for UI validation. File browsing is not implemented yet.
 
 The apps support Android 8.0 / API 26 and newer, touch, keyboard, mouse, and
 trackpad. Layouts adapt as windows resize, with system light/dark appearance and

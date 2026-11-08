@@ -3,8 +3,6 @@ package com.kkps.kdesktopsuite.explorer
 import android.os.Build
 import android.view.WindowInsetsController
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,8 +23,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -101,13 +97,13 @@ internal fun ExplorerScreen(
                     SuiteTabHeader(tabs, explorer.activeId, false, { id, _ -> explorer.select(id) }, closeTab,
                         explorer::newTab, caption, region.translate(origin), interactions = interactions,
                         moveToWindow = { movingId = it })
-                    ExplorerCommands(explorer::newTab, newWindow, { closeTab(explorer.activeId) }, closeWindow,
-                        explorer.tabs.isNotEmpty())
                 }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                val workspaceLabel = stringResource(R.string.blank_workspace)
-                Box(Modifier.weight(1f).fillMaxWidth().testTag("explorer-workspace")
-                    .semantics { contentDescription = workspaceLabel }.focusable())
+                ExplorerBrowserPreview(
+                    hasTabs = explorer.tabs.isNotEmpty(), interactions = interactions,
+                    fileMenu = { ExplorerFileMenu(explorer::newTab, newWindow, { closeTab(explorer.activeId) }, closeWindow,
+                        explorer.tabs.isNotEmpty()) },
+                    newTab = explorer::newTab, modifier = Modifier.weight(1f),
+                )
             }
         }
     }
@@ -142,23 +138,18 @@ internal fun ExplorerScreen(
 }
 
 @Composable
-private fun ExplorerCommands(new: () -> Unit, newWindow: () -> Unit, close: () -> Unit, closeWindow: () -> Unit, hasTab: Boolean) {
+private fun ExplorerFileMenu(new: () -> Unit, newWindow: () -> Unit, close: () -> Unit, closeWindow: () -> Unit, hasTab: Boolean) {
     var expanded by remember { mutableStateOf(false) }
-    Surface(color = MaterialTheme.colorScheme.surface) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("command-bar").padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically) {
-            Box {
-                AppMenuButton(stringResource(R.string.file_menu)) { expanded = true }
-                AppDropdownMenu(expanded, { expanded = false }) {
-                    AppMenuItem(text = { Text(stringResource(UiR.string.ui_tabs_new_tab)) }, shortcut = "Ctrl+N",
-                        onClick = { expanded = false; new() })
-                    AppMenuItem(text = { Text(stringResource(R.string.new_window)) }, shortcut = "Ctrl+Shift+N",
-                        onClick = { expanded = false; newWindow() })
-                    AppMenuItem(text = { Text(stringResource(UiR.string.ui_tabs_close_document)) }, shortcut = "Ctrl+W", enabled = hasTab,
-                        onClick = { expanded = false; close() })
-                    AppMenuItem(text = { Text(stringResource(R.string.close_window)) }, onClick = { expanded = false; closeWindow() })
-                }
-            }
+    Box {
+        AppMenuButton(stringResource(R.string.file_menu)) { expanded = true }
+        AppDropdownMenu(expanded, { expanded = false }) {
+            AppMenuItem(text = { Text(stringResource(UiR.string.ui_tabs_new_tab)) }, shortcut = "Ctrl+N",
+                onClick = { expanded = false; new() })
+            AppMenuItem(text = { Text(stringResource(R.string.new_window)) }, shortcut = "Ctrl+Shift+N",
+                onClick = { expanded = false; newWindow() })
+            AppMenuItem(text = { Text(stringResource(UiR.string.ui_tabs_close_document)) }, shortcut = "Ctrl+W", enabled = hasTab,
+                onClick = { expanded = false; close() })
+            AppMenuItem(text = { Text(stringResource(R.string.close_window)) }, onClick = { expanded = false; closeWindow() })
         }
     }
 }

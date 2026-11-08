@@ -1,10 +1,11 @@
 # KD Explorer — basic file browsing specification
 
-Updated 5 November 2026. Status: proposed browsing requirements. The `:explorer`
-module now provides a blank tabbed, multi-window UI validation shell; see the
-[Explorer guide](EXPLORER.md) for implemented behavior. Tabs and independent
-windows were brought forward from the original deferred scope. Browsing remains
-unimplemented; the layout below is a future browsing reference.
+Updated 6 November 2026. Status: proposed browsing functionality. The `:explorer`
+module provides the mockup-derived layout with sample content, shared tabs, and
+independent windows for UI validation; see the [Explorer guide](EXPLORER.md) for
+implemented behavior. Layout and presentation controls have been brought forward
+from this scope. Actual folder access, navigation, search, sorting, and file
+opening remain unimplemented; the requirements below describe that future work.
 
 KD Explorer is a native Android file browser for phones, tablets, foldables, and desktop windows. Preserve Microsoft File Explorer's recognizable arrangement and navigation model, styled with Jetpack Compose and Material 3 Expressive. Follow the [suite design guidelines](DESIGN_GUIDELINES.md), including KD branding, system appearance, dynamic color, and a green fallback palette.
 

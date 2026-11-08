@@ -5,7 +5,7 @@
 - [KD Notepad](NOTEPAD.md): documents, tabs, windows, shortcuts, and recovery.
 - [KD Paint](PAINT.md): drawing tools, image editing, settings, and recovery.
 - [Privacy policy draft](PRIVACY_POLICY.md): publication text covering KD Notepad and KD Paint.
-- [KD Explorer](EXPLORER.md): blank tabs, independent windows, and UI validation.
+- [KD Explorer](EXPLORER.md): mockup-based browser UI, shared tabs, independent windows, and preview limits.
 
 ## Contributing
 
@@ -27,6 +27,7 @@ do not define current app behavior.
 - [Windows 7 Paint baseline](WINDOWS_7_PAINT_SPEC.md) (original reference proposal)
 - [Explorer specification](KD_EXPLORER_SPEC.md) (planned browsing functionality)
 - [Tab visual references](references/chrome-android-tabs/) (historical Chrome examples)
+- [Explorer layout reference](references/kd-explorer/desktop-mockup.png)
 - [Paint layout references](references/kd-paint/README.md)
 - [Logo design studies](references/logos/README.md): selected Printed KD logos,
   light/dark palettes, launcher crops, and earlier explorations.

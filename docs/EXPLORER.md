@@ -1,8 +1,38 @@
 # KD Explorer
 
-KD Explorer currently provides a blank tabbed workspace for UI validation and
-independent Android windows. File browsing and storage access are not implemented.
-It requests no storage permissions and displays no sample files.
+KD Explorer currently provides a mockup-based browser layout for UI validation,
+with shared Notepad tabs and independent Android windows. File browsing and storage
+access are not implemented. The listing contains illustrative sample content;
+Explorer requests no storage permissions and does not read or create those files.
+
+## Layout preview
+
+The [desktop mockup](references/kd-explorer/desktop-mockup.png) defines the layout:
+navigation/address/search across the top, a tonal Locations tree, a quiet command
+strip, an aligned file listing, and a subdued item/selection status bar. The shared
+tab header replaces the mockup's older plain title bar.
+
+- The sample location is **Locations > Work > Reports**. Its eight folders/files,
+  metadata, and initial **Budget.xlsx** selection match the mockup.
+- The locations pane stays alongside the listing in expanded windows. Narrow,
+  large-font, and short windows use a Locations drawer. Work expands/collapses as
+  a presentation control; location rows do not navigate or request folder access.
+- Details uses Name, Date modified, Type, and right-aligned Size columns. Narrow
+  panes put type/size beneath names and omit columns that cannot fit. The listing
+  and tree scroll independently. Metadata remains available in Item information.
+- Details/Icons switches the sample presentation. Clicking a sample item changes
+  its visual selection and count. More > Item information shows fixture metadata.
+  These controls do not open or modify files.
+- Search accepts text and can be cleared, but does not filter or query anything.
+  Back, Forward, Up, Refresh, Sort, and Add location have no browsing behavior.
+  Menus, tooltips, focus, hover, view choices, and drawer controls are available
+  for UI review. The Sample content status label identifies the fixture listing.
+- Compact layouts stack navigation and breadcrumbs, reveal search on demand, and
+  keep view/sort choices in More. Short windows reduce chrome and collapse the tree.
+  Colors follow system appearance and dynamic color, with the suite green fallback.
+
+The presentation fields survive activity recreation within their window. They
+are not a browsing session or a durable file index.
 
 ## Tabs and windows
 
@@ -14,7 +44,7 @@ have Notepad's independent hit targets; hovering and focusing do not select tabs
 
 - Launch with one blank tab. Use **New document** (+) or **File > New document**
   to add one. The shared command uses Notepad's label; Explorer creates a blank
-  browsing tab with a stable numbered title.
+  preview tab with a stable numbered title.
 - Tabs compress equally before scrolling. The active tab stays visible;
   windows below 600dp use the shared dropdown showing the active tab, with New
   (+) alongside it. The dropdown is 60% of usable window height with a scrolling
@@ -30,7 +60,7 @@ have Notepad's independent hit targets; hovering and focusing do not select tabs
   tab and order. Context menus and accessibility actions offer Move left/right.
 - **Move to window…** offers other open Explorer windows and a new window.
   Dragging between tab strips transfers the same tab. Dropping a tab into the
-  blank workspace or outside the source can open a new window where Android
+  listing workspace or outside the source can open a new window where Android
   supports it. Source removal waits for destination acknowledgement; failed,
   stale, and cancelled transfers preserve the source. A sole tab can move to an
   existing window, closing its empty source, but cannot detach to a new window.
@@ -44,7 +74,7 @@ have Notepad's independent hit targets; hovering and focusing do not select tabs
 Tab IDs, order, active selection, and numbering survive resizing, activity
 recreation, and Android saved-task restoration. There is no private on-disk
 session recovery after task removal or force stop. Each new window starts with
-one blank tab. The workspace intentionally has no editor or browsing commands.
+one preview tab. Actual browsing commands and file/provider behavior remain deferred.
 
 ## Keyboard
 
