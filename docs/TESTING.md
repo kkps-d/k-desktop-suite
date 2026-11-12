@@ -234,6 +234,15 @@ displays, and pre-35 native window behavior still need manual verification.
 
 ## Manual verification
 
+Recovery-test verification on 12 November 2026: the appearance-preferences check in
+`NotepadStateTest` timed out because it polled the recovery file through a second
+`SessionStore` while the restored workspace wrote it. Each store has its own lock,
+and Android's `AtomicFile.openRead()` deletes another instance's in-progress `.new`
+file, so the `System` font write was silently lost. The app keeps one store per
+file. The test now closes the first workspace and polls through the writer's store.
+It passed five times alone and the full class (23 tests) three times on local Small
+Desktop under user 10.
+
 Icon appearance/status bar verification on 8 November 2026: both debug builds,
 lint (no errors; 19 Notepad and three Paint warnings), test-APK compilation,
 all 81 shared/Notepad/Paint JVM tests, and all 456 localization checks passed.
