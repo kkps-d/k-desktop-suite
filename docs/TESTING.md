@@ -149,10 +149,15 @@ and rapid checkpoints that all complete while keeping only the newest snapshot.
 Recovery-write verification on 12 November 2026: all 26 Notepad JVM tests, debug
 build, lint (no errors), and test-APK compilation passed. On local Small Desktop
 (`emulator-5554`, user 10), `DocumentRepositoryTest`, `TabWorkspaceTest`,
-`NotepadLifecycleTest`, `TabWindowTest`, and 22 of 23 `NotepadStateTest` cases
-passed. `appearancePreferencesPersistAndOlderSessionsUseDefaults` times out
-waiting for its recovery write; the same failure reproduces on unchanged
-revision `accfd22`.
+`NotepadLifecycleTest`, `TabWindowTest`, and all 23 `NotepadStateTest` cases
+passed.
+
+The appearance-preferences check in `NotepadStateTest` previously timed out
+because it polled the recovery file through a second `SessionStore` while the
+restored workspace wrote it. Each store has its own lock, and Android's
+`AtomicFile.openRead()` deletes another instance's in-progress `.new` file, so the
+`System` font write was silently lost. The app keeps one store per file; the test
+now closes the first workspace and polls through the writer's store.
 
 ### Paint
 
