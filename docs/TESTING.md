@@ -142,6 +142,18 @@ warnings. Real software-keyboard Back dismissal still needs manual verification;
 composition commits are separately covered by `NotepadSearchImeTest` using a
 controlled InputConnection.
 
+`SessionStoreTest` (Robolectric) covers the recovery format: round trips, a newer
+version rejected without being overwritten, duplicate IDs, zoom/recent-file limits,
+and rapid checkpoints that all complete while keeping only the newest snapshot.
+
+Recovery-write verification on 12 November 2026: all 26 Notepad JVM tests, debug
+build, lint (no errors), and test-APK compilation passed. On local Small Desktop
+(`emulator-5554`, user 10), `DocumentRepositoryTest`, `TabWorkspaceTest`,
+`NotepadLifecycleTest`, `TabWindowTest`, and 22 of 23 `NotepadStateTest` cases
+passed. `appearancePreferencesPersistAndOlderSessionsUseDefaults` times out
+waiting for its recovery write; the same failure reproduces on unchanged
+revision `accfd22`.
+
 ### Paint
 
 `ViewportTest` and `PaintStartupTest` cover fresh-image zoom before and after

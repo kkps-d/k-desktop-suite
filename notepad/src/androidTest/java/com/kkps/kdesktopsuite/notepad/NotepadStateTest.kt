@@ -603,6 +603,8 @@ internal class FakeDocuments : DocumentRepository {
         files[uri] = LoadedDocument(uri.substringAfter(':'), text, TextFormat(), TextCodec.fingerprint(text.toByteArray()))
     }
 
+    override suspend fun canRead(uri: String) = uri in files
+
     override suspend fun read(uri: String): LoadedDocument {
         if (invalid) throw UnsupportedTextException()
         return files[uri] ?: throw IOException("Unavailable")

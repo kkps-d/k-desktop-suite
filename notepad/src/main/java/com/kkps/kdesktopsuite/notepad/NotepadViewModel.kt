@@ -66,12 +66,7 @@ internal class NotepadViewModel(
             // Recovery copies are authoritative; validate access without replacing contents.
             documents.toList().forEach { doc ->
                 val uri = doc.uri ?: return@forEach
-                try {
-                    repository.read(uri)
-                } catch (error: Exception) {
-                    if (error is CancellationException) throw error
-                    reportError(R.string.error_access, doc.id)
-                }
+                if (!repository.canRead(uri)) reportError(R.string.error_access, doc.id)
             }
         }
     }

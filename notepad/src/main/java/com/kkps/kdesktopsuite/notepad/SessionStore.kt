@@ -17,14 +17,24 @@ internal class SessionStore(file: File) {
     private val atomicFile = AtomicFile(file)
     private val fileLock = Mutex()
     private var writable = true
-    private val writes = Channel<Pair<SessionSnapshot, (Boolean) -> Unit>>(Channel.UNLIMITED)
+
+    // Only the newest unwritten snapshot is kept; guarded by synchronized(pendingLock).
+    private val pendingLock = Any()
+    private var pending: SessionSnapshot? = null
+    private val pendingCallbacks = mutableListOf<(Boolean) -> Unit>()
+    private val writeRequested = Channel<Unit>(Channel.CONFLATED)
 
     init {
         // Own the writer beyond any Activity/ViewModel so a background flush can finish.
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            for ((snapshot, complete) in writes) {
+            for (request in writeRequested) {
+                val (snapshot, callbacks) = synchronized(pendingLock) {
+                    val snapshot = pending ?: continue
+                    pending = null
+                    snapshot to pendingCallbacks.toList().also { pendingCallbacks.clear() }
+                }
                 val succeeded = runCatching { fileLock.withLock { write(snapshot) } }.isSuccess
-                withContext(Dispatchers.Main.immediate) { complete(succeeded) }
+                withContext(Dispatchers.Main.immediate) { callbacks.forEach { it(succeeded) } }
             }
         }
     }
@@ -42,8 +52,13 @@ internal class SessionStore(file: File) {
         }
     }
 
+    /** A newer snapshot replaces one that has not started writing; both callers get its result. */
     fun checkpoint(snapshot: SessionSnapshot, complete: (Boolean) -> Unit = {}) {
-        writes.trySend(snapshot to complete)
+        synchronized(pendingLock) {
+            pending = snapshot
+            pendingCallbacks += complete
+        }
+        writeRequested.trySend(Unit)
     }
 
     private fun write(snapshot: SessionSnapshot) {
