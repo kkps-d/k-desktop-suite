@@ -48,6 +48,7 @@ class DocumentRepositoryTest {
     @Test
     fun unreadableAndInvalidDocumentsFailWithoutInventingEmptyContent() = runBlocking {
         val missing = uri()
+        assertFalse(repository.canRead(missing.toString()))
         try {
             repository.read(missing.toString())
             fail("Missing documents must not become empty documents")
@@ -57,5 +58,6 @@ class DocumentRepositoryTest {
             repository.read(missing.toString())
             fail("Invalid UTF-8 must not be decoded lossily")
         } catch (_: UnsupportedTextException) { }
+        assertTrue(repository.canRead(missing.toString()))
     }
 }

@@ -345,7 +345,12 @@ class NotepadStateTest {
         withTimeout(5_000) {
             while (sessions.read()?.fontStyle != NoteFontStyle.SansSerif) delay(10)
         }
-        val recovered = create(store = store(file), savedState = SavedStateHandle(mapOf("settingsOpen" to true)))
+        // The app keeps one store per file. Stop the first workspace's debounced autosave and poll
+        // through the same store the new workspace writes with: separate AtomicFile instances on one
+        // file race, and a read can delete another instance's in-progress ".new" write.
+        withContext(Dispatchers.Main) { holders.removeAt(0).clear() }
+        val recoveredStore = store(file)
+        val recovered = create(store = recoveredStore, savedState = SavedStateHandle(mapOf("settingsOpen" to true)))
         withContext(Dispatchers.Main) {
             assertEquals(AppTheme.Dark, recovered.appTheme)
             assertEquals(NoteFontStyle.SansSerif, recovered.fontStyle)
@@ -366,7 +371,7 @@ class NotepadStateTest {
         }
         withContext(Dispatchers.Main) { recovered.changeFontStyle(NoteFontStyle.System) }
         withTimeout(5_000) {
-            while (sessions.read()?.fontStyle != NoteFontStyle.System) delay(10)
+            while (recoveredStore.read()?.fontStyle != NoteFontStyle.System) delay(10)
         }
         val system = create(store = store(file))
         withContext(Dispatchers.Main) {
@@ -602,6 +607,8 @@ internal class FakeDocuments : DocumentRepository {
     fun put(uri: String, text: String) {
         files[uri] = LoadedDocument(uri.substringAfter(':'), text, TextFormat(), TextCodec.fingerprint(text.toByteArray()))
     }
+
+    override suspend fun canRead(uri: String) = uri in files
 
     override suspend fun read(uri: String): LoadedDocument {
         if (invalid) throw UnsupportedTextException()

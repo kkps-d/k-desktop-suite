@@ -12,11 +12,21 @@ internal data class LoadedDocument(val name: String?, val text: String, val form
 internal class FileChangedException : IOException()
 
 internal interface DocumentRepository {
+    suspend fun canRead(uri: String): Boolean
     suspend fun read(uri: String): LoadedDocument
     suspend fun write(uri: String, text: String, format: TextFormat, expectedFingerprint: String?): LoadedDocument
 }
 
 internal class AndroidDocumentRepository(private val resolver: ContentResolver) : DocumentRepository {
+    // Opening is enough to confirm the file still exists and access was kept.
+    override suspend fun canRead(uri: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            resolver.openInputStream(Uri.parse(uri)).use { it != null }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     override suspend fun read(uri: String): LoadedDocument = withContext(Dispatchers.IO) {
         val parsed = Uri.parse(uri)
         val bytes = resolver.openInputStream(parsed)?.use { it.readBytes() } ?: throw IOException("Missing input stream")
